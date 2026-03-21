@@ -49,3 +49,18 @@
   - ReferencePriceBadge internally uses SponsorBadge for the Exa attribution — nesting Badge inside Badge works fine
 ---
 
+## 2026-03-21 - US-004
+- Installed shadcn Alert component via `npx shadcn@latest add alert -y`
+- Refactored MegalodonAlert.tsx to use shadcn Alert with destructive variant
+- Replaced ⚠ emoji with AlertTriangle icon from lucide-react
+- Drug name displayed via AlertTitle, message via AlertDescription
+- Optional Intercept button preserved using AlertAction slot
+- Left border accent preserved via className override (border-l-4 border-alert-red)
+- Files changed: MegalodonAlert.tsx, ui/alert.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Alert v4 has AlertAction slot component for inline actions (positioned absolute top-right)
+  - Alert uses data-slot attributes for internal styling hooks — keep these intact
+  - `rounded-none border-0` overrides needed to strip default Alert border/radius when using custom border-left accent
+  - MegalodonAlert is only used in DashboardHome.tsx — refactoring in-place avoids touching consumers
+---
+
