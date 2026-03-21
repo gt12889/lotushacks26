@@ -82,6 +82,16 @@ Pivoting from GhostDriver to MediScrape for LotusHacks 2026. Pharmaceutical pric
 - [ ] End-to-end test with real drug searches
 - [ ] **Verify**: 5-minute demo script runs smoothly
 
+### Demo-Critical Features (Post-Audit Build)
+
+- [x] Agent Activity Feed — scrolling real-time log of agent spawn/search/complete events (`AgentActivityFeed.tsx`)
+- [x] Live Metrics Bar — ticking counters: agents deployed, pharmacies scanned, products found, savings (`LiveMetricsBar.tsx`)
+- [x] SSE-animated pharmacy cards — cards start dimmed (opacity-40), glow on result arrival (`PharmacyCards.tsx`)
+- [x] Sponsor tech badges — [TinyFish] [BrightData] pills on pharmacy cards and price grid rows (`SponsorBadge.tsx`)
+- [x] Discord + ElevenLabs demo alert trigger — `POST /api/demo-alert` fires Vietnamese voice note to Discord (`DemoAlertTrigger.tsx` + `routers/demo_alert.py`)
+- [x] Savings callout — already existed in `SavingsBanner.tsx` with percentage
+- [x] Core search flow — already existed: SSE streaming, 5 parallel agents, price table
+
 ---
 
 ## Phase 7: Sponsor Challenge Fixes (Post-Audit)

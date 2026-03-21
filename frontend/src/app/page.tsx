@@ -9,6 +9,19 @@ import SavingsBanner from '@/components/SavingsBanner';
 import MegalodonAlert from '@/components/MegalodonAlert';
 import StatusPill from '@/components/StatusPill';
 import SonarFilters from '@/components/SonarFilters';
+import AgentActivityFeed from '@/components/AgentActivityFeed';
+import LiveMetricsBar from '@/components/LiveMetricsBar';
+import DemoAlertTrigger from '@/components/DemoAlertTrigger';
+import LiveBrowserPreview from '@/components/LiveBrowserPreview';
+
+interface AgentEvent {
+  id: string;
+  timestamp: number;
+  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  agent: string;
+  message: string;
+  source_id?: string;
+}
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -109,8 +122,27 @@ export default function Home() {
   const [currentQuery, setCurrentQuery] = useState('');
   const [memoryHints, setMemoryHints] = useState<string[]>([]);
   const [syncTime, setSyncTime] = useState('');
+  const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
+  const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
   const eventBufferRef = useRef<Array<{type: string, data: any}>>([]);
   const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const eventIdRef = useRef(0);
+
+  // Computed metrics from results
+  const pharmaciesComplete = Object.values(results).filter(r => r.status === 'success' || r.status === 'error').length;
+  const productsFound = Object.values(results).reduce((sum, r) => sum + (r.status === 'success' ? r.result_count : 0), 0);
+
+  const addAgentEvent = useCallback((type: AgentEvent['type'], agent: string, message: string, source_id?: string) => {
+    const evt: AgentEvent = {
+      id: String(++eventIdRef.current),
+      timestamp: Date.now(),
+      type,
+      agent,
+      message,
+      source_id,
+    };
+    setAgentEvents(prev => [...prev, evt]);
+  }, []);
 
   const flushEvents = useCallback(() => {
     const buffer = eventBufferRef.current;
@@ -168,6 +200,10 @@ export default function Home() {
     setResults({});
     setSummary(null);
     setCurrentQuery(query);
+    setAgentEvents([]);
+    setStreamingUrls({});
+    eventIdRef.current = 0;
+    addAgentEvent('spawn', 'Orchestrator', `Deploying 5 pharmacy agents for "${query}"`);
     try {
       const memoryUserId = ensureMemoryUserId();
       await fetchMemoryHints(query, memoryUserId);
@@ -194,8 +230,17 @@ export default function Home() {
             const event = JSON.parse(dataMatch[1]);
             if (event.task === 'summary' || event.type === 'search_complete') {
               eventBufferRef.current.push({ type: 'summary', data: event });
-            } else if (event.source_id) {
+              addAgentEvent('success', 'Orchestrator', `Search complete — ${event.total_results} products found`);
+            } else if (event.type === 'agent_event') {
+              const evtType = event.event === 'spawned' ? 'spawn' : event.event === 'completed' ? 'success' : 'error';
+              addAgentEvent(evtType as AgentEvent['type'], event.name || 'Agent', event.description || event.error || `${event.event} (${event.result_count || 0})`, event.context);
+            } else if (event.type === 'pharmacy_status' && event.status === 'searching') {
+              addAgentEvent('searching', `${event.source_name} Agent`, 'Scanning pharmacy...', event.source_id);
+            } else if (event.source_id && event.status) {
               eventBufferRef.current.push({ type: 'pharmacy', data: event });
+              if (event.streaming_url) setStreamingUrls(prev => ({ ...prev, [event.source_id]: event.streaming_url }));
+              if (event.status === 'success') addAgentEvent('success', `${event.source_name} Agent`, `Found ${event.result_count} products (${((event.response_time_ms || 0) / 1000).toFixed(1)}s)`, event.source_id);
+              else if (event.status === 'error') addAgentEvent('error', `${event.source_name} Agent`, event.error || 'Signal lost', event.source_id);
             }
 
             // Debounce: flush every 200ms
@@ -296,7 +341,28 @@ export default function Home() {
                     )}
                   </div>
                 )}
+                <LiveBrowserPreview
+                  streamingUrls={streamingUrls}
+                  pharmacyNames={Object.fromEntries(
+                    Object.values(results).map(r => [r.source_id, r.source_name])
+                  )}
+                  isSearching={isSearching}
+                />
+                {/* Live Metrics Bar */}
+                <LiveMetricsBar
+                  agentsSpawned={agentEvents.filter(e => e.type === 'spawn').length}
+                  pharmaciesComplete={pharmaciesComplete}
+                  pharmaciesTotal={5}
+                  productsFound={productsFound}
+                  savingsVnd={summary?.potential_savings ?? null}
+                  isActive={isSearching}
+                />
+
                 <PharmacyCards results={results} />
+
+                {/* Agent Activity Feed */}
+                <AgentActivityFeed events={agentEvents} isActive={isSearching} />
+
                 {summary && (
                   <SavingsBanner
                     bestPrice={summary.best_price}
@@ -320,6 +386,13 @@ export default function Home() {
                   </div>
                 )}
                 <PriceGrid results={results} bestPrice={summary?.best_price ?? null} />
+
+                {/* Demo Alert Trigger */}
+                <DemoAlertTrigger
+                  drugName={currentQuery || 'Metformin 500mg'}
+                  bestPrice={summary?.best_price ?? undefined}
+                  bestSource={summary?.best_source ?? undefined}
+                />
               </div>
             )}
 

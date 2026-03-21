@@ -44,6 +44,8 @@ def _set_cached(query: str, source_id: str, result: PharmacySearchResult):
         _cache.popitem(last=False)
 
 TINYFISH_API_URL = "https://agent.tinyfish.ai/v1/automation/run-sse"
+TINYFISH_BATCH_URL = "https://agent.tinyfish.ai/v1/automation/run-batch"
+TINYFISH_RUN_URL = "https://agent.tinyfish.ai/v1/automation/runs"
 
 
 def _extract_json_array(text, source_id: str) -> list:
@@ -93,58 +95,107 @@ PHARMACY_CONFIGS = {
     "long_chau": {
         "name": "FPT Long Chau",
         "search_url": "https://nhathuoclongchau.com.vn/tim-kiem?key={query}",
-        "goal": """Search for '{query}' on this pharmacy website.
-Extract ALL matching products on the results page.
-For each product, return a JSON array with:
-- product_name (full name including dosage)
-- price (number in VND, remove dots/commas)
-- original_price (if on sale, the crossed-out price, else null)
-- manufacturer (brand/company name)
-- dosage_form (tablet, capsule, syrup, etc.)
-- pack_size (number of units per package, default 1)
-- in_stock (boolean)
-- product_url (full URL to product page)
-Return as valid JSON array. If no results found, return [].""",
+        "goal": """You are on nhathuoclongchau.com.vn search results for '{query}'.
+
+Step 1: If a cookie consent banner or popup appears, click "Dong y" or the X button to dismiss it.
+Step 2: Wait for the product listing grid to fully load (spinner should disappear).
+Step 3: If a CAPTCHA challenge appears, STOP immediately and return: {{"error": "CAPTCHA_DETECTED"}}
+Step 4: If the page shows "Khong tim thay san pham" or zero product cards, return []
+Step 5: Extract ALL visible product cards. For each product card, extract:
+  - product_name: the full Vietnamese product name including dosage (e.g. "Metformin Stada 500mg (hop 100 vien)")
+  - price: the bold/primary price number in VND as integer (remove dots, e.g. 45000 not "45.000")
+  - original_price: if there is a crossed-out/strikethrough price, that number in VND; otherwise null
+  - manufacturer: the brand or company name shown below the product name
+  - dosage_form: "tablet", "capsule", "syrup", "cream", "injection", or "other"
+  - pack_size: number of units in the package (look for "hop X vien" pattern), default 1
+  - in_stock: true if purchasable, false if showing "Het hang" or "Tam het hang"
+  - product_url: the full href link to the product detail page
+Step 6: If a product shows "Lien he" instead of a price, set price to null and in_stock to false.
+
+Return ONLY a valid JSON array. Example:
+[{{"product_name":"Metformin Stada 500mg (hop 100 vien)","price":45000,"original_price":null,"manufacturer":"Stada","dosage_form":"tablet","pack_size":100,"in_stock":true,"product_url":"https://nhathuoclongchau.com.vn/..."}}]
+
+If extraction fails for any reason, return:
+{{"error": "EXTRACTION_FAILED", "reason": "brief description of what went wrong"}}""",
     },
     "pharmacity": {
         "name": "Pharmacity",
         "search_url": "https://www.pharmacity.vn/search?q={query}",
-        "goal": """Search for '{query}' on this pharmacy website.
-Extract ALL matching products visible on the search results page.
-For each product, return JSON array with:
-- product_name, price (VND number), original_price (or null),
-  manufacturer, dosage_form, pack_size, in_stock, product_url
-Return as valid JSON array. If no results, return [].""",
+        "goal": """You are on pharmacity.vn search results for '{query}'.
+
+Step 1: Dismiss any cookie banner or promotional popup by clicking X or "Dong y".
+Step 2: Wait for the product grid to render. Products appear as cards with images.
+Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
+Step 4: Scroll down once to trigger any lazy-loaded products.
+Step 5: If "Khong tim thay ket qua" is displayed or no product cards exist, return []
+Step 6: Extract ALL product cards visible. For each:
+  - product_name: full name with dosage
+  - price: the displayed VND price as integer (remove dot separators)
+  - original_price: strikethrough price if present, else null
+  - manufacturer: brand name
+  - dosage_form: tablet/capsule/syrup/cream/other
+  - pack_size: units per package, default 1
+  - in_stock: true unless "Het hang" badge shown
+  - product_url: full product page URL
+
+Return ONLY a valid JSON array, no other text.
+If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
     },
     "an_khang": {
         "name": "An Khang",
         "search_url": "https://www.ankhang.vn/search?q={query}",
-        "goal": """Search for '{query}' on this pharmacy website.
-Extract ALL matching products from search results.
-For each product return JSON array with:
-- product_name, price (VND number), original_price (or null),
-  manufacturer, dosage_form, pack_size, in_stock, product_url
-Return as valid JSON array. If no results, return [].""",
+        "goal": """You are on ankhang.vn search results for '{query}'.
+
+Step 1: Close any popup or cookie banner by clicking X or "Dong y".
+Step 2: Wait for product listings to load completely.
+Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
+Step 4: If no results found or "Khong tim thay" message shown, return []
+Step 5: Extract ALL product entries:
+  - product_name: full name with dosage
+  - price: VND integer (remove dot separators)
+  - original_price: old price if on sale, else null
+  - manufacturer: brand name
+  - dosage_form: tablet/capsule/syrup/cream/other
+  - pack_size: units per package, default 1
+  - in_stock: true unless "Het hang" shown. If "Lien he de biet gia", set price to null and in_stock to false.
+  - product_url: full product page URL
+
+Return ONLY a valid JSON array.
+If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
     },
     "than_thien": {
         "name": "Nha Thuoc Than Thien",
         "search_url": "https://nhathuocthanhtien.vn/?s={query}",
-        "goal": """Search for '{query}' on this pharmacy website.
-Extract ALL matching products from search results.
-For each product return JSON array with:
-- product_name, price (VND number), original_price (or null),
-  manufacturer, dosage_form, pack_size, in_stock, product_url
-Return as valid JSON array. If no results, return [].""",
+        "goal": """You are on nhathuocthanhtien.vn search results for '{query}'.
+
+Step 1: Dismiss any popup or cookie banner.
+Step 2: Wait for search results to load.
+Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
+Step 4: If no results or "Khong tim thay" message, return []
+Step 5: Extract ALL product entries:
+  - product_name, price (VND integer, remove dots), original_price (or null),
+    manufacturer, dosage_form, pack_size (default 1), in_stock (false if "Het hang"),
+    product_url (full URL)
+
+Return ONLY a valid JSON array.
+If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
     },
     "medicare": {
         "name": "Medicare Vietnam",
         "search_url": "https://medicare.vn/search?q={query}",
-        "goal": """Search for '{query}' on this pharmacy website.
-Extract ALL matching products from search results.
-For each product return JSON array with:
-- product_name, price (VND number), original_price (or null),
-  manufacturer, dosage_form, pack_size, in_stock, product_url
-Return as valid JSON array. If no results, return [].""",
+        "goal": """You are on medicare.vn search results for '{query}'.
+
+Step 1: Dismiss any popup or cookie banner.
+Step 2: Wait for search results to load.
+Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
+Step 4: If no results or empty page, return []
+Step 5: Extract ALL product entries:
+  - product_name, price (VND integer, remove dots), original_price (or null),
+    manufacturer, dosage_form, pack_size (default 1), in_stock (false if "Het hang" or "Lien he"),
+    product_url (full URL)
+
+Return ONLY a valid JSON array.
+If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
     },
 }
 
@@ -213,6 +264,43 @@ MOCK_DATA_BY_QUERY = {
     "paracetamol": MOCK_PARACETAMOL,
     "panadol": MOCK_PARACETAMOL,
 }
+
+
+def _validate_tinyfish_result(event: dict, source_id: str) -> tuple[str, str]:
+    """Validate a TinyFish COMPLETE event. Returns (status, data_or_error).
+
+    COMPLETED means the browser session ended, NOT that data was extracted.
+    This function checks the actual result content for goal-level failures.
+    """
+    status = event.get("status", "")
+
+    if status == "FAILED":
+        error_msg = event.get("error", {})
+        if isinstance(error_msg, dict):
+            error_msg = error_msg.get("message", "Infrastructure failure")
+        return ("infra_failed", str(error_msg))
+
+    # Get result data
+    result_data = event.get("result_json", event.get("result", ""))
+
+    # Parse if string
+    parsed = result_data
+    if isinstance(result_data, str) and result_data.strip():
+        try:
+            parsed = json.loads(result_data)
+        except json.JSONDecodeError:
+            pass
+
+    # Check for structured error responses from our goal prompts
+    if isinstance(parsed, dict):
+        if parsed.get("error") == "CAPTCHA_DETECTED":
+            return ("captcha", f"CAPTCHA detected on {source_id}")
+        if parsed.get("error") == "EXTRACTION_FAILED":
+            return ("goal_failed", parsed.get("reason", "Extraction failed"))
+        if parsed.get("success") is False:
+            return ("goal_failed", parsed.get("reason", "Goal not achieved"))
+
+    return ("success", result_data)
 
 
 AGENT_TIMEOUT = 15.0  # seconds for mock mode
@@ -311,7 +399,7 @@ async def search_single_pharmacy(
     goal = config["goal"].format(query=query)
 
     try:
-        request_body = {"goal": goal, "url": url}
+        request_body = {"goal": goal, "url": url, "browser_profile": "stealth"}
         # Add BrightData proxy for high-traffic chains likely to block scrapers
         if source_id in ("long_chau", "pharmacity", "an_khang") and app_settings.brightdata_proxy_url:
             request_body["proxy-config"] = {
@@ -332,6 +420,8 @@ async def search_single_pharmacy(
             ) as response:
                 response.raise_for_status()
                 output_text = ""
+                streaming_url = None
+                run_id = None
                 async for line in response.aiter_lines():
                     if not line or line.startswith(":"):
                         continue
@@ -344,10 +434,38 @@ async def search_single_pharmacy(
                         data = line
                     try:
                         event = json.loads(data)
-                        # Capture any field that might contain the result
-                        for key in ("result", "output", "data", "content", "text", "message"):
-                            if key in event and event[key]:
-                                output_text = event[key]
+                        event_type = event.get("type", "")
+
+                        if event_type == "STARTED":
+                            run_id = event.get("run_id")
+                            logger.info(f"TinyFish run started for {source_id}: {run_id}")
+                        elif event_type == "STREAMING_URL":
+                            streaming_url = event.get("streaming_url")
+                            logger.info(f"TinyFish streaming URL for {source_id}: {streaming_url}")
+                        elif event_type == "PROGRESS":
+                            logger.debug(f"TinyFish progress [{source_id}]: {event.get('purpose', '')}")
+                        elif event_type == "HEARTBEAT":
+                            pass
+                        elif event_type == "COMPLETE":
+                            # Validate: COMPLETED != success
+                            run_status, result_data = _validate_tinyfish_result(event, source_id)
+                            if run_status != "success":
+                                logger.warning(f"TinyFish goal failed for {source_id}: {run_status} - {result_data}")
+                                elapsed = int((time.time() - start_time) * 1000)
+                                return PharmacySearchResult(
+                                    source_id=source_id,
+                                    source_name=config["name"],
+                                    status="error",
+                                    error=f"{run_status}: {result_data}",
+                                    response_time_ms=elapsed,
+                                    streaming_url=streaming_url,
+                                )
+                            output_text = result_data
+                        else:
+                            # Fallback for untyped events (backward compat)
+                            for key in ("result", "output", "data", "content", "text", "message"):
+                                if key in event and event[key]:
+                                    output_text = event[key]
                     except json.JSONDecodeError:
                         # Raw text - might be the result itself
                         if "[" in data or "{" in data:
@@ -398,6 +516,7 @@ async def search_single_pharmacy(
             lowest_price=lowest,
             result_count=len(products),
             response_time_ms=elapsed,
+            streaming_url=streaming_url,
         )
         _set_cached(query, source_id, result)
         return result
@@ -411,6 +530,7 @@ async def search_single_pharmacy(
             status="error",
             error=str(e),
             response_time_ms=elapsed,
+            streaming_url=locals().get("streaming_url"),
         )
 
 
@@ -438,3 +558,202 @@ async def search_all_pharmacies(query: str, api_key: str, sources: list[str] | N
             aggregated[sid] = result
 
     return aggregated
+
+
+def _build_batch_runs(
+    drugs: list[str], sources: list[str] | None = None
+) -> tuple[list[dict], dict[int, tuple[str, str]], dict[str, dict[str, PharmacySearchResult]]]:
+    """Build run payloads for /run-batch. Returns (runs, index_mapping, cached_results).
+
+    Skips cached drug+source combinations. index_mapping maps run index -> (drug, source_id).
+    """
+    target_sources = sources or list(PHARMACY_CONFIGS.keys())
+    runs = []
+    index_mapping: dict[int, tuple[str, str]] = {}
+    cached_results: dict[str, dict[str, PharmacySearchResult]] = {}
+
+    for drug in drugs:
+        cached_results.setdefault(drug, {})
+        for source_id in target_sources:
+            # Check cache first
+            cached = _get_cached(drug, source_id)
+            if cached is not None:
+                cached_results[drug][source_id] = cached
+                continue
+
+            config = PHARMACY_CONFIGS.get(source_id)
+            if not config:
+                continue
+
+            url = config["search_url"].format(query=drug)
+            goal = config["goal"].format(query=drug)
+
+            run_payload: dict = {
+                "url": url,
+                "goal": goal,
+                "browser_profile": "stealth",
+            }
+            if source_id in ("long_chau", "pharmacity", "an_khang") and app_settings.brightdata_proxy_url:
+                run_payload["proxy-config"] = {
+                    "enabled": True,
+                    "url": app_settings.brightdata_proxy_url,
+                }
+
+            index_mapping[len(runs)] = (drug, source_id)
+            runs.append(run_payload)
+
+    return runs, index_mapping, cached_results
+
+
+async def _poll_run_result(run_id: str, api_key: str, timeout: float = 180.0) -> dict:
+    """Poll a TinyFish run until COMPLETED/FAILED or timeout."""
+    deadline = time.time() + timeout
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        while time.time() < deadline:
+            resp = await client.get(
+                f"{TINYFISH_RUN_URL}/{run_id}",
+                headers={"X-API-Key": api_key},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            status = data.get("status", "")
+            if status in ("COMPLETED", "FAILED"):
+                return data
+            await asyncio.sleep(3.0)
+    return {"status": "FAILED", "error": {"message": f"Polling timeout after {timeout}s"}}
+
+
+def _parse_polled_result(
+    run_data: dict, source_id: str, query: str, start_time: float
+) -> PharmacySearchResult:
+    """Parse a polled run result into PharmacySearchResult. Reuses existing parsing logic."""
+    config = PHARMACY_CONFIGS.get(source_id, {})
+    name = config.get("name", "Unknown")
+
+    # Validate result (COMPLETED != success)
+    run_status, result_data = _validate_tinyfish_result(run_data, source_id)
+    if run_status != "success":
+        elapsed = int((time.time() - start_time) * 1000)
+        return PharmacySearchResult(
+            source_id=source_id,
+            source_name=name,
+            status="error",
+            error=f"{run_status}: {result_data}",
+            response_time_ms=elapsed,
+            streaming_url=run_data.get("streaming_url"),
+        )
+
+    products_data = _extract_json_array(result_data, source_id)
+
+    products = []
+    for p in products_data:
+        try:
+            product_name = p.get("product_name", "Unknown")
+            if fuzzy_match_score(query, product_name) < 0.2:
+                continue
+            price = int(str(p.get("price", 0)).replace(".", "").replace(",", ""))
+            if price < MIN_PRICE_VND or price > MAX_PRICE_VND:
+                continue
+            pack_size = int(p.get("pack_size", 1)) or 1
+            orig = p.get("original_price")
+            if orig:
+                orig = int(str(orig).replace(".", "").replace(",", ""))
+            products.append(ProductResult(
+                product_name=product_name,
+                price=price,
+                original_price=orig,
+                manufacturer=p.get("manufacturer"),
+                dosage_form=p.get("dosage_form"),
+                pack_size=pack_size,
+                unit_price=price / pack_size if pack_size else None,
+                in_stock=p.get("in_stock", True),
+                product_url=p.get("product_url"),
+            ))
+        except Exception as e:
+            logger.warning(f"Skipping product parse error for {source_id}: {e}")
+
+    elapsed = int((time.time() - start_time) * 1000)
+    lowest = min((p.price for p in products), default=None)
+    result = PharmacySearchResult(
+        source_id=source_id,
+        source_name=name,
+        status="success",
+        products=products,
+        lowest_price=lowest,
+        result_count=len(products),
+        response_time_ms=elapsed,
+        streaming_url=run_data.get("streaming_url"),
+    )
+    _set_cached(query, source_id, result)
+    return result
+
+
+async def search_all_pharmacies_batch(
+    drugs: list[str], api_key: str, sources: list[str] | None = None
+) -> dict[str, dict[str, PharmacySearchResult]]:
+    """Search multiple drugs across all pharmacies using /run-batch.
+
+    Returns {drug: {source_id: PharmacySearchResult}}.
+    """
+    runs, index_mapping, results = _build_batch_runs(drugs, sources)
+
+    if not runs:
+        # Everything was cached
+        return results
+
+    start_time = time.time()
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                TINYFISH_BATCH_URL,
+                json={"runs": runs},
+                headers={
+                    "X-API-Key": api_key,
+                    "Content-Type": "application/json",
+                },
+            )
+            resp.raise_for_status()
+            batch_data = resp.json()
+            run_ids = batch_data.get("run_ids", [])
+
+        logger.info(f"Batch submitted {len(run_ids)} runs for {len(drugs)} drugs")
+
+        # Poll all runs in parallel
+        poll_tasks = [_poll_run_result(rid, api_key) for rid in run_ids]
+        poll_results = await asyncio.gather(*poll_tasks, return_exceptions=True)
+
+        # Map results back
+        for idx, poll_result in enumerate(poll_results):
+            if idx not in index_mapping:
+                continue
+            drug, source_id = index_mapping[idx]
+            results.setdefault(drug, {})
+
+            if isinstance(poll_result, Exception):
+                results[drug][source_id] = PharmacySearchResult(
+                    source_id=source_id,
+                    source_name=PHARMACY_CONFIGS.get(source_id, {}).get("name", "Unknown"),
+                    status="error",
+                    error=str(poll_result),
+                    response_time_ms=int((time.time() - start_time) * 1000),
+                )
+            else:
+                results[drug][source_id] = _parse_polled_result(
+                    poll_result, source_id, drug, start_time
+                )
+
+    except Exception as e:
+        logger.error(f"Batch submission failed: {e}")
+        # Fallback: fill missing results with errors
+        for idx, (drug, source_id) in index_mapping.items():
+            results.setdefault(drug, {})
+            if source_id not in results[drug]:
+                results[drug][source_id] = PharmacySearchResult(
+                    source_id=source_id,
+                    source_name=PHARMACY_CONFIGS.get(source_id, {}).get("name", "Unknown"),
+                    status="error",
+                    error=f"Batch failed: {e}",
+                )
+
+    return results

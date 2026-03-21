@@ -1,6 +1,8 @@
 'use client';
 
+import { useState, useEffect, useRef } from 'react';
 import StatusPill from './StatusPill';
+import SponsorBadge from './SponsorBadge';
 
 interface PharmacyResult {
   source_id: string;
@@ -33,8 +35,33 @@ const PHARMACY_INITIALS: Record<string, string> = {
   medicare: 'MC',
 };
 
+const BRIGHTDATA_PHARMACIES = new Set(['long_chau', 'pharmacity', 'an_khang']);
+
 export default function PharmacyCards({ results }: PharmacyCardsProps) {
   const pharmacies = ['long_chau', 'pharmacity', 'an_khang', 'than_thien', 'medicare'];
+  const [glowing, setGlowing] = useState<Record<string, boolean>>({});
+  const prevResults = useRef<Record<string, boolean>>({});
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+
+    for (const id of pharmacies) {
+      const hasResult = !!results[id];
+      const hadResult = !!prevResults.current[id];
+
+      if (hasResult && !hadResult) {
+        setGlowing((prev) => ({ ...prev, [id]: true }));
+        const timer = setTimeout(() => {
+          setGlowing((prev) => ({ ...prev, [id]: false }));
+        }, 1500);
+        timers.push(timer);
+      }
+
+      prevResults.current[id] = hasResult;
+    }
+
+    return () => timers.forEach(clearTimeout);
+  }, [results]);
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -42,12 +69,19 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
         const result = results[id];
         const color = SOURCE_COLORS[id] || '#64748B';
         const statusType = result?.status === 'success' ? 'active' : result?.status === 'error' ? 'error' : result?.status === 'searching' ? 'searching' : 'monitor';
+        const hasResult = !!result;
+        const isGlowing = !!glowing[id];
+        const sponsors = BRIGHTDATA_PHARMACIES.has(id) ? ['TinyFish', 'BrightData'] : ['TinyFish'];
 
         return (
           <div
             key={id}
-            className="bg-deep border border-border rounded-lg p-4 transition-all duration-500"
-            style={{ borderLeftColor: result ? color : undefined, borderLeftWidth: result ? 3 : 1 }}
+            className={`bg-deep border border-border rounded-lg p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
+            style={{
+              borderLeftColor: hasResult ? color : undefined,
+              borderLeftWidth: hasResult ? 3 : 1,
+              boxShadow: isGlowing ? `0 0 20px ${color}40, 0 0 40px ${color}20` : 'none',
+            }}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
@@ -72,6 +106,11 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
             )}
             {result?.status === 'error' && (
               <div className="text-[10px] text-alert-red font-mono">Signal lost</div>
+            )}
+            {hasResult && (
+              <div className="mt-2">
+                <SponsorBadge sponsors={sponsors} />
+              </div>
             )}
           </div>
         );

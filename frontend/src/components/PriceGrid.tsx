@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import StatusPill from './StatusPill';
+import SponsorBadge from './SponsorBadge';
+
+const BRIGHTDATA_SOURCES = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
 interface Product {
   product_name: string;
@@ -93,6 +96,7 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
               <th className="text-right py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Unit</th>
               <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Mfr</th>
               <th className="text-center py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Status</th>
+              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Tech</th>
             </tr>
           </thead>
           <tbody>
@@ -127,6 +131,9 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
                 <td className="py-2.5 px-4 text-t3 text-xs">{p.manufacturer || '—'}</td>
                 <td className="py-2.5 px-4 text-center">
                   {p.in_stock ? <StatusPill status="active" label="IN STOCK" /> : <StatusPill status="out-of-stock" label="OUT" />}
+                </td>
+                <td className="py-2.5 px-4">
+                  <SponsorBadge sponsors={BRIGHTDATA_SOURCES.has(p.source_id) ? ['TinyFish', 'BrightData'] : ['TinyFish']} />
                 </td>
               </tr>
             ))}
