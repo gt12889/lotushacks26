@@ -1,4 +1,8 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-abyss: #0D1C32;
@@ -14,6 +18,44 @@
   --color-t3: #64748B;
   --color-border: rgba(0, 219, 231, 0.1);
   --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 /* ───────── Existing animations ───────── */
@@ -229,4 +271,46 @@ summary {
   inset: 0;
   background: linear-gradient(to bottom, rgba(13,28,50,0.7) 0%, rgba(1,14,36,0.95) 100%);
   z-index: 1;
+}
+
+/* shadcn theme — abyss dark (always dark, no .dark class needed) */
+:root {
+  --background: #0D1C32;
+  --foreground: #D6E3FF;
+  --card: #1C2A41;
+  --card-foreground: #D6E3FF;
+  --popover: #1C2A41;
+  --popover-foreground: #D6E3FF;
+  --primary: #00DBE7;
+  --primary-foreground: #010E24;
+  --secondary: #1C2A41;
+  --secondary-foreground: #D6E3FF;
+  --muted: #1C2A41;
+  --muted-foreground: #94A3B8;
+  --accent: #1C2A41;
+  --accent-foreground: #D6E3FF;
+  --destructive: #EE4042;
+  --border: rgba(0, 219, 231, 0.1);
+  --input: rgba(0, 219, 231, 0.15);
+  --ring: #00DBE7;
+  --chart-1: #00DBE7;
+  --chart-2: #2DD4BF;
+  --chart-3: #F97316;
+  --chart-4: #EE4042;
+  --chart-5: #94A3B8;
+  --radius: 0.5rem;
+  --sidebar: #010E24;
+  --sidebar-foreground: #D6E3FF;
+  --sidebar-primary: #00DBE7;
+  --sidebar-primary-foreground: #010E24;
+  --sidebar-accent: #1C2A41;
+  --sidebar-accent-foreground: #D6E3FF;
+  --sidebar-border: rgba(0, 219, 231, 0.1);
+  --sidebar-ring: #00DBE7;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
 }
