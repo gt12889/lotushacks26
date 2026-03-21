@@ -29,10 +29,16 @@ def _cors_origin_list() -> list[str]:
 async def lifespan(app: FastAPI):
     await init_db()
     start_scheduler()
-    # Initial health check
+    # Initial health check (all services)
     await check_tinyfish_health(settings.tinyfish_api_key)
-    # Start periodic health check (every 5 min)
-    health_task = asyncio.create_task(periodic_health_check(settings.tinyfish_api_key, interval=300))
+    # Start periodic health check for all services (every 5 min)
+    health_task = asyncio.create_task(periodic_health_check(
+        tinyfish_key=settings.tinyfish_api_key,
+        exa_key=settings.exa_api_key,
+        openrouter_key=settings.openrouter_api_key,
+        proxy_url=settings.brightdata_proxy_url,
+        interval=300,
+    ))
     yield
     health_task.cancel()
     stop_scheduler()

@@ -168,6 +168,18 @@ async def search_drugs(
         for event in mgr.drain_events():
             yield f"data: {json.dumps(event)}\n\n"
 
+        # Deduplicate products across sources by normalized name
+        seen_products: dict[str, dict] = {}  # normalized_name -> best offer
+        for r in results.values():
+            if r.status != "success":
+                continue
+            for p in r.products:
+                key = p.product_name.lower().strip()
+                entry = {"name": p.product_name, "price": p.price, "source": r.source_name, "source_id": r.source_id}
+                if key not in seen_products or p.price < seen_products[key]["price"]:
+                    seen_products[key] = entry
+        deduplicated = sorted(seen_products.values(), key=lambda x: x["price"])
+
         # Build summary
         all_prices = [p.price for r in results.values() if r.status == "success" for p in r.products]
         best_price = min(all_prices) if all_prices else None
@@ -188,6 +200,8 @@ async def search_drugs(
             "price_range": f"{best_price:,} - {worst_price:,} VND" if best_price and worst_price else None,
             "potential_savings": worst_price - best_price if best_price and worst_price else 0,
             "total_results": sum(r.result_count for r in results.values()),
+            "unique_products": len(deduplicated),
+            "deduplicated": deduplicated[:20],
             "variants": all_variants,
             "agents": mgr.stats,
             "agent_tree": mgr.tree,
