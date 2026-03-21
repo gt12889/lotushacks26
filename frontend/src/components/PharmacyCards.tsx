@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import StatusPill from './StatusPill';
+import MegalodonBadge from './ui/megalodon-badge';
 import SponsorBadge from './SponsorBadge';
 import SparklineChart from './SparklineChart';
 
@@ -88,7 +88,7 @@ export default function PharmacyCards({ results, sparklines }: PharmacyCardsProp
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
-              {result && <StatusPill status={statusType} />}
+              {result && <MegalodonBadge status={statusType} />}
             </div>
             <div className="text-[10px] text-t3 mb-2">{result?.source_name || id}</div>
             {result?.status === 'searching' && (
