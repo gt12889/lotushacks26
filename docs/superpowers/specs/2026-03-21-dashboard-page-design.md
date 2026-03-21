@@ -1,8 +1,10 @@
 # Dashboard Page Design
 
+> **SUPERSEDED — NOT IMPLEMENTED.** This spec describes a separate `/dashboard` route and components that were never built. The actual dashboard lives at `/` (root route) with the existing component set. The API endpoints described here (`/api/competitors`, `/api/movements`, `/api/analytics`) do not exist.
+
 **Date:** 2026-03-21
 **Route:** `/dashboard`
-**Status:** Static data (API integration pending)
+**Status:** Superseded — never implemented
 
 ## Overview
 
