@@ -49,9 +49,16 @@ TINYFISH_RUN_URL = "https://agent.tinyfish.ai/v1/automation/runs"
 
 
 def _extract_json_array(text, source_id: str) -> list:
-    """Safely extract a JSON array from text, handling markdown fences and nested content."""
+    """Safely extract a JSON array from text, handling markdown fences, dicts, and nested content."""
     if isinstance(text, list):
         return text
+    if isinstance(text, dict):
+        # TinyFish sometimes returns {key: [...]} — extract the first array value
+        for v in text.values():
+            if isinstance(v, list):
+                logger.info(f"Extracted array from dict wrapper for {source_id}")
+                return v
+        return []
     if not isinstance(text, str):
         return []
 
@@ -59,7 +66,6 @@ def _extract_json_array(text, source_id: str) -> list:
     cleaned = text.strip()
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
-        # Remove first and last fence lines
         lines = [l for l in lines[1:] if not l.strip().startswith("```")]
         cleaned = "\n".join(lines).strip()
 
@@ -68,6 +74,12 @@ def _extract_json_array(text, source_id: str) -> list:
         parsed = json.loads(cleaned)
         if isinstance(parsed, list):
             return parsed
+        # Handle dict wrapper: {"products": [...]} or {"metformin_products": [...]}
+        if isinstance(parsed, dict):
+            for v in parsed.values():
+                if isinstance(v, list):
+                    logger.info(f"Extracted array from JSON dict wrapper for {source_id}")
+                    return v
     except json.JSONDecodeError:
         pass
 
@@ -95,107 +107,94 @@ PHARMACY_CONFIGS = {
     "long_chau": {
         "name": "FPT Long Chau",
         "search_url": "https://nhathuoclongchau.com.vn/tim-kiem?key={query}",
-        "goal": """You are on nhathuoclongchau.com.vn search results for '{query}'.
+        "goal": """Extract drug prices from nhathuoclongchau.com.vn search results for '{query}'.
 
-Step 1: If a cookie consent banner or popup appears, click "Dong y" or the X button to dismiss it.
-Step 2: Wait for the product listing grid to fully load (spinner should disappear).
-Step 3: If a CAPTCHA challenge appears, STOP immediately and return: {{"error": "CAPTCHA_DETECTED"}}
-Step 4: If the page shows "Khong tim thay san pham" or zero product cards, return []
-Step 5: Extract ALL visible product cards. For each product card, extract:
-  - product_name: the full Vietnamese product name including dosage (e.g. "Metformin Stada 500mg (hop 100 vien)")
-  - price: the bold/primary price number in VND as integer (remove dots, e.g. 45000 not "45.000")
-  - original_price: if there is a crossed-out/strikethrough price, that number in VND; otherwise null
-  - manufacturer: the brand or company name shown below the product name
-  - dosage_form: "tablet", "capsule", "syrup", "cream", "injection", or "other"
-  - pack_size: number of units in the package (look for "hop X vien" pattern), default 1
-  - in_stock: true if purchasable, false if showing "Het hang" or "Tam het hang"
-  - product_url: the full href link to the product detail page
-Step 6: If a product shows "Lien he" instead of a price, set price to null and in_stock to false.
+1. Dismiss any popup/cookie banner.
+2. Wait for product cards to load.
+3. For EACH product card on the page, extract these fields:
+   - product_name: full Vietnamese name including dosage
+   - price: the VND price shown on the card as integer. Remove dots (45.000 → 45000). If price shows "Liên hệ" or "Liên Hệ", set price to 0.
+   - manufacturer: brand/company name
+   - pack_size: number of units (look for "hộp X viên"), default 1
+   - product_url: the href link to product detail page
 
-Return ONLY a valid JSON array. Example:
-[{{"product_name":"Metformin Stada 500mg (hop 100 vien)","price":45000,"original_price":null,"manufacturer":"Stada","dosage_form":"tablet","pack_size":100,"in_stock":true,"product_url":"https://nhathuoclongchau.com.vn/..."}}]
+IMPORTANT: Return a JSON array directly. Not wrapped in an object.
+Example: [{{"product_name":"Metformin Stada 500mg","price":45000,"manufacturer":"Stada","pack_size":100,"product_url":"https://..."}}]
 
-If extraction fails for any reason, return:
-{{"error": "EXTRACTION_FAILED", "reason": "brief description of what went wrong"}}""",
+If no products found, return: []""",
     },
     "pharmacity": {
         "name": "Pharmacity",
         "search_url": "https://www.pharmacity.vn/search?q={query}",
-        "goal": """You are on pharmacity.vn search results for '{query}'.
+        "goal": """Extract drug prices from pharmacity.vn search results for '{query}'.
 
-Step 1: Dismiss any cookie banner or promotional popup by clicking X or "Dong y".
-Step 2: Wait for the product grid to render. Products appear as cards with images.
-Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
-Step 4: Scroll down once to trigger any lazy-loaded products.
-Step 5: If "Khong tim thay ket qua" is displayed or no product cards exist, return []
-Step 6: Extract ALL product cards visible. For each:
-  - product_name: full name with dosage
-  - price: the displayed VND price as integer (remove dot separators)
-  - original_price: strikethrough price if present, else null
-  - manufacturer: brand name
-  - dosage_form: tablet/capsule/syrup/cream/other
-  - pack_size: units per package, default 1
-  - in_stock: true unless "Het hang" badge shown
-  - product_url: full product page URL
+1. Dismiss any popup/cookie banner.
+2. Scroll down once to load all products.
+3. For EACH product card, extract:
+   - product_name: full Vietnamese name
+   - price: VND price as integer (remove dots). If "Liên hệ", set to 0.
+   - original_price: strikethrough/old price if shown, else null
+   - manufacturer: brand name
+   - pack_size: units per package, default 1
+   - product_url: full product page URL
 
-Return ONLY a valid JSON array, no other text.
-If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
+IMPORTANT: Return a JSON array directly. Not wrapped in an object.
+Example: [{{"product_name":"...","price":89000,"original_price":null,"manufacturer":"...","pack_size":50,"product_url":"https://..."}}]
+
+If no products found, return: []""",
     },
     "an_khang": {
         "name": "An Khang",
         "search_url": "https://www.ankhang.vn/search?q={query}",
-        "goal": """You are on ankhang.vn search results for '{query}'.
+        "goal": """Extract drug prices from ankhang.vn search results for '{query}'.
 
-Step 1: Close any popup or cookie banner by clicking X or "Dong y".
-Step 2: Wait for product listings to load completely.
-Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
-Step 4: If no results found or "Khong tim thay" message shown, return []
-Step 5: Extract ALL product entries:
-  - product_name: full name with dosage
-  - price: VND integer (remove dot separators)
-  - original_price: old price if on sale, else null
-  - manufacturer: brand name
-  - dosage_form: tablet/capsule/syrup/cream/other
-  - pack_size: units per package, default 1
-  - in_stock: true unless "Het hang" shown. If "Lien he de biet gia", set price to null and in_stock to false.
-  - product_url: full product page URL
+1. Dismiss any popup/cookie banner.
+2. Wait for product listings to load.
+3. For EACH product, extract:
+   - product_name: full Vietnamese name
+   - price: VND price as integer (remove dots). If "Liên hệ", set to 0.
+   - manufacturer: brand name
+   - pack_size: units per package, default 1
+   - product_url: full product page URL
 
-Return ONLY a valid JSON array.
-If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
+IMPORTANT: Return a JSON array directly.
+Example: [{{"product_name":"...","price":48000,"manufacturer":"...","pack_size":100,"product_url":"https://..."}}]
+
+If no products found, return: []""",
     },
     "than_thien": {
         "name": "Nha Thuoc Than Thien",
         "search_url": "https://nhathuocthanhtien.vn/?s={query}",
-        "goal": """You are on nhathuocthanhtien.vn search results for '{query}'.
+        "goal": """Extract drug prices from nhathuocthanhtien.vn search results for '{query}'.
 
-Step 1: Dismiss any popup or cookie banner.
-Step 2: Wait for search results to load.
-Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
-Step 4: If no results or "Khong tim thay" message, return []
-Step 5: Extract ALL product entries:
-  - product_name, price (VND integer, remove dots), original_price (or null),
-    manufacturer, dosage_form, pack_size (default 1), in_stock (false if "Het hang"),
-    product_url (full URL)
+1. Dismiss any popup/cookie banner.
+2. Wait for search results to load.
+3. For EACH product, extract:
+   - product_name: full Vietnamese name
+   - price: VND price as integer (remove dots). If "Liên hệ", set to 0.
+   - manufacturer: brand name
+   - pack_size: units per package, default 1
+   - product_url: full product page URL
 
-Return ONLY a valid JSON array.
-If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
+IMPORTANT: Return a JSON array directly.
+If no products found, return: []""",
     },
     "medicare": {
         "name": "Medicare Vietnam",
         "search_url": "https://medicare.vn/search?q={query}",
-        "goal": """You are on medicare.vn search results for '{query}'.
+        "goal": """Extract drug prices from medicare.vn search results for '{query}'.
 
-Step 1: Dismiss any popup or cookie banner.
-Step 2: Wait for search results to load.
-Step 3: If a CAPTCHA appears, STOP and return: {{"error": "CAPTCHA_DETECTED"}}
-Step 4: If no results or empty page, return []
-Step 5: Extract ALL product entries:
-  - product_name, price (VND integer, remove dots), original_price (or null),
-    manufacturer, dosage_form, pack_size (default 1), in_stock (false if "Het hang" or "Lien he"),
-    product_url (full URL)
+1. Dismiss any popup/cookie banner.
+2. Wait for search results to load.
+3. For EACH product, extract:
+   - product_name: full Vietnamese name
+   - price: VND price as integer (remove dots). If "Liên hệ", set to 0.
+   - manufacturer: brand name
+   - pack_size: units per package, default 1
+   - product_url: full product page URL
 
-Return ONLY a valid JSON array.
-If extraction fails, return: {{"error": "EXTRACTION_FAILED", "reason": "description"}}""",
+IMPORTANT: Return a JSON array directly.
+If no products found, return: []""",
     },
 }
 
