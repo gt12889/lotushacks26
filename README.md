@@ -8,6 +8,19 @@ AI-powered pharmaceutical price intelligence platform that deploys parallel Tiny
 
 Built for **LotusHacks 2026** | Enterprise Track
 
+## Features
+
+- 5 parallel TinyFish stealth agents across Vietnam's top pharmacy chains
+- Real-time SSE streaming with live browser preview
+- NL multi-drug search with AI orchestration (OpenRouter)
+- WHO reference pricing badges showing ×N global benchmark multiplier
+- Historical price sparkline charts per pharmacy source
+- Multi-drug comparison matrix with optimal sourcing route
+- Prescription OCR via GPT-4o function calling
+- Price alerts + APScheduler recurring monitors
+- Discord webhook + ElevenLabs Vietnamese TTS notifications
+- Government DAV ceiling price compliance checks
+- Supermemory cross-session context recall
 
 ## Quick Start
 
@@ -67,6 +80,8 @@ Visit **http://localhost:3005**
 | GET | `/api/monitors` | List active monitors |
 | POST | `/api/ocr` | OCR prescription image → extract drug names |
 | POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
+| POST | `/api/nl-search` | Natural language multi-drug search |
+| GET | `/api/sparklines/{drug}` | Price history sparklines |
 | POST | `/api/insights` | Personalized shopping insights via Supermemory context |
 | POST | `/api/tts/summary` | Vietnamese TTS audio summary of search results (ElevenLabs) |
 | GET | `/api/memory/recall` | Supermemory context recall |

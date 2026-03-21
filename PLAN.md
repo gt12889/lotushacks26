@@ -195,6 +195,35 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 ---
 
+---
+
+## Phase 9: Hackathon Power Features (Demo-Day Differentiators)
+
+### 9.1 — NL Multi-Drug Search via OpenRouter
+- `POST /api/nl-search` — LLM parses NL query → parallel drug searches → sourcing matrix
+- New frontend: NLSearchBar, ComparisonMatrix on Trends page with mode toggle
+- Qualifies for OpenRouter sponsor prize
+
+### 9.2 — Exa International Reference Pricing
+- WHO reference price badges on PriceGrid products
+- Shows multiplier vs global benchmark (e.g., "1.2× WHO price")
+- Qualifies for Exa sponsor prize
+
+### 9.3 — Historical Price Sparklines
+- `GET /api/sparklines/{drug}` — per-source price history
+- SparklineChart component on PharmacyCards
+- Visual proof of monitoring capability
+
+### 9.4 — Ocean Video Landing Page
+- Progressive enhancement: video bg on hero section
+- No dependency on video file existing
+
+### 9.5 — Multi-Drug Comparison Matrix
+- Optimal sourcing route table with savings calculation
+- AI-generated procurement recommendation via OpenRouter
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
