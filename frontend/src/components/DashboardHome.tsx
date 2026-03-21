@@ -481,14 +481,17 @@ export default function DashboardHome() {
       <div className="border-b border-border">
         <div className="max-w-[1400px] mx-auto px-6 py-4">
           <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-t1 tracking-tight">
-                Megladon MD: <span className="text-cyan">The Abyss</span>
-              </h2>
-              <p className="text-[11px] text-t3 mt-0.5 italic">
-                Surfacing deep market trajectories and molecular cost-signals.
-              </p>
-            </div>
+            <Link href="/" className="group flex items-center gap-2">
+              <div className="w-8 h-8 bg-cyan rounded flex items-center justify-center font-bold text-deep group-hover:scale-110 transition-transform">M</div>
+              <div>
+                <h2 className="text-lg font-bold text-t1 tracking-tight">
+                  Megladon MD: <span className="text-cyan">The Abyss</span>
+                </h2>
+                <p className="text-[11px] text-t3 mt-0.5 italic">
+                  Surfacing deep market trajectories and molecular cost-signals.
+                </p>
+              </div>
+            </Link>
             <div className="flex gap-2 mt-1">
               <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
                 Export Intel
