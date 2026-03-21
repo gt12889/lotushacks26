@@ -3,7 +3,7 @@
     python backend/scripts/verify_supermemory.py
 
 Indexing is async; this script waits briefly then uses ``search.memories`` (hybrid),
-which matches how the MediScrape API recalls context.
+which matches how the Megladon MD API recalls context.
 """
 import os
 import sys

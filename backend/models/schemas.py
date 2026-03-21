@@ -1,4 +1,4 @@
-"""Pydantic models for MediScrape API"""
+"""Pydantic models for Megladon MD API"""
 from pydantic import BaseModel, Field
 from typing import Optional
 

@@ -22,7 +22,7 @@ export default function NavBar() {
             <span className="text-abyss font-bold text-base">M</span>
           </div>
           <div>
-            <h1 className="text-sm font-bold text-t1 leading-tight">MediScrape</h1>
+            <h1 className="text-sm font-bold text-t1 leading-tight">Megladon MD</h1>
             <p className="text-[10px] text-t3 leading-tight">Pharmaceutical Price Intelligence</p>
           </div>
         </Link>

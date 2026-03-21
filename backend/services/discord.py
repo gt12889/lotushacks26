@@ -19,7 +19,7 @@ async def send_alert(message: str, webhook_url: str, **kwargs) -> bool:
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(
                 webhook_url,
-                json={"content": content, "username": "MediScrape Bot"},
+                json={"content": content, "username": "Megladon MD Bot"},
             )
             response.raise_for_status()
             return True
@@ -40,7 +40,7 @@ async def send_alert_with_audio(message: str, audio_bytes: bytes, webhook_url: s
         async with httpx.AsyncClient(timeout=15.0) as client:
             response = await client.post(
                 webhook_url,
-                data={"content": content, "username": "MediScrape Bot"},
+                data={"content": content, "username": "Megladon MD Bot"},
                 files={"file": ("alert.mp3", audio_bytes, "audio/mpeg")},
             )
             response.raise_for_status()

@@ -59,7 +59,7 @@ async def generate_insight(
 
     system = (
         "You are a concise shopping assistant for comparing prescription drug prices "
-        "across Vietnamese pharmacy chains (MediScrape). "
+        "across Vietnamese pharmacy chains (Megladon MD). "
         "Write in clear English only. Use ONLY the JSON facts and memory snippets provided—do not invent prices or medical facts. "
         "Do not give medical advice, diagnosis, or dosing guidance; you only discuss prices and where to shop. "
         "Produce 3 to 6 short sentences. If memory snippets are empty, still summarize the current scan. "

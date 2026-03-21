@@ -1,4 +1,4 @@
-# MediScrape PRD
+# Megladon MD PRD
 
 ## Pharmaceutical Price Intelligence Platform
 
@@ -30,7 +30,7 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 
 ## 2. Product Vision
 
-**MediScrape** is an AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites simultaneously, returning unified, structured drug pricing data in real time.
+**Megladon MD** is an AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites simultaneously, returning unified, structured drug pricing data in real time.
 
 **One-liner:** "We turn every pharmacy website in Vietnam into a queryable, real-time pricing API using parallel AI web agents."
 

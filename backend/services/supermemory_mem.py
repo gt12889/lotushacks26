@@ -1,4 +1,4 @@
-"""Supermemory — per-user drug search history and preferences (MediScrape).
+"""Supermemory — per-user drug search history and preferences (Megladon MD).
 
 Uses ``search.memories`` with ``search_mode='hybrid'`` for recall; document indexing
 is asynchronous, so recall right after ``add`` may be empty for a few seconds.
@@ -84,7 +84,7 @@ async def remember_search_session(
 ) -> None:
     if not is_enabled() or not user_tag:
         return
-    parts = [f'MediScrape search for drug "{drug_query}"']
+    parts = [f'Megladon MD search for drug "{drug_query}"']
     if best_price is not None and best_source:
         parts.append(f"best price {best_price:,} VND at {best_source}")
     if potential_savings:
@@ -97,7 +97,7 @@ async def remember_search_session(
     content = ". ".join(parts) + "."
 
     meta: dict[str, str] = {
-        "kind": "mediscrape_scan",
+        "kind": "megladon_md_scan",
         "drug_query": (drug_query or "")[:500],
         "best_source": (best_source or "")[:200],
         "best_source_id": (best_source_id or "")[:80],

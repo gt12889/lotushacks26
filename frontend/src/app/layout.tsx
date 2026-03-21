@@ -4,7 +4,7 @@ import NavBar from "@/components/NavBar";
 import AbyssFooter from "@/components/AbyssFooter";
 
 export const metadata: Metadata = {
-  title: "MediScrape — The Abyss",
+  title: "Megladon MD — The Abyss",
   description: "AI-powered pharmaceutical price intelligence across Vietnamese pharmacy chains",
 };
 

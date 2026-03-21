@@ -53,6 +53,7 @@ interface TrendPoint {
 }
 
 const MEMORY_USER_KEY = 'megladonMdMemoryUser';
+/** Supermemory indexes asynchronously; first recall may be empty; we retry once after this delay. */
 const MEMORY_RECALL_RETRY_MS = 7000;
 
 function ensureMemoryUserId(): string {
@@ -413,6 +414,37 @@ export default function Home() {
             )}
 
             <SearchBar onSearch={handleSearch} isSearching={isSearching} />
+
+            {!hasResults && !isSearching && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+                {[
+                  {
+                    icon: '⚡',
+                    title: 'Parallel Agents',
+                    desc: '5 AI agents search pharmacy websites simultaneously in under 30 seconds.',
+                  },
+                  {
+                    icon: '📊',
+                    title: 'Price Intelligence',
+                    desc: 'Track price trends, set alerts, and find savings of up to 300%.',
+                  },
+                  {
+                    icon: '💊',
+                    title: 'Prescription Optimizer',
+                    desc: 'Optimize sourcing across pharmacies for entire prescriptions.',
+                  },
+                ].map((card) => (
+                  <div
+                    key={card.title}
+                    className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors"
+                  >
+                    <div className="text-2xl mb-3">{card.icon}</div>
+                    <h3 className="font-bold text-t1 text-sm mb-2">{card.title}</h3>
+                    <p className="text-xs text-t3">{card.desc}</p>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {(hasResults || isSearching) && (
               <div className="space-y-4">

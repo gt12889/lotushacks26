@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import PricingChart from '@/components/PricingChart';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -19,11 +20,35 @@ const TIME_RANGES = [
   { label: '90D', days: 90 },
 ];
 
-export default function TrendsPage() {
+function TrendsContent() {
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [days, setDays] = useState(7);
   const [data, setData] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const q = searchParams.get('q')?.trim();
+    if (!q) return;
+    setQuery(q);
+    let cancelled = false;
+    setLoading(true);
+    void (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        const json = await res.json();
+        if (!cancelled) setData(json.data || []);
+      } catch (e) {
+        console.error(e);
+        if (!cancelled) setData([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams]);
 
   const fetchTrends = async () => {
     if (!query.trim()) return;
@@ -132,5 +157,17 @@ export default function TrendsPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function TrendsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-t3 text-sm font-mono">Loading trends…</div>
+      }
+    >
+      <TrendsContent />
+    </Suspense>
   );
 }

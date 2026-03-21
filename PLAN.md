@@ -1,8 +1,8 @@
-# MediScrape - Implementation Plan
+# Megladon MD - Implementation Plan
 
 ## Context
 
-Pivoting from GhostDriver to MediScrape for LotusHacks 2026. Pharmaceutical price intelligence platform using parallel TinyFish agents to scrape 5+ Vietnamese pharmacy websites simultaneously.
+Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical price intelligence platform using parallel TinyFish agents to scrape 5+ Vietnamese pharmacy websites simultaneously.
 
 ---
 
@@ -10,7 +10,7 @@ Pivoting from GhostDriver to MediScrape for LotusHacks 2026. Pharmaceutical pric
 
 **Goal**: Replace GhostDriver scaffolding, set up SQLite schema.
 
-- [ ] Update backend structure for MediScrape (new services, models)
+- [ ] Update backend structure for Megladon MD (new services, models)
 - [ ] Implement SQLite database with schema (sources, drugs, prices, alerts, monitor_jobs)
 - [ ] Seed sources table with 5 Tier 1 pharmacies
 - [ ] Update .env.example and requirements.txt

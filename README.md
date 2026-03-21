@@ -1,6 +1,6 @@
-# 
+# Megladon MD
 
-> **MEGLADON MD**  Vietnamese pharmaceutical price intelligence with parallel AI web agents.
+> **MEGLADON MD** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
 
 > Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
@@ -18,6 +18,8 @@ Built for **LotusHacks 2026** | Enterprise Track
 ### 1. Environment Setup
 
 Copy `.env.example` to `.env` at the repo root (backend reads it via `backend/config.py`). Set at least `TINYFISH_API_KEY` for searches.
+
+The local SQLite database file is **`backend/megladon_md.db`**. If you still have an old `mediscrape.db`, rename it to `megladon_md.db` or run a fresh scan to repopulate.
 
 **Supermemory (optional)** — Per-browser recall of past drug searches on the home page:
 
@@ -49,6 +51,8 @@ npm run dev
 ```
 
 Visit **http://localhost:3000**
+
+After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/trends` (SQLite history). Use **Open full trends** for longer ranges; deep-link **`/trends?q=DrugName`** pre-fills and loads 7-day data.
 
 ## Tech Stack
 
