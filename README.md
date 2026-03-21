@@ -6,7 +6,7 @@
 
 AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites, returning unified drug pricing data in real time.
 
-Built for **LotusHacks 2026** | Enterprise Track (TinyFish)
+Built for **LotusHacks 2026** | Enterprise Track
 
 ## Quick Start
 
@@ -15,10 +15,7 @@ Built for **LotusHacks 2026** | Enterprise Track (TinyFish)
 - Python 3.11+
 
 ### 1. Environment Setup
-```bash
-cp .env.example .env
-# Fill in your API keys (TinyFish required, others optional)
-```
+
 
 ### 2. Backend
 ```bash
