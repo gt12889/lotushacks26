@@ -179,7 +179,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 
 ## 6. Multi-Tier Agent Pipeline
 
-The search system uses a 3-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
+The search system uses a 4-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
 
 ### Tier 0: OCR Extract (optional)
 - Triggered by prescription image upload
@@ -202,6 +202,23 @@ The search system uses a 3-tier agent cascade, visualized in real-time via the *
 - Top 3 discovered variants are re-searched across successful pharmacies
 - Results tagged as `is_variant_result: true` with `variant_of` label
 - This is the dynamic agent spawning from runtime discoveries that makes TinyFish irreplaceable
+
+### Tier 4: Analyst Verdict (cross-validation + actionable labels)
+- Spawned after summary is built — cross-validates all prior tier results
+- **Confidence scoring engine** computes a 0-100 score from 5 weighted signals:
+  - Source agreement (30%): How many pharmacies returned results
+  - Price convergence (20%): Low coefficient of variation = high confidence
+  - Compliance clear (15%): Government ceiling alignment
+  - Anomaly free (20%): Absence of counterfeit flags
+  - Variant coverage (15%): Exa discovered alternative drugs
+- **LLM analyst** (Qwen 2.5 72B via OpenRouter) generates actionable Vietnamese verdict:
+  - `action_label`: Vietnamese imperative directive (e.g., "Mua tại Long Châu. Giá tốt nhất, đáng tin cậy.")
+  - `risk_level`: safe / caution / warning / danger
+  - `reasoning`: 2-3 sentence English explanation
+  - `buy_recommendation`: boolean
+- **Rule-based fallback** if LLM fails — deterministic labels based on confidence score + anomaly/compliance flags
+- Tracked as "Analyst → Qwen 2.5 72B" in Model Router Panel
+- Streamed as late SSE event `analyst_verdict` — frontend shows `ActionLabel` component above SavingsBanner
 
 ### Enrichment (parallel, non-blocking)
 - **WHO reference pricing**: Exa `category: "research paper"` search for international benchmarks
@@ -332,6 +349,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `NavBar` | Top navigation bar with route links and locale toggle |
 | `StatusPill` | Reusable status badge (best/critical/monitor) with color coding |
 | `SupermemoryStatusBadge` | Supermemory connection status indicator |
+| `ActionLabel` | Tier 4 analyst verdict banner with Vietnamese action directive, confidence score badge, expandable reasoning |
 | `ComparisonBanner` | Cross-pharmacy comparison summary |
 | `SonarFilters` | Right sidebar with molecule selector, AWP/WAC toggle, time range, drug class chips |
 
@@ -411,6 +429,7 @@ The `/api/search` endpoint streams these typed events:
 | `model_used` | `{step, model, provider, latency_ms}` | LLM/service call completed |
 | `{source_id, status, products, ...}` | Full `PharmacySearchResult` | Pharmacy results ready |
 | `search_complete` | Summary with best_price, savings, variants, compliance, agents, dedup | All tiers done |
+| `analyst_verdict` | `{action_label, action_label_en, risk_level, reasoning, confidence_score, buy_recommendation}` | Tier 4 cross-validation verdict (late event) |
 | `counterfeit_risk` | `{risk_level, sources, report}` | Post-summary Exa research (late event) |
 
 ### Price Fluctuation Analysis (`services/price_fluctuation.py`)
@@ -561,5 +580,7 @@ Comparison matrix on the Trends page showing:
 - Vietnamese voice summary auto-plays after search (ElevenLabs sponsor prize)
 - Counterfeit risk detection flags anomalously cheap products
 - Price fluctuation tracking across scans with human-readable trend lines
+- Cross-validation confidence scoring (0-100) from 5 weighted signals across all agent tiers
+- Actionable Vietnamese labels via Tier 4 Analyst agent ("Mua tại Long Châu" not "Best price: 45,000 VND")
 - Personalized shopping insights via Supermemory cross-session context
 - All sponsor integrations visible via SponsorBadge on result cards

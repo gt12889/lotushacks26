@@ -282,6 +282,8 @@ export default function OptimizePage() {
           tier1Complete={drugsComplete}
           tier1Total={drugsTotal}
           tier2Variants={0}
+          tier3AnalystActive={false}
+          tier3AnalystComplete={false}
           visible={isActive || !!result}
         />
 

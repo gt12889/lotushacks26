@@ -11,6 +11,7 @@ from services.variants import discover_variants_with_exa
 from services.exa import search_who_reference_price, search_drug_info, research_counterfeit_risk, detect_price_anomaly
 from services.qwen import normalize_vietnamese_drug_text
 from services.agent_manager import AgentManager, AgentTier
+from services.confidence import compute_confidence, generate_analyst_verdict
 from services import supermemory_mem
 from services.price_fluctuation import fluctuation_lines_for_scan, get_prices_id_cutoff_before_scan
 from config import settings
@@ -318,6 +319,12 @@ async def search_drugs(
         if anomalies:
             summary["price_anomalies"] = anomalies
 
+        # Cross-validation confidence scoring (fast, no API call)
+        confidence_result = compute_confidence(
+            results, all_products, compliance_data, anomalies, all_variants, tier3_products
+        )
+        summary["confidence_scoring"] = confidence_result
+
         mem_tag = supermemory_mem.normalize_user_tag(memory_user) if memory_user else None
         if mem_tag and supermemory_mem.is_enabled():
             _mem_task = asyncio.create_task(
@@ -334,6 +341,28 @@ async def search_drugs(
             _mem_task.add_done_callback(_log_supermemory_remember_done)
 
         yield f"data: {json.dumps(summary, ensure_ascii=False)}\n\n"
+
+        # Tier 4: Analyst Verdict — cross-validates all signals, produces actionable label
+        if settings.openrouter_api_key and best_price:
+            t4_aid = mgr.spawn(AgentTier.ANALYST, "Analyst Verdict", query)
+            for event in mgr.drain_events():
+                yield f"data: {json.dumps(event)}\n\n"
+            try:
+                _analyst_start = time.time()
+                analyst_verdict = await generate_analyst_verdict(
+                    query, confidence_result, summary, settings.openrouter_api_key
+                )
+                analyst_latency = int((time.time() - _analyst_start) * 1000)
+                mgr.complete(t4_aid, 1)
+                for event in mgr.drain_events():
+                    yield f"data: {json.dumps(event)}\n\n"
+                yield f"data: {json.dumps({'type': 'analyst_verdict', **analyst_verdict}, ensure_ascii=False)}\n\n"
+                yield f"data: {json.dumps({'type': 'model_used', 'step': 'analyst', 'model': 'qwen-2.5-72b', 'provider': 'OpenRouter', 'latency_ms': analyst_latency})}\n\n"
+            except Exception as e:
+                mgr.fail(t4_aid, str(e))
+                for event in mgr.drain_events():
+                    yield f"data: {json.dumps(event)}\n\n"
+                logger.warning(f"Analyst verdict failed: {e}")
 
         # Post-summary: fire Exa Research for counterfeit risk (streams as late event)
         if has_anomalies and settings.exa_api_key:
