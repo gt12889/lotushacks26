@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult, SearchResponse
 from services.tinyfish import search_single_pharmacy, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
+from services import supermemory_mem
 from config import settings
 from database import get_db
 
@@ -14,10 +15,23 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 
 
+def _log_supermemory_remember_done(task: asyncio.Task) -> None:
+    try:
+        exc = task.exception()
+    except asyncio.CancelledError:
+        return
+    if exc is not None:
+        logger.error("Supermemory remember_search_session failed", exc_info=exc)
+
+
 @router.post("/search")
 async def search_drugs(
     query: str = Query(..., description="Drug name to search"),
     sources: str = Query("all", description="Comma-separated source IDs or 'all'"),
+    memory_user: str | None = Query(
+        None,
+        description="Opaque client id; when set and Supermemory is configured, search summary is stored for recall",
+    ),
 ):
     """SSE streaming search across all pharmacy sources."""
     target_sources = list(PHARMACY_CONFIGS.keys()) if sources == "all" else sources.split(",")
@@ -102,6 +116,20 @@ async def search_drugs(
             "total_results": sum(r.result_count for r in results.values()),
             "variants": all_variants,
         }
+
+        mem_tag = supermemory_mem.normalize_user_tag(memory_user) if memory_user else None
+        if mem_tag and supermemory_mem.is_enabled():
+            _mem_task = asyncio.create_task(
+                supermemory_mem.remember_search_session(
+                    mem_tag,
+                    query,
+                    best_price=best_price,
+                    best_source=best_source,
+                    potential_savings=summary["potential_savings"] or None,
+                )
+            )
+            _mem_task.add_done_callback(_log_supermemory_remember_done)
+
         yield f"data: {json.dumps(summary)}\n\n"
 
     return StreamingResponse(

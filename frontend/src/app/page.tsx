@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
@@ -30,11 +30,47 @@ interface Summary {
   variants?: string[];
 }
 
+const MEMORY_USER_KEY = 'mediscrapeMemoryUser';
+
+function ensureMemoryUserId(): string {
+  let id = localStorage.getItem(MEMORY_USER_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(MEMORY_USER_KEY, id);
+  }
+  return id;
+}
+
 export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Record<string, PharmacyResult>>({});
   const [summary, setSummary] = useState<Summary | null>(null);
   const [currentQuery, setCurrentQuery] = useState('');
+  const [memoryHints, setMemoryHints] = useState<string[]>([]);
+
+  const fetchMemoryHints = useCallback(async (q: string, userId: string) => {
+    if (!q.trim()) {
+      setMemoryHints([]);
+      return;
+    }
+    try {
+      const r = await fetch(
+        `${API_URL}/api/memory/recall?q=${encodeURIComponent(q.trim())}&user=${encodeURIComponent(userId)}`
+      );
+      if (!r.ok) {
+        setMemoryHints([]);
+        return;
+      }
+      const data = await r.json();
+      if (data.enabled && Array.isArray(data.snippets) && data.snippets.length > 0) {
+        setMemoryHints(data.snippets);
+      } else {
+        setMemoryHints([]);
+      }
+    } catch {
+      setMemoryHints([]);
+    }
+  }, []);
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
@@ -43,9 +79,16 @@ export default function Home() {
     setCurrentQuery(query);
 
     try {
-      const response = await fetch(`${API_URL}/api/search?query=${encodeURIComponent(query)}`, {
-        method: 'POST',
-      });
+      const memoryUserId = ensureMemoryUserId();
+      await fetchMemoryHints(query, memoryUserId);
+
+      const memQ = `&memory_user=${encodeURIComponent(memoryUserId)}`;
+      const response = await fetch(
+        `${API_URL}/api/search?query=${encodeURIComponent(query)}${memQ}`,
+        {
+          method: 'POST',
+        }
+      );
 
       if (!response.ok || !response.body) throw new Error('Search failed');
 
@@ -120,6 +163,17 @@ export default function Home() {
             <p className="text-sm text-t3 mb-8 max-w-2xl mx-auto">
               Deploy parallel AI agents across 5+ pharmacy chains. Results in under 30 seconds.
             </p>
+          </div>
+        )}
+
+        {memoryHints.length > 0 && (
+          <div className="rounded-lg border border-cyan/25 bg-cyan/5 px-4 py-3">
+            <p className="text-xs font-mono text-cyan mb-2">Supermemory — related context</p>
+            <ul className="text-xs text-t2 space-y-1 list-disc list-inside">
+              {memoryHints.slice(0, 5).map((s, i) => (
+                <li key={i}>{s}</li>
+              ))}
+            </ul>
           </div>
         )}
 

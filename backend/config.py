@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     exa_api_key: str = ""
     openrouter_api_key: str = ""
     brightdata_proxy_url: str = ""
+    supermemory_api_key: str = ""
+    cors_origins: str = "http://localhost:3000,http://localhost:3001"
     database_url: str = "sqlite:///./mediscrape.db"
 
     class Config:

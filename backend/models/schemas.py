@@ -88,3 +88,8 @@ class OptimizeResponse(BaseModel):
     total_single_source: Optional[int] = None
     savings: Optional[int] = None
     best_single_source: Optional[str] = None
+
+
+class MemoryRecallResponse(BaseModel):
+    enabled: bool
+    snippets: list[str]
