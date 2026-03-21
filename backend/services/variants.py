@@ -2,6 +2,7 @@
 import re
 import logging
 from models.schemas import ProductResult
+from services.exa import search_drug_variants
 
 logger = logging.getLogger(__name__)
 
@@ -96,3 +97,15 @@ def suggest_generic_alternatives(query: str) -> list[str]:
             suggestions.append(f"{brand.capitalize()}{dosage}")
 
     return suggestions[:3]
+
+
+async def discover_variants_with_exa(query: str, products: list[ProductResult], exa_api_key: str) -> list[str]:
+    """Enhanced variant discovery using Exa semantic search + local mappings."""
+    local_variants = extract_variants_from_results(query, products)
+    generic_suggestions = suggest_generic_alternatives(query)
+
+    # Exa semantic search for additional variants
+    exa_variants = await search_drug_variants(query, exa_api_key)
+
+    all_variants = list(set(local_variants + generic_suggestions + exa_variants))
+    return all_variants[:5]

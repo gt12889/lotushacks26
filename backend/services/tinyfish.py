@@ -5,6 +5,7 @@ import json
 import logging
 import time
 from models.schemas import ProductResult, PharmacySearchResult
+from config import settings as app_settings
 
 logger = logging.getLogger(__name__)
 
@@ -174,12 +175,20 @@ async def search_single_pharmacy(
     goal = config["goal"].format(query=query)
 
     try:
+        request_body = {"goal": goal, "url": url}
+        # Add BrightData proxy for Long Chau (largest chain, most likely to block)
+        if source_id == "long_chau" and app_settings.brightdata_proxy_url:
+            request_body["proxy-config"] = {
+                "enabled": True,
+                "url": app_settings.brightdata_proxy_url,
+            }
+
         async with httpx.AsyncClient(timeout=120.0) as client:
             # TinyFish uses SSE streaming - collect all events
             async with client.stream(
                 "POST",
                 TINYFISH_API_URL,
-                json={"goal": goal, "url": url},
+                json=request_body,
                 headers={
                     "X-API-Key": api_key,
                     "Content-Type": "application/json",

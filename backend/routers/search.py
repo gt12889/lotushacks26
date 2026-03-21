@@ -6,7 +6,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult, SearchResponse
 from services.tinyfish import search_single_pharmacy, PHARMACY_CONFIGS
-from services.variants import extract_variants_from_results, suggest_generic_alternatives
+from services.variants import discover_variants_with_exa
 from config import settings
 from database import get_db
 
@@ -88,9 +88,7 @@ async def search_drugs(
             if r.status == "success":
                 all_products.extend(r.products)
 
-        discovered_variants = extract_variants_from_results(query, all_products)
-        generic_suggestions = suggest_generic_alternatives(query)
-        all_variants = list(set(discovered_variants + generic_suggestions))[:5]
+        all_variants = await discover_variants_with_exa(query, all_products, settings.exa_api_key)
 
         summary = {
             "task": "summary",

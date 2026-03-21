@@ -5,6 +5,7 @@ import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
 import SavingsBanner from '@/components/SavingsBanner';
+import AgentCascade from '@/components/AgentCascade';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -117,6 +118,15 @@ export default function Home() {
                 Results for &ldquo;{currentQuery}&rdquo;
               </h3>
             )}
+
+            <AgentCascade
+              tier0Active={false}
+              tier1Active={activeAgents}
+              tier1Complete={completedAgents}
+              tier1Total={totalAgents}
+              tier2Variants={summary?.variants?.length ?? 0}
+              visible={isSearching || Object.keys(results).length > 0}
+            />
 
             {isSearching && totalAgents > 0 && (
               <div className="flex items-center gap-3 text-sm">

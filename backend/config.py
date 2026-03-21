@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     discord_webhook_url: str = ""
     exa_api_key: str = ""
     openrouter_api_key: str = ""
+    brightdata_proxy_url: str = ""
     database_url: str = "sqlite:///./mediscrape.db"
 
     class Config:
