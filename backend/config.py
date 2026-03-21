@@ -9,11 +9,16 @@ class Settings(BaseSettings):
     discord_webhook_url: str = ""
     exa_api_key: str = ""
     openrouter_api_key: str = ""
+    openai_api_key: str = ""
     insights_model: str = "qwen/qwen-2.5-72b-instruct"
     brightdata_proxy_url: str = ""
+    # OpenRouter model selection (configurable without code changes)
+    openrouter_ocr_model: str = "openai/gpt-4o"
+    openrouter_normalization_model: str = "qwen/qwen-2.5-72b-instruct"
+    openrouter_fallback_model: str = "anthropic/claude-sonnet-4-20250514"
     supermemory_api_key: str = ""
     cors_origins: str = "http://localhost:3000,http://localhost:3001"
-    database_url: str = "sqlite:///./mediscrape.db"
+    database_url: str = "sqlite:///./megladon_md.db"
 
     class Config:
         env_file = _env_file

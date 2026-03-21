@@ -21,180 +21,130 @@ export default function OptimizePage() {
 
   const addDrug = () => setDrugs([...drugs, '']);
   const removeDrug = (i: number) => setDrugs(drugs.filter((_, idx) => idx !== i));
-  const updateDrug = (i: number, val: string) => {
-    const updated = [...drugs];
-    updated[i] = val;
-    setDrugs(updated);
-  };
+  const updateDrug = (i: number, val: string) => { const u = [...drugs]; u[i] = val; setDrugs(u); };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
-
     setOcrLoading(true);
     try {
       const formData = new FormData();
       formData.append('image', file);
       const res = await fetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
       const data = await res.json();
-      if (data.drugs && data.drugs.length > 0) {
-        setDrugs(data.drugs);
-      }
-    } catch (e) {
-      console.error('OCR error:', e);
-    } finally {
-      setOcrLoading(false);
-    }
+      if (data.drugs?.length > 0) setDrugs(data.drugs);
+    } catch (e) { console.error('OCR error:', e); }
+    finally { setOcrLoading(false); }
   };
 
   const optimize = async () => {
     const validDrugs = drugs.filter((d) => d.trim());
     if (validDrugs.length === 0) return;
-    setLoading(true);
-    setResult(null);
+    setLoading(true); setResult(null);
     try {
-      const res = await fetch(`${API_URL}/api/optimize`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drugs: validDrugs }),
-      });
-      const data = await res.json();
-      setResult(data);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+      const res = await fetch(`${API_URL}/api/optimize`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drugs: validDrugs }) });
+      setResult(await res.json());
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-5xl mx-auto px-6 py-8 space-y-6">
-        <h2 className="text-2xl font-bold text-gray-900">Prescription Optimizer</h2>
-        <p className="text-gray-500">Enter multiple drugs to find the cheapest sourcing plan across all pharmacies.</p>
+    <div className="min-h-screen">
+      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+        <div>
+          <h2 className="text-xl font-bold text-t1">Prescription Optimizer</h2>
+          <p className="text-xs text-t3 mt-1">Optimal sourcing routes across pharmacy networks</p>
+        </div>
 
-        {/* Drug input rows */}
-        <div className="bg-white rounded-2xl shadow-lg p-8 space-y-3">
-          {/* Prescription Photo Upload */}
-          <div className="border-b border-gray-100 pb-6 mb-6">
-            <h4 className="text-sm font-semibold text-gray-700 mb-3">Upload Prescription Photo</h4>
+        <div className="bg-deep border border-border rounded-lg p-6 space-y-4">
+          <div className="border-b border-border pb-6">
+            <h4 className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-3">Upload Prescription Photo</h4>
             <label className="block cursor-pointer">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-cyan/30 transition-colors">
                 {imagePreview ? (
                   <img src={imagePreview} alt="Prescription" className="max-h-32 mx-auto rounded mb-2" />
                 ) : (
-                  <div className="text-gray-400">
-                    <svg className="mx-auto h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm">Click to upload prescription photo</p>
-                    <p className="text-xs text-gray-400 mt-1">AI will extract drug names automatically</p>
+                  <div className="text-t3">
+                    <div className="text-3xl mb-2">📷</div>
+                    <p className="text-xs">Click to upload prescription photo</p>
+                    <p className="text-[10px] text-t3 mt-1">AI will extract drug names automatically</p>
                   </div>
                 )}
-                {ocrLoading && <p className="text-sm text-blue-600 animate-pulse mt-2">Extracting drugs from image...</p>}
+                {ocrLoading && <p className="text-xs text-cyan animate-pulse mt-2 font-mono">Extracting molecules from image...</p>}
               </div>
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </label>
           </div>
 
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Or Enter Manually</h4>
+          <h4 className="text-[10px] uppercase tracking-wider text-t3 font-mono">Prescription Manifest</h4>
           {drugs.map((drug, i) => (
             <div key={i} className="flex gap-3 items-center">
-              <span className="text-sm font-medium text-gray-400 w-6">{i + 1}.</span>
-              <input
-                type="text"
-                value={drug}
-                onChange={(e) => updateDrug(i, e.target.value)}
-                placeholder="e.g. Metformin 500mg"
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-900"
-              />
+              <span className="text-xs font-mono text-t3 w-6">{i + 1}.</span>
+              <input type="text" value={drug} onChange={(e) => updateDrug(i, e.target.value)} placeholder="e.g. Metformin 500mg" className="flex-1 px-4 py-2.5 bg-abyss border border-border rounded-lg text-t1 font-mono placeholder-t3 focus:ring-1 focus:ring-cyan focus:border-cyan outline-none text-sm" />
               {drugs.length > 1 && (
-                <button
-                  onClick={() => removeDrug(i)}
-                  className="px-3 py-3 text-red-500 hover:bg-red-50 rounded-lg"
-                >
-                  Remove
-                </button>
+                <button onClick={() => removeDrug(i)} className="px-3 py-2.5 text-alert-red text-xs hover:bg-alert-red/10 rounded-lg transition-colors">Remove</button>
               )}
             </div>
           ))}
           <div className="flex gap-3 pt-2">
-            <button
-              onClick={addDrug}
-              className="px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg font-medium"
-            >
-              + Add Drug
-            </button>
-            <button
-              onClick={optimize}
-              disabled={loading || drugs.every((d) => !d.trim())}
-              className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
-            >
-              {loading ? 'Optimizing...' : 'Optimize Sourcing'}
+            <button onClick={addDrug} className="px-4 py-2 text-xs text-cyan hover:bg-cyan/10 rounded-lg font-mono transition-colors">+ Add Drug</button>
+            <button onClick={optimize} disabled={loading || drugs.every((d) => !d.trim())} className="px-6 py-2 bg-cyan text-abyss font-bold rounded-lg text-sm hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 transition-colors">
+              {loading ? 'Optimizing...' : 'Calculate Optimal Route'}
             </button>
           </div>
         </div>
 
-        {/* Results */}
         {result && (
           <>
-            {/* Savings banner */}
             {result.savings && result.savings > 0 && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6">
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div>
-                    <p className="text-sm font-medium text-green-700">Optimized Total</p>
-                    <p className="text-3xl font-bold text-green-900">{result.total_optimized.toLocaleString()} VND</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-gray-600">vs {result.best_single_source}</p>
-                    <p className="text-lg text-gray-500 line-through">{result.total_single_source?.toLocaleString()} VND</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-medium text-orange-600">You Save</p>
-                    <p className="text-2xl font-bold text-orange-700">{result.savings.toLocaleString()} VND</p>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-deep border border-success/30 rounded-lg p-6 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Optimized Total</p>
+                  <p className="text-3xl font-bold font-mono text-success">{result.total_optimized.toLocaleString()} ₫</p>
+                </div>
+                <div className="bg-deep border border-alert-red/30 rounded-lg p-6 text-center">
+                  <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Savings vs {result.best_single_source}</p>
+                  <p className="text-3xl font-bold font-mono text-alert-red">-{result.savings.toLocaleString()} ₫</p>
+                  <p className="text-xs text-t3 font-mono line-through">{result.total_single_source?.toLocaleString()} ₫</p>
                 </div>
               </div>
             )}
 
-            {/* Sourcing plan table */}
-            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-gray-900">Optimized Sourcing Plan</h3>
+            <div className="bg-deep border border-border rounded-lg overflow-hidden">
+              <div className="px-6 py-3 border-b border-border">
+                <h3 className="text-xs font-bold text-t1 uppercase tracking-wider">Optimized Sourcing Plan</h3>
               </div>
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left py-3 px-6 font-semibold text-gray-600">Drug</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-600">Best Source</th>
-                    <th className="text-left py-3 px-6 font-semibold text-gray-600">Product</th>
-                    <th className="text-right py-3 px-6 font-semibold text-gray-600">Price (VND)</th>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Drug</th>
+                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Best Source</th>
+                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Product</th>
+                    <th className="text-right py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Price (VND)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {result.items.map((item, i) => (
-                    <tr key={i} className="border-b border-gray-50">
-                      <td className="py-3 px-6 font-medium text-gray-900">{item.drug}</td>
-                      <td className="py-3 px-6 text-blue-600 font-medium">{item.best_source}</td>
-                      <td className="py-3 px-6 text-gray-700">{item.product_name}</td>
-                      <td className="py-3 px-6 text-right font-mono text-gray-900">{item.best_price.toLocaleString()}</td>
+                    <tr key={i} className="border-b border-border/50 hover:bg-card/50 transition-colors">
+                      <td className="py-2.5 px-6 font-medium text-t1">{item.drug}</td>
+                      <td className="py-2.5 px-6 text-cyan text-xs font-mono">{item.best_source}</td>
+                      <td className="py-2.5 px-6 text-t2 text-xs">{item.product_name}</td>
+                      <td className="py-2.5 px-6 text-right font-mono text-t1">{item.best_price.toLocaleString()}</td>
                     </tr>
                   ))}
-                  <tr className="bg-gray-50 font-bold">
-                    <td className="py-3 px-6 text-gray-900" colSpan={3}>Total (Optimized)</td>
-                    <td className="py-3 px-6 text-right font-mono text-green-700">{result.total_optimized.toLocaleString()}</td>
+                  <tr className="bg-card/50 font-bold">
+                    <td className="py-2.5 px-6 text-t1" colSpan={3}>Total (Optimized)</td>
+                    <td className="py-2.5 px-6 text-right font-mono text-success">{result.total_optimized.toLocaleString()}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </>
         )}
-      </main>
+      </div>
     </div>
   );
 }

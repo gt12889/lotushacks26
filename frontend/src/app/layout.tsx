@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased bg-abyss text-t1 min-h-screen flex flex-col">
+      <body className="antialiased bg-abyss text-t1 min-h-screen flex flex-col" suppressHydrationWarning>
         <NavBar />
         <main className="flex-1">{children}</main>
         <AbyssFooter />

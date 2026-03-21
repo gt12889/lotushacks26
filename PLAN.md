@@ -84,6 +84,67 @@ Pivoting from GhostDriver to MediScrape for LotusHacks 2026. Pharmaceutical pric
 
 ---
 
+## Phase 7: Sponsor Challenge Fixes (Post-Audit)
+
+**Goal**: Fix all sponsor integrations identified as broken/non-functional in audit.
+**Reference**: See `SPONSORS.md` for full audit details.
+
+### P0 — Security (Do First) ✅
+
+- [x] ~~Rotate exposed ElevenLabs API key~~ — `.env` was never committed to git history
+- [x] `.env` already in `.gitignore`
+
+### P1 — Codex Challenge (Highest Impact — Was Disqualified) ✅
+
+- [x] Install `openai>=1.0.0` SDK in `requirements.txt`
+- [x] Add `OPENAI_API_KEY` to `config.py` and `.env`
+- [x] Rewrite `services/ocr.py` to use OpenAI SDK directly (AsyncOpenAI client)
+- [x] Implement function calling with `tools` parameter and structured schema (`extract_prescription_drugs`)
+- [x] Parse `tool_calls` response — returns structured `{name, dosage, frequency, quantity}` dicts
+- [x] Connect OCR → optimizer via new `POST /api/optimize/prescription` endpoint
+- [x] **Verified**: OCR imports OK, function calling schema has 4 fields, both optimize routes exist
+
+### P2 — Dead Code & Missing Env Vars (3 Sponsors Non-Functional) ✅
+
+- [x] Add `BRIGHTDATA_PROXY_URL` to `.env`
+- [x] Add `EXA_API_KEY` to `.env`
+- [x] Integrate `services/qwen.py` into search pipeline via `routers/search.py`
+  - Qwen normalizes Vietnamese drug queries before TinyFish search
+- [x] **Verified**: Search router imports Qwen; all modules load cleanly
+
+### P3 — ElevenLabs Voice ✅ (Pre-existing fix)
+
+- [x] Voice IDs verified in commit `4506bec` — Sarah + Rachel with fallback chain
+- [x] Vietnamese-optimized voice settings (stability 0.65, similarity 0.80)
+- [x] Fallback: tries next voice on quota/failure before giving up
+
+### P4 — TinyFish Hardening ✅
+
+- [x] Add retry with exponential backoff (3 attempts, delays: 1s, 3s, 5s)
+- [x] Replace JSON string-slicing with `_extract_json_array()` — handles markdown fences, balanced brackets
+- [x] Add price range validation (1,000–50,000,000 VND)
+- [x] Improved error logging with raw product context on parse failures
+- [x] Lowered fuzzy threshold to 0.2 (was 0.3) to avoid over-filtering generics
+- [x] **Verified**: Module imports OK, JSON extractor works, constants exported
+
+### P5 — BrightData & Exa Polish ✅
+
+- [x] Extend BrightData proxy to Pharmacity and An Khang (was Long Chau only)
+- [x] Add proxy health check to `services/health.py`
+- [x] Improve Exa variant extraction — regex-based drug name matching (replaces capitalized-word heuristic)
+- [x] Cache Exa results per drug name (1-hour TTL)
+- [x] Add Exa + OpenRouter + BrightData proxy to health check endpoint
+- [x] **Verified**: Health services = [tinyfish, exa, openrouter, brightdata_proxy]
+
+### P6 — OpenRouter Multi-Model ✅
+
+- [x] Move model names to `config.py` env vars (`openrouter_ocr_model`, `openrouter_normalization_model`, `openrouter_fallback_model`)
+- [x] Add model fallback chain in `qwen.py` — `_call_openrouter()` tries primary then fallback model
+- [x] Add product deduplication across pharmacy sources in search summary (`deduplicated` field)
+- [x] **Verified**: All modules import cleanly, routes confirmed
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |

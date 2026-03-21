@@ -1,16 +1,93 @@
 """TinyFish service - parallel pharmacy web scraping"""
 import asyncio
+import hashlib
 import httpx
 import json
 import logging
 import time
+from collections import OrderedDict
 from models.schemas import ProductResult, PharmacySearchResult
 from services.normalizer import normalize_drug_name, fuzzy_match_score
 from config import settings as app_settings
 
 logger = logging.getLogger(__name__)
 
+# In-memory cache: key=(query+source_id) -> (timestamp, PharmacySearchResult)
+_cache: OrderedDict[str, tuple[float, PharmacySearchResult]] = OrderedDict()
+CACHE_TTL = 900  # 15 minutes
+CACHE_MAX_SIZE = 200
+
+
+def _cache_key(query: str, source_id: str) -> str:
+    return hashlib.md5(f"{query.lower().strip()}:{source_id}".encode()).hexdigest()
+
+
+def _get_cached(query: str, source_id: str) -> PharmacySearchResult | None:
+    key = _cache_key(query, source_id)
+    if key in _cache:
+        ts, result = _cache[key]
+        if time.time() - ts < CACHE_TTL:
+            # Add cache metadata
+            age = int(time.time() - ts)
+            logger.info(f"Cache HIT for {source_id}:{query} (age: {age}s)")
+            return result
+        else:
+            del _cache[key]
+    return None
+
+
+def _set_cached(query: str, source_id: str, result: PharmacySearchResult):
+    key = _cache_key(query, source_id)
+    _cache[key] = (time.time(), result)
+    # Evict oldest entries if cache too large
+    while len(_cache) > CACHE_MAX_SIZE:
+        _cache.popitem(last=False)
+
 TINYFISH_API_URL = "https://agent.tinyfish.ai/v1/automation/run-sse"
+
+
+def _extract_json_array(text, source_id: str) -> list:
+    """Safely extract a JSON array from text, handling markdown fences and nested content."""
+    if isinstance(text, list):
+        return text
+    if not isinstance(text, str):
+        return []
+
+    # Strip markdown code fences if present
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        lines = cleaned.split("\n")
+        # Remove first and last fence lines
+        lines = [l for l in lines[1:] if not l.strip().startswith("```")]
+        cleaned = "\n".join(lines).strip()
+
+    # Try direct parse first
+    try:
+        parsed = json.loads(cleaned)
+        if isinstance(parsed, list):
+            return parsed
+    except json.JSONDecodeError:
+        pass
+
+    # Find outermost balanced brackets
+    depth = 0
+    start_idx = None
+    for i, ch in enumerate(cleaned):
+        if ch == "[":
+            if depth == 0:
+                start_idx = i
+            depth += 1
+        elif ch == "]":
+            depth -= 1
+            if depth == 0 and start_idx is not None:
+                try:
+                    return json.loads(cleaned[start_idx : i + 1])
+                except json.JSONDecodeError:
+                    pass
+                start_idx = None
+
+    logger.error(f"Failed to parse TinyFish JSON for {source_id}: {cleaned[:200]}")
+    return []
 
 PHARMACY_CONFIGS = {
     "long_chau": {
@@ -138,6 +215,57 @@ MOCK_DATA_BY_QUERY = {
 }
 
 
+AGENT_TIMEOUT = 15.0  # seconds for mock mode
+MAX_RETRIES = 3
+RETRY_DELAYS = [1.0, 3.0, 5.0]  # exponential-ish backoff
+# VND price bounds for sanity checking
+MIN_PRICE_VND = 1_000
+MAX_PRICE_VND = 50_000_000
+
+
+async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, timeout: float = 15.0) -> PharmacySearchResult:
+    """Timeout-isolated wrapper with retry logic around search_single_pharmacy."""
+    config = PHARMACY_CONFIGS.get(source_id)
+    name = config["name"] if config else "Unknown"
+    effective_timeout = 180.0 if api_key else timeout
+    last_error = None
+
+    for attempt in range(MAX_RETRIES):
+        start_time = time.time()
+        try:
+            result = await asyncio.wait_for(
+                search_single_pharmacy(source_id, query, api_key),
+                timeout=effective_timeout,
+            )
+            if result.status == "success":
+                return result
+            # Non-success but not an exception — don't retry (e.g., no results found)
+            return result
+        except asyncio.TimeoutError:
+            elapsed = int((time.time() - start_time) * 1000)
+            last_error = f"Timeout after {effective_timeout}s"
+            logger.warning(f"Agent timeout for {source_id} (attempt {attempt + 1}/{MAX_RETRIES})")
+        except Exception as e:
+            elapsed = int((time.time() - start_time) * 1000)
+            last_error = str(e)
+            logger.error(f"Agent error for {source_id} (attempt {attempt + 1}/{MAX_RETRIES}): {e}")
+
+        # Retry delay (skip on last attempt)
+        if attempt < MAX_RETRIES - 1:
+            delay = RETRY_DELAYS[attempt]
+            logger.info(f"Retrying {source_id} in {delay}s...")
+            await asyncio.sleep(delay)
+
+    elapsed = int((time.time() - start_time) * 1000)
+    return PharmacySearchResult(
+        source_id=source_id,
+        source_name=name,
+        status="error",
+        error=f"Failed after {MAX_RETRIES} attempts: {last_error}",
+        response_time_ms=elapsed,
+    )
+
+
 async def search_single_pharmacy(
     source_id: str, query: str, api_key: str
 ) -> PharmacySearchResult:
@@ -147,6 +275,11 @@ async def search_single_pharmacy(
         return PharmacySearchResult(
             source_id=source_id, source_name="Unknown", status="error", error="Unknown source"
         )
+
+    # Check cache first
+    cached = _get_cached(query, source_id)
+    if cached is not None:
+        return cached
 
     start_time = time.time()
 
@@ -162,7 +295,7 @@ async def search_single_pharmacy(
         mock_products = mock_set.get(source_id, [])
         elapsed = int((time.time() - start_time) * 1000)
         lowest = min((p.price for p in mock_products), default=None)
-        return PharmacySearchResult(
+        result = PharmacySearchResult(
             source_id=source_id,
             source_name=config["name"],
             status="success",
@@ -171,14 +304,16 @@ async def search_single_pharmacy(
             result_count=len(mock_products),
             response_time_ms=elapsed,
         )
+        _set_cached(query, source_id, result)
+        return result
 
     url = config["search_url"].format(query=query)
     goal = config["goal"].format(query=query)
 
     try:
         request_body = {"goal": goal, "url": url}
-        # Add BrightData proxy for Long Chau (largest chain, most likely to block)
-        if source_id == "long_chau" and app_settings.brightdata_proxy_url:
+        # Add BrightData proxy for high-traffic chains likely to block scrapers
+        if source_id in ("long_chau", "pharmacity", "an_khang") and app_settings.brightdata_proxy_url:
             request_body["proxy-config"] = {
                 "enabled": True,
                 "url": app_settings.brightdata_proxy_url,
@@ -221,29 +356,19 @@ async def search_single_pharmacy(
             if not output_text:
                 output_text = "[]"
 
-        if isinstance(output_text, str):
-            try:
-                start = output_text.index("[")
-                end = output_text.rindex("]") + 1
-                products_data = json.loads(output_text[start:end])
-            except (ValueError, json.JSONDecodeError):
-                logger.error(f"Failed to parse TinyFish output for {source_id}: {output_text[:200]}")
-                products_data = []
-        elif isinstance(output_text, list):
-            products_data = output_text
-        else:
-            products_data = []
+        products_data = _extract_json_array(output_text, source_id)
 
         products = []
         for p in products_data:
             try:
                 product_name = p.get("product_name", "Unknown")
                 # Filter out irrelevant results using fuzzy matching
-                if fuzzy_match_score(query, product_name) < 0.3:
+                if fuzzy_match_score(query, product_name) < 0.2:
                     logger.debug(f"Filtered low-relevance product: {product_name}")
                     continue
                 price = int(str(p.get("price", 0)).replace(".", "").replace(",", ""))
-                if price <= 0:
+                if price < MIN_PRICE_VND or price > MAX_PRICE_VND:
+                    logger.warning(f"Price {price} VND out of range for {product_name}, skipping")
                     continue
                 pack_size = int(p.get("pack_size", 1)) or 1
                 orig = p.get("original_price")
@@ -261,11 +386,11 @@ async def search_single_pharmacy(
                     product_url=p.get("product_url"),
                 ))
             except Exception as e:
-                logger.warning(f"Skipping product parse error: {e}")
+                logger.warning(f"Skipping product parse error for {source_id}: {e} | raw: {p}")
 
         elapsed = int((time.time() - start_time) * 1000)
         lowest = min((p.price for p in products), default=None)
-        return PharmacySearchResult(
+        result = PharmacySearchResult(
             source_id=source_id,
             source_name=config["name"],
             status="success",
@@ -274,6 +399,8 @@ async def search_single_pharmacy(
             result_count=len(products),
             response_time_ms=elapsed,
         )
+        _set_cached(query, source_id, result)
+        return result
 
     except Exception as e:
         elapsed = int((time.time() - start_time) * 1000)
@@ -292,7 +419,7 @@ async def search_all_pharmacies(query: str, api_key: str, sources: list[str] | N
     target_sources = sources or list(PHARMACY_CONFIGS.keys())
 
     tasks = [
-        search_single_pharmacy(sid, query, api_key)
+        search_single_pharmacy_safe(sid, query, api_key)
         for sid in target_sources
     ]
 

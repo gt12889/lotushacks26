@@ -1,9 +1,13 @@
+import asyncio
+import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from config import settings
 from database import init_db
 from services.scheduler import start_scheduler, stop_scheduler
+from services.health import check_tinyfish_health, periodic_health_check, get_health_status
 from routers.search import router as search_router
 from routers.prices import router as prices_router
 from routers.alerts import router as alerts_router
@@ -13,6 +17,8 @@ from routers.ocr import router as ocr_router
 from routers.memory import router as memory_router
 from routers.insights import router as insights_router
 from services import supermemory_mem
+
+logger = logging.getLogger(__name__)
 
 
 def _cors_origin_list() -> list[str]:
@@ -26,11 +32,22 @@ def _cors_origin_list() -> list[str]:
 async def lifespan(app: FastAPI):
     await init_db()
     start_scheduler()
+    await check_tinyfish_health(settings.tinyfish_api_key)
+    health_task = asyncio.create_task(
+        periodic_health_check(
+            tinyfish_key=settings.tinyfish_api_key,
+            exa_key=settings.exa_api_key,
+            openrouter_key=settings.openrouter_api_key,
+            proxy_url=settings.brightdata_proxy_url,
+            interval=300,
+        )
+    )
     yield
+    health_task.cancel()
     stop_scheduler()
 
 
-app = FastAPI(title="MediScrape API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Megladon MD API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,6 +71,20 @@ app.include_router(insights_router)
 async def health():
     return {
         "status": "ok",
-        "service": "mediscrape",
+        "service": "megladon_md",
         "supermemory_configured": supermemory_mem.is_enabled(),
     }
+
+
+@app.get("/health/services")
+async def services_health():
+    return get_health_status()
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error", "type": type(exc).__name__},
+    )
