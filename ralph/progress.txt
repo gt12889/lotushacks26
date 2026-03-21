@@ -11,6 +11,7 @@
 - App is always dark-themed — no .dark class toggle needed, :root vars set to abyss theme directly
 - Components in src/components/ use mixed import styles: relative (`./Foo`) for siblings, alias (`@/components/Foo`) from app pages — replace both when swapping components
 - shadcn Badge v4 uses `useRender` from `@base-ui/react` — pass `className` overrides to customize colors
+- shadcn Collapsible v4 uses `defaultOpen` prop and manages state internally — no useState needed for expand/collapse
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -62,5 +63,20 @@
   - Alert uses data-slot attributes for internal styling hooks — keep these intact
   - `rounded-none border-0` overrides needed to strip default Alert border/radius when using custom border-left accent
   - MegalodonAlert is only used in DashboardHome.tsx — refactoring in-place avoids touching consumers
+---
+
+## 2026-03-21 - US-005
+- Installed shadcn Collapsible via `npx shadcn@latest add collapsible -y`
+- Refactored ModelRouterPanel.tsx: replaced manual useState expand/collapse with Collapsible/CollapsibleTrigger/CollapsibleContent, defaultOpen for initial expanded state
+- Refactored LiveBrowserPreview.tsx: replaced manual useState expand/collapse with Collapsible components, starts collapsed (no defaultOpen)
+- Removed unused useState imports from both components
+- All existing content (pipeline steps, latency bars, sponsor badges, iframes) preserved
+- completionFlash and gradientShift animations preserved in ModelRouterPanel
+- Files changed: ModelRouterPanel.tsx, LiveBrowserPreview.tsx, ui/collapsible.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Collapsible v4 wraps `@base-ui/react/collapsible` — uses `defaultOpen` prop for initial state
+  - Collapsible manages its own open/close state internally — no need for useState
+  - For chevron rotation on open/close, use `[[data-panel-open]>&]:rotate-180` Tailwind selector targeting base-ui data attributes
+  - The ▾/▸ text indicators can't easily toggle with Collapsible — use a static indicator or CSS-based approach instead
 ---
 
