@@ -82,6 +82,16 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 - [ ] End-to-end test with real drug searches
 - [ ] **Verify**: 5-minute demo script runs smoothly
 
+### Demo-Critical Features (Post-Audit Build)
+
+- [x] Agent Activity Feed — scrolling real-time log of agent spawn/search/complete events (`AgentActivityFeed.tsx`)
+- [x] Live Metrics Bar — ticking counters: agents deployed, pharmacies scanned, products found, savings (`LiveMetricsBar.tsx`)
+- [x] SSE-animated pharmacy cards — cards start dimmed (opacity-40), glow on result arrival (`PharmacyCards.tsx`)
+- [x] Sponsor tech badges — [TinyFish] [BrightData] pills on pharmacy cards and price grid rows (`SponsorBadge.tsx`)
+- [x] Discord + ElevenLabs demo alert trigger — `POST /api/demo-alert` fires Vietnamese voice note to Discord (`DemoAlertTrigger.tsx` + `routers/demo_alert.py`)
+- [x] Savings callout — already existed in `SavingsBanner.tsx` with percentage
+- [x] Core search flow — already existed: SSE streaming, 5 parallel agents, price table
+
 ---
 
 ## Phase 7: Sponsor Challenge Fixes (Post-Audit)
@@ -142,6 +152,46 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 - [x] Add model fallback chain in `qwen.py` — `_call_openrouter()` tries primary then fallback model
 - [x] Add product deduplication across pharmacy sources in search summary (`deduplicated` field)
 - [x] **Verified**: All modules import cleanly, routes confirmed
+
+---
+
+## Phase 8: Demo-Day Hardening (5 Critical Gaps)
+
+**Goal**: Close 5 high-impact gaps identified from TinyFish API docs before demo.
+
+### Gap 1 — Stealth Browser Profile ✅
+
+- [x] Add `browser_profile: "stealth"` to all TinyFish requests (`services/tinyfish.py`)
+- [x] Prevents bot detection on Long Chau (FPT-owned) and other protected sites
+
+### Gap 2 — Production-Ready Goal Prompts ✅
+
+- [x] Replace generic goals with per-pharmacy tailored prompts in `PHARMACY_CONFIGS`
+- [x] Numbered steps, cookie/popup dismissal, CAPTCHA detection
+- [x] Exact JSON schema with example output
+- [x] Vietnamese edge cases: "Het hang" → `in_stock: false`, "Lien he" → `price: null`
+- [x] Visual descriptions (not CSS selectors) for resilience
+
+### Gap 3 — COMPLETED != Success Validation ✅
+
+- [x] Add `_validate_tinyfish_result()` function
+- [x] Distinguish infrastructure failure (FAILED) from goal failure (CAPTCHA, extraction error)
+- [x] Structured error handling integrated into SSE parsing loop
+
+### Gap 4 — SSE Event Parsing + Streaming URL ✅
+
+- [x] Restructure SSE loop to handle typed events: STARTED, STREAMING_URL, PROGRESS, HEARTBEAT, COMPLETE
+- [x] Add `streaming_url` field to `PharmacySearchResult` schema
+- [x] Create `LiveBrowserPreview.tsx` — collapsible iframe panel showing live browser sessions
+- [x] Wire streaming URLs into frontend SSE event handler and page state
+
+### Gap 5 — /run-batch for Prescription Optimizer ✅
+
+- [x] Add `TINYFISH_BATCH_URL` and `TINYFISH_RUN_URL` constants
+- [x] Implement `_build_batch_runs()`, `_poll_run_result()`, `_parse_polled_result()`
+- [x] Implement `search_all_pharmacies_batch()` — atomic multi-drug submission
+- [x] Update `routers/optimize.py` to use batch when API key present, mock fallback preserved
+- [x] **Verified**: Python files parse clean, TypeScript type-checks pass
 
 ---
 

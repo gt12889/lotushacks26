@@ -10,54 +10,55 @@
 
 | Challenge | Code Exists | Functional | Challenge-Ready | Blocking Issue |
 |-----------|:-----------:|:----------:|:---------------:|----------------|
-| TinyFish (Primary) | Yes | Yes | Needs hardening | No retry logic, brittle JSON parsing |
-| BrightData | Yes | **No** | No | `BRIGHTDATA_PROXY_URL` missing from `.env` |
-| OpenRouter | Partial | **Partial** | No | Qwen service is dead code; no routing logic |
-| Exa | Yes | **No** | No | `EXA_API_KEY` missing from `.env` |
-| ElevenLabs | Yes | **No** | No | Unverified voice ID; API key committed in plaintext |
-| OpenAI Codex | Yes | **Partial** | **No** | Wrong API (OpenRouter, not OpenAI SDK); no function calling |
+| TinyFish (Primary) | Yes | **Yes** | **Yes** | ~~No retry logic, brittle JSON parsing~~ All fixed — stealth mode, batch endpoint, streaming URLs, production goals, result validation |
+| BrightData | Yes | **Yes** | **Yes** | ~~`BRIGHTDATA_PROXY_URL` missing~~ Fixed in Phase 7 |
+| OpenRouter | Yes | **Yes** | **Yes** | ~~Qwen dead code~~ Fixed — integrated into search pipeline |
+| Exa | Yes | **Yes** | **Yes** | ~~`EXA_API_KEY` missing~~ Fixed in Phase 7 |
+| ElevenLabs | Yes | **Yes** | **Yes** | ~~Unverified voice ID~~ Fixed — verified voices with fallback |
+| OpenAI Codex | Yes | **Yes** | **Yes** | ~~Wrong API~~ Fixed — OpenAI SDK with function calling |
 
 ---
 
 ## 1. TinyFish — Enterprise Track (Primary)
 
 **Role**: Parallel web scraping agents across 5 Vietnamese pharmacy chains
-**Status**: FUNCTIONAL, NEEDS HARDENING
+**Status**: PRODUCTION-READY
 
 ### What Works
-- 5 parallel agents confirmed: Long Chau, Pharmacity, An Khang, Than Thien, Medicare
-- SSE streaming properly implemented with correct `data:` format
-- `asyncio.gather()` parallel execution
-- API key loaded from config, passed via `X-API-Key` header
-- BrightData proxy conditional support for Long Chau
+- 5 parallel agents: Long Chau, Pharmacity, An Khang, Than Thien, Medicare
+- SSE streaming with typed event handling (STARTED, STREAMING_URL, PROGRESS, COMPLETE)
+- `asyncio.gather()` parallel execution for single-drug search
+- `/run-batch` atomic multi-drug submission for prescription optimizer (up to 100 runs per request)
+- `browser_profile: "stealth"` on all agents (anti-detection for bot-protected sites like Long Chau/FPT)
+- BrightData proxy for Long Chau, Pharmacity, An Khang
+- Production-grade goal prompts per pharmacy (numbered steps, cookie handling, CAPTCHA detection, JSON schema)
+- Result validation: distinguishes infrastructure failure, goal failure, and CAPTCHA detection
+- Live browser preview URLs (iframe-embeddable, 24hr validity) surfaced to frontend
+- Retry with exponential backoff (3 attempts: 1s, 3s, 5s)
+- Robust JSON extraction (`_extract_json_array()` handles markdown fences, balanced brackets)
+- Price range validation (1,000–50,000,000 VND)
+- Fuzzy drug name matching (0.2 threshold for generics)
+- In-memory cache with TTL (15 min) and LRU eviction (200 entries)
 - Periodic health checks (5-min interval)
-- In-memory cache with TTL (15 min) and LRU eviction
 
-### Critical Issues
-| # | Issue | File | Line(s) | Impact |
-|---|-------|------|---------|--------|
-| 1 | No retry/backoff logic | `services/tinyfish.py` | 177-204 | Single failure = permanent failure for that pharmacy |
-| 2 | Brittle JSON parsing via `content.index("[")` | `services/tinyfish.py` | 299-303 | Breaks on malformed TinyFish responses |
-| 3 | Fuzzy match threshold (0.3) too aggressive | `services/tinyfish.py` | 315 | Filters valid results (e.g., generics with different brand names) |
-| 4 | No price sanity validation | `services/tinyfish.py` | 318-320 | Accepts any int > 0; no max bound, no currency check |
-| 5 | Timeout comment says 120s, code uses 180s | `services/tinyfish.py` | 174, 183 | Misleading; debug confusion |
+### Issues Resolved (Phase 7 + Phase 8)
+| # | Issue | Resolution |
+|---|-------|------------|
+| 1 | No retry/backoff logic | ✅ 3-attempt retry with 1s/3s/5s delays |
+| 2 | Brittle JSON parsing | ✅ `_extract_json_array()` with balanced bracket detection |
+| 3 | Fuzzy threshold too aggressive | ✅ Lowered to 0.2 |
+| 4 | No price validation | ✅ 1,000–50,000,000 VND bounds |
+| 5 | No stealth browser profile | ✅ `browser_profile: "stealth"` on all requests |
+| 6 | Generic goal prompts (slow, unreliable) | ✅ Per-pharmacy production goals with numbered steps |
+| 7 | No COMPLETED vs success validation | ✅ `_validate_tinyfish_result()` with structured error handling |
+| 8 | No streaming URL capture | ✅ SSE typed event parsing, `streaming_url` on results |
+| 9 | 25 individual calls for optimizer | ✅ `/run-batch` atomic submission with parallel polling |
+| 10 | No live browser preview in UI | ✅ `LiveBrowserPreview.tsx` collapsible iframe panel |
 
-### Medium Issues
-| # | Issue | File | Impact |
-|---|-------|------|--------|
-| 6 | In-memory cache lost on restart | `services/tinyfish.py` | No persistence across deploys |
-| 7 | Insufficient error logging (no product context) | `services/tinyfish.py:337` | Can't debug TinyFish output quality |
-| 8 | Health check sends dummy request to `example.com` | `services/health.py` | Wastes credits; doesn't validate real pharmacy scraping |
-| 9 | Timeout metric set to timeout value, not elapsed time | `services/tinyfish.py:195` | Misleading response_time_ms on errors |
-| 10 | Mock data only covers 4 drugs | `services/tinyfish.py:166-171` | Other queries get metformin prices in dev mode |
-| 11 | No product deduplication across sources | `routers/search.py:102` | Same product appears 5× from 5 pharmacies |
-
-### Recommendations
-1. Add retry with exponential backoff (3 attempts, 1-5s delays)
-2. Replace string-slicing JSON extraction with proper decoder
-3. Raise fuzzy threshold to 0.5 or use phonetic matching for Vietnamese
-4. Add price range validation (1,000–50,000,000 VND)
-5. Implement Redis or SQLite-backed cache
+### Remaining Known Limitations
+- In-memory cache lost on restart (acceptable for hackathon)
+- Cannot solve CAPTCHAs (reCAPTCHA, hCaptcha) — returns structured error
+- Each browser run starts fresh (no session persistence)
 
 ---
 

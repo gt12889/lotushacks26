@@ -19,6 +19,10 @@ import MegalodonAlert from '@/components/MegalodonAlert';
 import StatusPill from '@/components/StatusPill';
 import SonarFilters from '@/components/SonarFilters';
 import PricingChart from '@/components/PricingChart';
+import AgentActivityFeed from '@/components/AgentActivityFeed';
+import LiveMetricsBar from '@/components/LiveMetricsBar';
+import DemoAlertTrigger from '@/components/DemoAlertTrigger';
+import LiveBrowserPreview from '@/components/LiveBrowserPreview';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -50,6 +54,15 @@ interface TrendPoint {
   product_name: string;
   price: number;
   observed_at: string;
+}
+
+interface AgentEvent {
+  id: string;
+  timestamp: number;
+  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  agent: string;
+  message: string;
+  source_id?: string;
 }
 
 const MEMORY_USER_KEY = 'megladonMdMemoryUser';
@@ -134,10 +147,36 @@ export default function DashboardHome() {
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
   const [syncTime, setSyncTime] = useState('');
+  const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
+  const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
   const lastSummaryRef = useRef<ScanSummary | null>(null);
+  const eventIdRef = useRef(0);
+
+  const pharmaciesComplete = Object.values(results).filter(
+    (r) => r.status === 'success' || r.status === 'error'
+  ).length;
+  const productsFound = Object.values(results).reduce(
+    (sum, r) => sum + (r.status === 'success' ? r.result_count : 0),
+    0
+  );
+
+  const addAgentEvent = useCallback(
+    (type: AgentEvent['type'], agent: string, message: string, source_id?: string) => {
+      const evt: AgentEvent = {
+        id: String(++eventIdRef.current),
+        timestamp: Date.now(),
+        type,
+        agent,
+        message,
+        source_id,
+      };
+      setAgentEvents((prev) => [...prev, evt]);
+    },
+    []
+  );
 
   const flushEvents = useCallback(() => {
     const buffer = eventBufferRef.current;
@@ -231,6 +270,10 @@ export default function DashboardHome() {
     setInsightError(null);
     setInsightLoading(false);
     setCurrentQuery(query);
+    setAgentEvents([]);
+    setStreamingUrls({});
+    eventIdRef.current = 0;
+    addAgentEvent('spawn', 'Orchestrator', `Deploying agents for "${query}"`);
 
     try {
       const memoryUserId = ensureMemoryUserId();
@@ -281,10 +324,58 @@ export default function DashboardHome() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.task === 'summary' || event.type === 'search_complete') {
+            if (event.type === 'agent_spawn') {
+              addAgentEvent(
+                'spawn',
+                event.name || 'Agent',
+                `Spawned → ${event.target ?? ''}`
+              );
+            } else if (event.type === 'agent_complete') {
+              addAgentEvent(
+                'success',
+                event.agent_id || 'Agent',
+                `Complete (${event.result_count ?? 0} results)`
+              );
+            } else if (event.type === 'agent_fail') {
+              addAgentEvent('error', event.agent_id || 'Agent', String(event.error || 'failed'));
+            } else if (event.type === 'pharmacy_status' && event.status === 'searching') {
+              addAgentEvent(
+                'searching',
+                `${event.source_name || 'Pharmacy'}`,
+                'Scanning…',
+                event.source_id
+              );
+              eventBufferRef.current.push({ type: 'pharmacy', data: event });
+            } else if (event.task === 'summary' || event.type === 'search_complete') {
               eventBufferRef.current.push({ type: 'summary', data: event });
+              addAgentEvent(
+                'success',
+                'Orchestrator',
+                `Search complete — ${event.total_results ?? 0} products`
+              );
             } else if (event.source_id) {
               eventBufferRef.current.push({ type: 'pharmacy', data: event });
+              if (event.streaming_url) {
+                setStreamingUrls((prev) => ({
+                  ...prev,
+                  [event.source_id]: event.streaming_url,
+                }));
+              }
+              if (event.status === 'success') {
+                addAgentEvent(
+                  'success',
+                  `${event.source_name || 'Pharmacy'} Agent`,
+                  `Found ${event.result_count ?? 0} products (${((event.response_time_ms || 0) / 1000).toFixed(1)}s)`,
+                  event.source_id
+                );
+              } else if (event.status === 'error') {
+                addAgentEvent(
+                  'error',
+                  `${event.source_name || 'Pharmacy'} Agent`,
+                  String(event.error || 'Signal lost'),
+                  event.source_id
+                );
+              }
             }
 
             if (!flushTimerRef.current) {
@@ -461,7 +552,23 @@ export default function DashboardHome() {
                     )}
                   </div>
                 )}
+                <LiveBrowserPreview
+                  streamingUrls={streamingUrls}
+                  pharmacyNames={Object.fromEntries(
+                    Object.values(results).map((r) => [r.source_id, r.source_name])
+                  )}
+                  isSearching={isSearching}
+                />
+                <LiveMetricsBar
+                  agentsSpawned={agentEvents.filter((e) => e.type === 'spawn').length}
+                  pharmaciesComplete={pharmaciesComplete}
+                  pharmaciesTotal={5}
+                  productsFound={productsFound}
+                  savingsVnd={scanSummary?.potential_savings ?? null}
+                  isActive={isSearching}
+                />
                 <PharmacyCards results={results} />
+                <AgentActivityFeed events={agentEvents} isActive={isSearching} />
                 {scanSummary && (
                   <SavingsBanner
                     bestPrice={scanSummary.best_price}
@@ -513,6 +620,11 @@ export default function DashboardHome() {
                   </div>
                 )}
                 <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
+                <DemoAlertTrigger
+                  drugName={currentQuery || 'Metformin 500mg'}
+                  bestPrice={scanSummary?.best_price ?? undefined}
+                  bestSource={scanSummary?.best_source ?? undefined}
+                />
               </div>
             )}
 

@@ -28,6 +28,7 @@ class PharmacySearchResult(BaseModel):
     result_count: int = 0
     response_time_ms: Optional[int] = None
     error: Optional[str] = None
+    streaming_url: Optional[str] = None
 
 class SearchResponse(BaseModel):
     query: str

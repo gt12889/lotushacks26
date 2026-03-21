@@ -16,6 +16,15 @@
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 }
 
+@keyframes pulse-left-border {
+  0%, 100% { border-left-color: #00DBE7; }
+  50% { border-left-color: rgba(0, 219, 231, 0.2); }
+}
+
+.animate-pulse-left-border {
+  animation: pulse-left-border 2s ease-in-out infinite;
+}
+
 body {
   background-color: #0D1C32;
   color: #D6E3FF;

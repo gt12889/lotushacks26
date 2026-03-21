@@ -2,7 +2,7 @@
 import asyncio
 from fastapi import APIRouter, UploadFile, File
 from models.schemas import OptimizeRequest, OptimizeResponse, OptimizeDrugResult
-from services.tinyfish import search_all_pharmacies
+from services.tinyfish import search_all_pharmacies, search_all_pharmacies_batch
 from services.ocr import extract_drugs_from_image
 from config import settings
 
@@ -11,16 +11,27 @@ router = APIRouter(prefix="/api")
 
 @router.post("/optimize", response_model=OptimizeResponse)
 async def optimize_prescription(request: OptimizeRequest):
-    """Find cheapest sourcing across pharmacies for multiple drugs."""
-    # Search all drugs in parallel
-    search_tasks = [
-        search_all_pharmacies(drug, settings.tinyfish_api_key)
-        for drug in request.drugs
-    ]
-    all_results = await asyncio.gather(*search_tasks)
+    """Find cheapest sourcing across pharmacies for multiple drugs.
+
+    Uses /run-batch for atomic multi-drug submission when API key is configured,
+    falling back to individual parallel searches for mock mode.
+    """
+    if settings.tinyfish_api_key:
+        # Batch: single POST for all drugs x pharmacies
+        all_results = await search_all_pharmacies_batch(
+            request.drugs, settings.tinyfish_api_key
+        )
+    else:
+        # Mock mode fallback: individual parallel searches
+        search_tasks = [
+            search_all_pharmacies(drug, settings.tinyfish_api_key)
+            for drug in request.drugs
+        ]
+        gathered = await asyncio.gather(*search_tasks)
+        all_results = dict(zip(request.drugs, gathered))
 
     items = []
-    for drug, results in zip(request.drugs, all_results):
+    for drug, results in all_results.items():
         best_price: int | None = None
         best_source = ""
         best_name = ""
@@ -45,7 +56,7 @@ async def optimize_prescription(request: OptimizeRequest):
 
     # Calculate single-source comparison
     source_totals = {}
-    for drug, results in zip(request.drugs, all_results):
+    for drug, results in all_results.items():
         for source_id, result in results.items():
             if result.status == "success" and result.products:
                 cheapest = min(p.price for p in result.products)

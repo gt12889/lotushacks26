@@ -64,18 +64,18 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 ┌─────────────────────────────────────────────────────────┐
 │                    REACT DASHBOARD                       │
 │  Drug search → Price comparison grid → Trend charts     │
-│  Procurement alerts → Historical analytics              │
+│  Live browser preview (iframe) → Procurement alerts     │
 └───────────────────────┬─────────────────────────────────┘
                         │ REST API + SSE
 ┌───────────────────────┴─────────────────────────────────┐
 │                   FASTAPI BACKEND                        │
 │                                                         │
-│  POST /api/search      - parallel price search          │
+│  POST /api/search      - parallel price search (SSE)    │
+│  POST /api/optimize    - batch prescription optimizer    │
 │  GET  /api/prices      - cached results                 │
 │  GET  /api/trends      - historical price data          │
 │  POST /api/alerts      - price alerts                   │
 │  POST /api/monitor     - recurring monitor              │
-│  GET  /api/optimize    - prescription optimizer          │
 └──┬──────────┬──────────┬──────────┬─────────────────────┘
    │          │          │          │
    ▼          ▼          ▼          ▼
@@ -84,8 +84,11 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 │Agent │ │Agent │ │Agent │ │  (cron jobs)  │
 │Long  │ │Pharm │ │An    │ │  15-min cycle │
 │Chau  │ │acity │ │Khang │ │              │
+│stlth │ │stlth │ │stlth │ │              │
 └──┬───┘ └──┬───┘ └──┬───┘ └──────┬───────┘
    │        │        │             │
+   │  /run-batch for multi-drug   │
+   │  (up to 100 runs atomic)     │
    ▼        ▼        ▼             ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   SQLite DATABASE                        │
@@ -118,9 +121,38 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 4. Telegram alert + ElevenLabs Vietnamese voice when price drops
 
 ### Flow 3: Prescription Cost Optimizer
-1. Input full prescription (multiple drugs)
-2. Parallel searches for ALL drugs across ALL sources
-3. Returns optimized sourcing plan to minimize total cost
+1. Input full prescription (multiple drugs) or upload prescription image (OCR extraction via GPT-4o function calling)
+2. Backend submits ALL drug x pharmacy combinations via TinyFish `/run-batch` endpoint (single atomic POST, up to 100 runs)
+3. Polls all run results in parallel, validates each result (COMPLETED != success)
+4. Returns optimized sourcing plan showing cheapest source per drug with total savings vs single-source
+
+---
+
+## 5b. TinyFish Integration Details
+
+### Browser Profile
+All agents use `browser_profile: "stealth"` (anti-detection fingerprinting) to prevent bot blocking on protected sites like Long Chau (FPT-owned). BrightData proxy additionally applied to Long Chau, Pharmacity, and An Khang.
+
+### Production Goal Prompts
+Each pharmacy has a tailored goal prompt with:
+- Numbered steps for deterministic execution (4.9x faster than generic goals)
+- Cookie/popup dismissal as Step 1
+- CAPTCHA detection → structured error return `{"error": "CAPTCHA_DETECTED"}`
+- Exact JSON schema with example output
+- Vietnamese-specific edge cases: "Het hang" → `in_stock: false`, "Lien he" → `price: null`
+- Visual descriptions (not CSS selectors) for resilience against site redesigns
+
+### Result Validation
+`COMPLETED` status means the browser session ended, NOT that data was extracted. Every result is validated:
+- Infrastructure failure (`FAILED` status) → error with message
+- Goal failure (CAPTCHA detected, extraction failed) → structured error
+- Partial results → logged with context for debugging
+
+### Live Browser Preview
+Every TinyFish run emits a `STREAMING_URL` — an iframe-embeddable live view of the browser navigating. The frontend shows these in a collapsible panel during search, allowing judges to watch real-time pharmacy scraping.
+
+### Batch Endpoint
+The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combinations atomically (e.g., 5 drugs x 5 pharmacies = 25 runs in one POST). Individual SSE streaming is preserved for the primary single-drug search flow.
 
 ---
 
@@ -145,12 +177,13 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/search` | Trigger parallel price search (SSE stream) |
+| POST | `/api/search` | Trigger parallel price search (SSE stream with live browser URLs) |
+| POST | `/api/optimize` | Prescription cost optimizer (uses /run-batch for atomic multi-drug search) |
+| POST | `/api/optimize/prescription` | OCR prescription image → extract drugs → optimize (GPT-4o function calling) |
 | GET | `/api/prices/{drug_query}` | Get cached results |
 | GET | `/api/trends/{drug_query}` | Historical price data |
 | POST | `/api/alerts` | Configure price alerts |
 | POST | `/api/monitor` | Set up recurring monitor |
-| GET | `/api/optimize` | Prescription cost optimizer |
 
 ---
 
@@ -200,6 +233,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips, manufacturer, price threshold slider |
 | `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
 | `PharmacyCards` | 5 agent status cards with source colors, latency, result counts |
+| `LiveBrowserPreview` | Collapsible iframe panel showing live TinyFish browser sessions per pharmacy |
 | `PriceGrid` | Sortable data table with source color dots, stock status, best price badges |
 | `AbyssFooter` | Live UTC sync clock, protocol links |
 
@@ -219,7 +253,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 ## 9. Demo Script (5 Minutes)
 
 1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
-2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Deploy probe for "Metformin 500mg", watch 5 pharmacy agent cards light up with latency data. Show Pricing Abyss Index table. Run prescription optimizer with OCR photo upload.
+2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Deploy probe for "Metformin 500mg", expand Live Browser Preview to show real browsers navigating pharmacy sites in real time. Watch 5 pharmacy agent cards light up with latency data. Show Pricing Abyss Index table. Run prescription optimizer with OCR photo upload (uses /run-batch for atomic 25-run submission).
 3. **2:00-2:45 | Architecture**: Navigate to How It Works page — TinyFish parallel agents, asyncio.gather, SSE streaming, Supermemory context recall.
 4. **2:45-3:15 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies.
 5. **3:15-4:00 | Sponsors & Future**: TinyFish + AWS + BrightData + ElevenLabs + Exa + Supermemory. Expand to 50+ sources, hospital ERP integration, regional expansion.
