@@ -26,6 +26,7 @@ import LiveBrowserPreview from '@/components/LiveBrowserPreview';
 import AgentCascade from '@/components/AgentCascade';
 import ModelRouterPanel from '@/components/ModelRouterPanel';
 import CeilingPanel from '@/components/CeilingPanel';
+import VoiceSummary from '@/components/VoiceSummary';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
@@ -608,13 +609,22 @@ export default function DashboardHome() {
                 <AgentActivityFeed events={agentEvents} isActive={isSearching} />
                 <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
                 {scanSummary && (
-                  <SavingsBanner
-                    bestPrice={scanSummary.best_price}
-                    bestSource={scanSummary.best_source}
-                    priceRange={scanSummary.price_range}
-                    potentialSavings={scanSummary.potential_savings}
-                    totalResults={scanSummary.total_results}
-                  />
+                  <>
+                    <SavingsBanner
+                      bestPrice={scanSummary.best_price}
+                      bestSource={scanSummary.best_source}
+                      priceRange={scanSummary.price_range}
+                      potentialSavings={scanSummary.potential_savings}
+                      totalResults={scanSummary.total_results}
+                    />
+                    <VoiceSummary
+                      query={scanSummary.query}
+                      bestPrice={scanSummary.best_price}
+                      bestSource={scanSummary.best_source}
+                      potentialSavings={scanSummary.potential_savings}
+                      totalResults={scanSummary.total_results}
+                    />
+                  </>
                 )}
                 {scanSummary?.price_fluctuations && scanSummary.price_fluctuations.length > 0 && (
                   <div className="rounded-lg border border-border bg-card/40 px-4 py-3">

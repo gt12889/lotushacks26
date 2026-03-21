@@ -17,6 +17,7 @@ from routers.ocr import router as ocr_router
 from routers.memory import router as memory_router
 from routers.insights import router as insights_router
 from routers.demo_alert import router as demo_alert_router
+from routers.tts import router as tts_router
 from services import supermemory_mem
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,7 @@ app.include_router(ocr_router)
 app.include_router(memory_router)
 app.include_router(insights_router)
 app.include_router(demo_alert_router)
+app.include_router(tts_router)
 
 
 @app.get("/health")

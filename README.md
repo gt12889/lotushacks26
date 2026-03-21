@@ -48,6 +48,8 @@ Visit **http://localhost:3005**
 | Notifications | Discord Webhooks |
 | Voice | ElevenLabs |
 | Drug Intelligence | Exa (variant discovery, WHO reference pricing, drug info summaries) |
+| LLM Routing | OpenRouter (Qwen 2.5 72B, GPT-4o) |
+| Memory | Supermemory (cross-session context recall) |
 
 ## API Endpoints
 
@@ -65,6 +67,8 @@ Visit **http://localhost:3005**
 | GET | `/api/monitors` | List active monitors |
 | POST | `/api/ocr` | OCR prescription image → extract drug names |
 | POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
+| POST | `/api/insights` | Personalized shopping insights via Supermemory context |
+| POST | `/api/tts/summary` | Vietnamese TTS audio summary of search results (ElevenLabs) |
 | GET | `/api/memory/recall` | Supermemory context recall |
 | GET | `/health` | Health check |
 | GET | `/health/services` | Detailed service health status |

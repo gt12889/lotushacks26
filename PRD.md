@@ -248,6 +248,9 @@ The search system uses a 3-tier agent cascade, visualized in real-time via the *
 | GET | `/api/monitors` | List active monitors |
 | POST | `/api/ocr` | OCR prescription image → extract drug names |
 | POST | `/api/demo-alert` | Trigger demo Discord + ElevenLabs voice alert |
+| POST | `/api/insights` | Personalized shopping insights via Supermemory recall (drug_query + current scan context) |
+| POST | `/api/tts/summary` | Vietnamese TTS audio summary of search results via ElevenLabs (returns audio/mpeg) |
+| POST | `/api/optimize/stream` | Streaming prescription optimizer with SSE progress events |
 | GET | `/api/memory/recall` | Supermemory context recall |
 | GET | `/health` | Health check |
 | GET | `/health/services` | Detailed service health (TinyFish, Exa, OpenRouter, Discord, ElevenLabs) |
@@ -296,7 +299,8 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 
 | Route | Page Title | Description |
 |-------|-----------|-------------|
-| `/` | Dashboard | Search + live SSE results + agent feed + metrics + price grid + savings + compliance + model router |
+| `/` | Landing Page | Hero section, feature grid, stats, infrastructure visualization, CTA to dashboard |
+| `/dashboard` | Dashboard | Search + live SSE results + agent feed + metrics + price grid + savings + compliance + model router + voice summary |
 | `/trends` | Depth Analysis | Recharts multi-source line chart, price summary table, time range selector |
 | `/alerts` | Megalodon Alert System | Price tripwires (ARMED status) + sonar probes (recurring monitors) |
 | `/optimize` | Prescription Optimizer | Multi-drug sourcing with OCR prescription upload, optimized vs single-source comparison |
@@ -322,6 +326,14 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips |
 | `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
 | `AbyssFooter` | Live UTC sync clock, protocol links |
+| `VoiceSummary` | ElevenLabs Vietnamese TTS auto-play after search completes, with play/stop/retry states |
+| `CounterfeitRiskPanel` | Price anomaly detection display with Exa-researched counterfeit risk reports |
+| `LocaleProvider` | i18n context provider with VN/EN locale toggle and `useLocale()` hook |
+| `NavBar` | Top navigation bar with route links and locale toggle |
+| `StatusPill` | Reusable status badge (best/critical/monitor) with color coding |
+| `SupermemoryStatusBadge` | Supermemory connection status indicator |
+| `ComparisonBanner` | Cross-pharmacy comparison summary |
+| `SonarFilters` | Right sidebar with molecule selector, AWP/WAC toggle, time range, drug class chips |
 
 ### Accessibility
 
@@ -337,7 +349,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 2. **Bioluminescent UI** — animated glow cards, sonar pulses, terminal feed, gradient bars for maximum demo impact.
 3. **Supermemory integration** — search context recall hints shown above search bar when available.
 4. **Recharts over hand-rolled SVG** — cleaner code, proper tooltips, responsive containers.
-5. **VN/EN toggle** — decorative for demo, no i18n implementation.
+5. **VN/EN toggle** — fully implemented via `LocaleProvider` context with `useLocale()` hook across all components.
 6. **Lucide React icons** — consistent SVG icon family, no emoji as structural icons.
 7. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
 8. **Architecture page** — 3-column node-connector diagram explaining full data flow with all sponsor credits.
@@ -349,7 +361,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 ## 10. Demo Script (5 Minutes)
 
 1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
-2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Use voice input or type "Metformin 500mg". Watch Agent Activity Feed log 47 agent events. 5 pharmacy cards light up with bioluminescent glow. Live Metrics Bar ticks up. Agent Cascade shows Tier 1 → Tier 2 → Tier 3 progression. Model Router shows Qwen → TinyFish → Exa pipeline with latency. SavingsBanner shows "Save ₫340,000 (47%)". Government Ceiling Panel flags violations.
+2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Use voice input or type "Metformin 500mg". Watch Agent Activity Feed log 47 agent events. 5 pharmacy cards light up with bioluminescent glow. Live Metrics Bar ticks up. Agent Cascade shows Tier 1 → Tier 2 → Tier 3 progression. Model Router shows Qwen → TinyFish → Exa pipeline with latency. SavingsBanner shows "Save ₫340,000 (47%)". Government Ceiling Panel flags violations. **Vietnamese voice summary auto-plays** via ElevenLabs: "Metformin 500mg, giá rẻ nhất tại Long Châu, 45.000 đồng..."
 3. **2:00-2:30 | Prescription OCR**: Upload photo on Optimize page. Watch 50+ agents spawn for multi-drug search.
 4. **2:30-3:00 | Discord Alert**: Fire demo alert — play Vietnamese voice note from phone speaker.
 5. **3:00-3:30 | Architecture**: Navigate to System Architecture page — 3-column flow showing all sponsors.
@@ -374,7 +386,116 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 
 ---
 
-## 12. Success Metrics
+## 12. Technical Architecture Details
+
+### Agent Manager (`services/agent_manager.py`)
+
+The `AgentManager` tracks the full lifecycle of every agent in a search session:
+
+- **AgentTier enum**: `OCR`, `SEARCH`, `VARIANT` — categorizes agent purpose
+- **Lifecycle**: `spawn(tier, name, target)` → `complete(id, count)` / `fail(id, error)`
+- **Event draining**: `drain_events()` yields SSE-ready dicts (`agent_spawn`, `agent_complete`, `agent_fail`)
+- **Stats**: `mgr.stats` returns aggregate counts (spawned, completed, failed) per tier
+- **Tree**: `mgr.tree` returns parent-child agent relationships for cascade visualization
+
+### SSE Event Protocol
+
+The `/api/search` endpoint streams these typed events:
+
+| Event Type | Payload | When |
+|------------|---------|------|
+| `pharmacy_status` | `{source_id, source_name, status: "searching"}` | Agent dispatched |
+| `agent_spawn` | `{id, name, tier, target, parent_id}` | Agent created |
+| `agent_complete` | `{agent_id, result_count}` | Agent finished successfully |
+| `agent_fail` | `{agent_id, error}` | Agent failed |
+| `model_used` | `{step, model, provider, latency_ms}` | LLM/service call completed |
+| `{source_id, status, products, ...}` | Full `PharmacySearchResult` | Pharmacy results ready |
+| `search_complete` | Summary with best_price, savings, variants, compliance, agents, dedup | All tiers done |
+| `counterfeit_risk` | `{risk_level, sources, report}` | Post-summary Exa research (late event) |
+
+### Price Fluctuation Analysis (`services/price_fluctuation.py`)
+
+Detects price changes across scans by comparing current results against prior price records in the database. Emits human-readable fluctuation lines (e.g., "Metformin 500mg at Long Chau: 45,000 → 42,000 VND (-6.7%)") included in the `search_complete` summary event.
+
+### Counterfeit Risk Detection
+
+Two-stage system:
+1. **Price anomaly detection** (`services/exa.py:detect_price_anomaly()`): Flags products priced significantly below the median for their drug class
+2. **Exa deep research** (`services/exa.py:research_counterfeit_risk()`): If anomalies found, fires a post-summary Exa search for counterfeit risk intelligence, streamed as a late SSE event
+
+Frontend displays via `CounterfeitRiskPanel.tsx` with severity-coded warnings.
+
+### Shopping Insights (`services/shopping_insights.py`)
+
+After search completes, the frontend calls `POST /api/insights` with:
+- Current scan summary (best_price, savings, variants, fluctuations)
+- Supermemory user ID for cross-session context
+
+Returns a personalized Vietnamese/English insight combining current results with historical search patterns from Supermemory.
+
+### Vietnamese Voice Summary (`services/elevenlabs.py` + `routers/tts.py`)
+
+After search completes, the dashboard auto-plays a Vietnamese TTS summary:
+- **Summary template**: `"{drug}, giá rẻ nhất tại {source}, {price} đồng. tiết kiệm {savings} đồng so với nơi đắt nhất. Tìm thấy {count} sản phẩm."`
+- **Voice**: ElevenLabs `eleven_multilingual_v2` model, Sarah voice (fallback: Rachel)
+- **Settings**: stability 0.65, similarity_boost 0.80, style 0.15, speaker_boost enabled
+- **Frontend**: `VoiceSummary.tsx` auto-plays on mount, shows loading/playing/error states with replay button
+- **ElevenLabs sponsor badge** visible during playback
+
+### Caching & Performance
+
+| Cache | TTL | Size | Strategy |
+|-------|-----|------|----------|
+| TinyFish results | 15 min | 200 entries | LRU eviction, in-memory |
+| Exa variant results | 1 hour | Per drug name | Dict-based, in-memory |
+| SSE event buffer | 200ms flush | Unbounded | Batched UI updates |
+| Database | WAL mode | — | Concurrent reads, single writer |
+
+### Error Handling & Resilience
+
+| Component | Strategy |
+|-----------|----------|
+| TinyFish agents | 3 retries with exponential backoff (1s, 3s, 5s) |
+| ElevenLabs TTS | Voice fallback chain (Sarah → Rachel → give up) |
+| OpenRouter LLM | Model fallback chain (primary → fallback model) |
+| TinyFish validation | `COMPLETED` ≠ success — validates extracted data separately |
+| Price validation | Bounds check: 1,000–50,000,000 VND |
+| Fuzzy matching | 0.2 threshold for generic drug name matching |
+| JSON extraction | `_extract_json_array()` with balanced bracket detection, markdown fence stripping |
+| Proxy | BrightData URL validated at config time, credential masking in logs |
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|:--------:|---------|-------------|
+| `TINYFISH_API_KEY` | Yes | — | TinyFish API authentication |
+| `ELEVENLABS_API_KEY` | Yes | — | ElevenLabs TTS authentication |
+| `EXA_API_KEY` | Yes | — | Exa semantic search |
+| `OPENROUTER_API_KEY` | Yes | — | OpenRouter LLM routing |
+| `OPENAI_API_KEY` | Yes | — | Direct OpenAI for Codex challenge |
+| `DISCORD_WEBHOOK_URL` | No | — | Discord alert notifications |
+| `BRIGHTDATA_PROXY_URL` | No | — | BrightData proxy for protected pharmacies |
+| `SUPERMEMORY_API_KEY` | No | — | Supermemory cross-session context |
+| `CORS_ORIGINS` | No | `localhost:3005,3000,3001` | Allowed CORS origins |
+| `INSIGHTS_MODEL` | No | `qwen/qwen-2.5-72b-instruct` | Model for shopping insights |
+| `OPENROUTER_OCR_MODEL` | No | `openai/gpt-4o` | Configurable OCR model |
+| `OPENROUTER_NORMALIZATION_MODEL` | No | `qwen/qwen-2.5-72b-instruct` | Drug name normalization model |
+| `OPENROUTER_FALLBACK_MODEL` | No | `anthropic/claude-sonnet-4-20250514` | LLM fallback model |
+
+### Database Schema
+
+SQLite with WAL mode. Tables:
+
+- **`sources`** — 5 Tier 1 pharmacy chains (seeded on init)
+- **`drugs`** — Drug metadata
+- **`prices`** — Price observations with timestamps, source_id, product details
+- **`alerts`** — User-configured price threshold alerts
+- **`monitor_jobs`** — APScheduler recurring monitor configurations
+- **`gov_prices`** — Government DAV ceiling prices (5 drugs seeded for demo)
+
+---
+
+## 13. Success Metrics
 
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
 - Real-time SSE streaming with pharmacy cards lighting up + agent activity feed
@@ -385,7 +506,11 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 - Discord alerts with Vietnamese voice summaries (ElevenLabs)
 - Model Router shows full LLM pipeline with latency tracking
 - Prescription optimizer shows measurable savings via OCR
-- All 5 frontend routes render in Abyss dark theme with bioluminescent effects
+- All 6 frontend routes render in Abyss dark theme with bioluminescent effects
 - Architecture page clearly credits all sponsor integrations
 - Voice input works for Vietnamese drug names
+- Vietnamese voice summary auto-plays after search (ElevenLabs sponsor prize)
+- Counterfeit risk detection flags anomalously cheap products
+- Price fluctuation tracking across scans with human-readable trend lines
+- Personalized shopping insights via Supermemory cross-session context
 - All sponsor integrations visible via SponsorBadge on result cards
