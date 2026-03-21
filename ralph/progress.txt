@@ -1,0 +1,24 @@
+# Ralph Progress - 21st.dev + ReactBits Component Migration
+# Started: 2026-03-21
+# Branch: ralph/21st-reactbits-components
+
+## Codebase Patterns
+- Frontend uses Tailwind v4 with `@tailwindcss/postcss` — no tailwind.config file
+- Custom theme colors defined via `@theme inline` block in globals.css (not tailwind.config)
+- Path alias `@/*` maps to `./src/*` in tsconfig.json
+- shadcn v4.1.0 uses `base-nova` style (not `new-york`/`default` — those are removed in v4+)
+- shadcn init with `-d -y` flags for non-interactive defaults
+- App is always dark-themed — no .dark class toggle needed, :root vars set to abyss theme directly
+
+## 2026-03-21 - US-001
+- Initialized shadcn/ui via `npx shadcn@latest init -d -y`
+- Customized shadcn CSS variables in :root to match abyss dark theme colors
+- Preserved all custom animations and theme variables in globals.css
+- Files changed: globals.css, components.json, src/lib/utils.ts, src/components/ui/button.tsx, package.json, package-lock.json
+- **Learnings for future iterations:**
+  - shadcn v4+ no longer supports `--style` flag — uses `--preset` instead; `-d` gives `base-nova` preset
+  - shadcn init merges with existing globals.css rather than overwriting — appends :root/.dark vars at the bottom
+  - The app body colors are set via plain CSS (`body { background-color: #0D1C32; color: #D6E3FF; }`) not @apply
+  - clsx and tailwind-merge are auto-installed as dependencies by shadcn init
+---
+

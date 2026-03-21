@@ -1,0 +1,249 @@
+{
+  "project": "MegalodonMD",
+  "branchName": "ralph/21st-reactbits-components",
+  "description": "Replace static UI with 21st.dev and ReactBits components to reduce custom code and add polish",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Initialize shadcn/ui foundation for 21st.dev components",
+      "description": "As a developer, I need shadcn/ui set up so 21st.dev components can be installed via the shadcn CLI.",
+      "acceptanceCriteria": [
+        "Run npx shadcn@latest init in frontend/ with New York style and slate base color",
+        "components.json exists and points to src/components/ui/",
+        "lib/utils.ts exists with cn() helper",
+        "Existing Tailwind theme (abyss, deep, card, cyan, warn, etc.) is preserved in globals.css",
+        "Existing components still render correctly (no style breakage)",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Must preserve custom CSS variables (--abyss, --deep, --card, --cyan, --warn, --border, etc.) and custom animations (sonar, terminalSlideIn, blink, completionFlash, gradientShift, shimmer). shadcn init may overwrite globals.css — merge carefully."
+    },
+    {
+      "id": "US-002",
+      "title": "Replace StatusPill with shadcn Badge",
+      "description": "As a user, I want consistent status indicators using shadcn Badge instead of the custom StatusPill component.",
+      "acceptanceCriteria": [
+        "Install shadcn Badge component via npx shadcn@latest add badge",
+        "Create a MegalodonBadge wrapper in src/components/ui/ that maps existing status types (best, critical, monitor, active, searching, error, out-of-stock) to Badge variants with matching colors",
+        "Replace all StatusPill imports with MegalodonBadge across the codebase",
+        "StatusPill.tsx is deleted",
+        "Badge colors match original: best=emerald, critical=red, monitor=amber, active=cyan, searching=blue, error=red, out-of-stock=gray",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": "StatusPill is used in PharmacyCards.tsx and PriceGrid.tsx. Check all import references."
+    },
+    {
+      "id": "US-003",
+      "title": "Replace SponsorBadge and ReferencePriceBadge with shadcn Badge variants",
+      "description": "As a user, I want sponsor and reference price badges to use the same Badge system for visual consistency.",
+      "acceptanceCriteria": [
+        "SponsorBadge.tsx refactored to use shadcn Badge with outline variant and custom sponsor colors",
+        "ReferencePriceBadge.tsx refactored to use shadcn Badge for the WHO price display",
+        "All 8 sponsor color mappings preserved (TinyFish=cyan, BrightData=orange, Qwen=purple, OpenRouter=blue, Exa=emerald, ElevenLabs=pink, OpenAI=green, Supermemory=violet)",
+        "USD→VND conversion logic preserved in ReferencePriceBadge",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": "These are small components (35 and 38 lines). Refactor in-place rather than delete — just swap the rendering to use Badge."
+    },
+    {
+      "id": "US-004",
+      "title": "Replace MegalodonAlert with shadcn Alert",
+      "description": "As a user, I want alerts to use a standard Alert component instead of the custom implementation.",
+      "acceptanceCriteria": [
+        "Install shadcn Alert component via npx shadcn@latest add alert",
+        "MegalodonAlert.tsx refactored to use shadcn Alert with destructive variant",
+        "Warning icon (AlertTriangle from lucide-react) preserved",
+        "Drug name displayed as AlertTitle, message as AlertDescription",
+        "Optional Intercept button preserved inside the alert",
+        "Left border accent color preserved via className override",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 4,
+      "passes": false,
+      "notes": "MegalodonAlert is only 33 lines. Simple swap."
+    },
+    {
+      "id": "US-005",
+      "title": "Replace collapsible panels with shadcn Collapsible",
+      "description": "As a user, I want ModelRouterPanel and LiveBrowserPreview to use shadcn Collapsible for consistent expand/collapse behavior.",
+      "acceptanceCriteria": [
+        "Install shadcn Collapsible via npx shadcn@latest add collapsible",
+        "ModelRouterPanel.tsx refactored: header uses CollapsibleTrigger, content uses CollapsibleContent",
+        "LiveBrowserPreview.tsx refactored: header uses CollapsibleTrigger, iframe grid uses CollapsibleContent",
+        "Expand/collapse animation is smooth (shadcn default transition)",
+        "All existing content (pipeline steps, latency bars, sponsor badges, iframes) preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 5,
+      "passes": false,
+      "notes": "ModelRouterPanel is 205 lines with custom animations — preserve completionFlash and gradientShift animations. Only replace the expand/collapse mechanism."
+    },
+    {
+      "id": "US-006",
+      "title": "Install ReactBits and add Counter animations to LiveMetricsBar",
+      "description": "As a user, I want the metrics bar numbers to animate up when they change, creating a polished counting effect.",
+      "acceptanceCriteria": [
+        "Install ReactBits Counter component: npx shadcn@latest add @react-bits/Counter-TS-TW",
+        "LiveMetricsBar.tsx refactored: each metric value (Agents Deployed, Pharmacies Scanned, Products Found, Savings Detected) uses ReactBits Counter",
+        "Counter animates from 0 to current value on mount and animates between value changes",
+        "tabular-nums font variant preserved for alignment",
+        "Status-based coloring (success, warn) preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 6,
+      "passes": false,
+      "notes": "LiveMetricsBar is 97 lines. Counter replaces static number display with animated counting."
+    },
+    {
+      "id": "US-007",
+      "title": "Add Counter animations to landing page stats section",
+      "description": "As a user, I want the landing page statistics to count up when scrolled into view.",
+      "acceptanceCriteria": [
+        "Landing page stats section (4 columns: pharmacies, products, savings %, response time) uses ReactBits Counter",
+        "Counters trigger on scroll into view (intersection observer or ScrollFloat wrapper)",
+        "Numbers format correctly (e.g., 500+ pharmacies, 10,000+ products)",
+        "Existing stat labels and layout preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 7,
+      "passes": false,
+      "notes": "Stats section is in /frontend/src/app/page.tsx around lines 150-180."
+    },
+    {
+      "id": "US-008",
+      "title": "Replace AgentActivityFeed terminal list with ReactBits AnimatedList",
+      "description": "As a user, I want the agent event feed to use AnimatedList for smoother entry animations instead of custom CSS keyframes.",
+      "acceptanceCriteria": [
+        "Install ReactBits AnimatedList: npx shadcn@latest add @react-bits/AnimatedList-TS-TW",
+        "AgentActivityFeed.tsx refactored: event items render via AnimatedList with slide-in animation",
+        "Mac window dots header preserved",
+        "Event type colors preserved (spawn=cyan, searching=blue, success=green, error=red, variant=purple)",
+        "Sonar dot indicators preserved",
+        "Blinking cursor when active preserved",
+        "Last 50 events limit preserved",
+        "Custom terminalSlideIn keyframe can be removed if AnimatedList handles entry animation",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 8,
+      "passes": false,
+      "notes": "AgentActivityFeed is 157 lines. Only replace the list animation mechanism — keep the terminal styling and event rendering."
+    },
+    {
+      "id": "US-009",
+      "title": "Add ReactBits background animation to landing page hero",
+      "description": "As a user, I want the landing page hero to have an animated background instead of a static video, creating a more distinctive first impression.",
+      "acceptanceCriteria": [
+        "Install ReactBits Aurora or Hyperspeed background: npx shadcn@latest add @react-bits/Aurora-TS-TW",
+        "Landing page hero section uses Aurora (or similar deep-sea themed background) behind the hero text",
+        "Background uses dark blue/cyan/teal colors matching the abyss theme",
+        "Hero text and CTA buttons remain readable over the background",
+        "Background has reduced opacity or blur to not distract from content",
+        "Existing video element removed or replaced",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 9,
+      "passes": false,
+      "notes": "Choose a background that fits the deep-sea/abyss theme. Aurora with cyan/teal tones or Particles with bioluminescent colors would work well. Hyperspeed might be too aggressive."
+    },
+    {
+      "id": "US-010",
+      "title": "Add ReactBits GlareHover effect to PharmacyCards",
+      "description": "As a user, I want pharmacy cards to have a subtle hover glow effect using ReactBits instead of the custom CSS glow animation.",
+      "acceptanceCriteria": [
+        "Install ReactBits GlareHover: npx shadcn@latest add @react-bits/GlareHover-TS-TW",
+        "PharmacyCards.tsx wraps each card in GlareHover for a glare-on-hover effect",
+        "Existing glow animation on result arrival can be kept or replaced with GlareHover trigger",
+        "Card content (status pill, result count, lowest price, latency, sparkline) unchanged",
+        "Responsive grid layout (2-5 columns) preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 10,
+      "passes": false,
+      "notes": "PharmacyCards is 127 lines. GlareHover adds polish without changing functionality."
+    },
+    {
+      "id": "US-011",
+      "title": "Replace NavBar with ReactBits Dock or PillNav",
+      "description": "As a user, I want the navigation to use a polished animated navigation component instead of the basic custom navbar.",
+      "acceptanceCriteria": [
+        "Install ReactBits Dock: npx shadcn@latest add @react-bits/Dock-TS-TW",
+        "NavBar.tsx refactored to use Dock (macOS-style) or PillNav component",
+        "All 5 navigation links preserved: Dashboard, Trends, Alerts, Optimize, How It Works",
+        "Logo (cyan M box) preserved at the start",
+        "Language toggle (VN/EN) preserved",
+        "Active link highlighting works with Next.js usePathname()",
+        "Sticky positioning preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 11,
+      "passes": false,
+      "notes": "NavBar is 76 lines. Dock gives a macOS-style magnification effect on hover. PillNav is a more subtle animated pill indicator. Choose whichever fits the dark abyss theme better."
+    },
+    {
+      "id": "US-012",
+      "title": "Add ReactBits ScrollReveal to landing page sections",
+      "description": "As a user, I want landing page sections to animate in on scroll for a polished experience.",
+      "acceptanceCriteria": [
+        "Install ReactBits ScrollReveal: npx shadcn@latest add @react-bits/ScrollReveal-TS-TW",
+        "Landing page features grid (3 items) wraps each feature in ScrollReveal",
+        "Landing page stats section wraps in ScrollReveal",
+        "Landing page CTA section wraps in ScrollReveal",
+        "Animations are subtle (fade + slight upward slide)",
+        "No layout shift caused by animation",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 12,
+      "passes": false,
+      "notes": "page.tsx is 230 lines. Wrap major sections — don't animate every element individually."
+    },
+    {
+      "id": "US-013",
+      "title": "Replace custom ActionLabel expandable with shadcn Accordion",
+      "description": "As a user, I want the analyst verdict details to expand smoothly using shadcn Accordion instead of custom toggle logic.",
+      "acceptanceCriteria": [
+        "Install shadcn Accordion via npx shadcn@latest add accordion",
+        "ActionLabel.tsx refactored: expandable reasoning section uses AccordionItem with AccordionTrigger and AccordionContent",
+        "Risk level colors (safe=green, caution=yellow, warning=orange, danger=red) preserved via left border",
+        "Confidence score badge preserved",
+        "Status metadata (RISK, CONFIDENCE, BUY Y/N) preserved",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 13,
+      "passes": false,
+      "notes": "ActionLabel is 98 lines. Only the expand/collapse for reasoning details needs to change."
+    },
+    {
+      "id": "US-014",
+      "title": "Clean up unused custom CSS animations replaced by library components",
+      "description": "As a developer, I want to remove custom CSS keyframes and classes that are no longer used after library adoption.",
+      "acceptanceCriteria": [
+        "Audit globals.css for custom animations no longer referenced: terminalSlideIn (if replaced by AnimatedList), custom glow (if replaced by GlareHover)",
+        "Remove only animations confirmed unused via grep across all component files",
+        "Keep animations still in use: sonar, blink, completionFlash, gradientShift, shimmer",
+        "No visual regressions in any component",
+        "Typecheck passes",
+        "Verify in browser using dev-browser skill"
+      ],
+      "priority": 14,
+      "passes": false,
+      "notes": "This is a cleanup story — run after all other stories. Grep for each animation name before removing."
+    }
+  ]
+}
