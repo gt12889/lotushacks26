@@ -367,7 +367,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `ScrollReveal` | IntersectionObserver-based fade+slide animation for landing page sections |
 | `Aurora` | Canvas-based animated background with cyan/teal gradients (landing page hero) |
 | `VoiceSummary` | ElevenLabs Vietnamese TTS auto-play after search completes, with play/stop/retry states |
-| `CounterfeitRiskPanel` | Price anomaly detection display with Exa-researched counterfeit risk reports |
+| `CounterfeitRiskPanel` | Price anomaly detection + **Investigation Swarm Results** with per-product cards showing VERIFIED/UNVERIFIED manufacturer badges, WHO reference snippets, and counterfeit risk levels |
 | `LocaleProvider` | i18n context provider with VN/EN locale toggle and `useLocale()` hook |
 | `NavBar` | Top navigation bar with route links and locale toggle |
 | `MegalodonBadge` | Status badge system (best/critical/monitor/active/searching/error/out-of-stock) built on shadcn Badge |

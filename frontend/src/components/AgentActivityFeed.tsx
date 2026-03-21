@@ -3,10 +3,12 @@
 import { useRef, useEffect, useMemo } from 'react';
 import { AnimatedList } from '@/components/ui/animated-list';
 
+type AgentEventType = 'spawn' | 'searching' | 'success' | 'error' | 'variant' | 'investigate';
+
 interface AgentEvent {
   id: string;
   timestamp: number;
-  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  type: AgentEventType;
   agent: string;
   message: string;
   source_id?: string;
@@ -17,28 +19,31 @@ interface AgentActivityFeedProps {
   isActive: boolean;
 }
 
-const SONAR_COLORS: Record<AgentEvent['type'], string> = {
+const SONAR_COLORS: Record<AgentEventType, string> = {
   spawn: '#00DBE7',
   searching: '#F97316',
   success: '#2DD4BF',
   error: '#EE4042',
   variant: '#A855F7',
+  investigate: '#F59E0B',
 };
 
-const TYPE_COLORS: Record<AgentEvent['type'], string> = {
+const TYPE_COLORS: Record<AgentEventType, string> = {
   spawn: 'bg-cyan',
   searching: 'bg-warn',
   success: 'bg-success',
   error: 'bg-alert-red',
   variant: 'bg-purple-500',
+  investigate: 'bg-amber-500',
 };
 
-const TYPE_TEXT_COLORS: Record<AgentEvent['type'], string> = {
+const TYPE_TEXT_COLORS: Record<AgentEventType, string> = {
   spawn: 'text-cyan',
   searching: 'text-warn',
   success: 'text-success',
   error: 'text-alert-red',
   variant: 'text-purple-400',
+  investigate: 'text-amber-400',
 };
 
 function formatTimestamp(ts: number): string {

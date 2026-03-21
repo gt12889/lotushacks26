@@ -22,6 +22,7 @@ class AgentTier(int, Enum):
     SEARCH = 1
     VARIANT = 2
     ANALYST = 3
+    INVESTIGATOR = 4
 
 
 @dataclass

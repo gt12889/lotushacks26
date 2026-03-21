@@ -10,11 +10,11 @@
 
 | # | Challenge | Score | Verdict |
 |---|-----------|:-----:|---------|
-| 1 | **TinyFish (Enterprise Track)** | **9/10** | Best shot. 5 parallel stealth agents, 3-tier cascade, /run-batch, live browser preview. Exactly what TinyFish wants. Demo-dependent — have cached fallback. |
+| 1 | **TinyFish (Enterprise Track)** | **9/10** | Best shot. 5 parallel stealth agents, 5-tier cascade, /run-batch, War Room live browser previews. Exactly what TinyFish wants. Demo-dependent — have cached fallback. |
 | 2 | **ElevenLabs (Voice AI)** | **8/10** | Auto-playing Vietnamese voice summary is a wow moment judges remember. Two integration points (search summary + Discord alerts). Differentiator most teams won't have. |
 | 3 | **Qwen (Vietnamese NLP)** | **8/10** | Qwen 2.5 72B normalizes Vietnamese drug names with diacritics/typos in the live search pipeline. Perfect domain fit. Demo the "thuoc ha duong huyet" → "Metformin" transformation. |
 | 4 | **BrightData (Data Collection)** | **7/10** | Proxy on 3/5 chains, health check, credential masking. Solid but thin — no advanced BrightData features (SERP API, unlocker, dataset marketplace). |
-| 5 | **Exa (AI Search)** | **8/10** | 5 distinct use cases: variant discovery, WHO pricing badges with ×N multiplier, drug info, counterfeit risk, scout-spawn triggers. Caching, graceful degradation. More use cases than any other team. |
+| 5 | **Exa (AI Search)** | **8/10** | 6 distinct use cases: variant discovery, WHO pricing badges with ×N multiplier, drug info, counterfeit risk, scout-spawn triggers, investigation swarm. Caching, graceful degradation. More use cases than any other team. |
 | 6 | **OpenAI Codex (Best Use)** | **7/10** | GPT-4o vision + function calling for prescription OCR. Structured tool schema works. Not exceptional vs teams with full agentic tool_calls chaining. |
 | 7 | **OpenRouter (LLM Routing)** | **8/10** | NL multi-drug search parsing, AI procurement recommendation, 2-model pipeline (Qwen + GPT-4o), configurable env vars, fallback chain. Demonstrates AI orchestration on top of AI agents. |
 | 8 | **HRG: IndieHacker** | **6/10** | $7-10B market, 57K pharmacies, 100-300% variance — business case writes itself. Needs dedicated pitch prep (business model canvas, revenue projections) to score higher. |
@@ -73,7 +73,7 @@
 | 7 | No COMPLETED vs success validation | ✅ `_validate_tinyfish_result()` with structured error handling |
 | 8 | No streaming URL capture | ✅ SSE typed event parsing, `streaming_url` on results |
 | 9 | 25 individual calls for optimizer | ✅ `/run-batch` atomic submission with parallel polling |
-| 10 | No live browser preview in UI | ✅ `LiveBrowserPreview.tsx` collapsible iframe panel |
+| 10 | No live browser preview in UI | ✅ `LiveBrowserPreview.tsx` **War Room** — auto-expanded 5-column grid with status borders and results overlays, supports Tier 3 variant agent previews |
 
 ### Remaining Known Limitations
 - In-memory cache lost on restart (acceptable for hackathon)
@@ -147,12 +147,13 @@
 **Status**: PRODUCTION-READY
 
 ### What Works
-- **5 distinct Exa use cases**:
+- **6 distinct Exa use cases**:
   1. **Tier 2 variant discovery** — finds generic alternatives (e.g., Metformin → Glucophage, Metformin Stada)
   2. **WHO reference pricing** — international price benchmarks via `category: "research paper"` search
   3. **Drug info cards** — indications, side effects, dosage via `summary: true`
   4. **Counterfeit risk research** — deep research on anomalously cheap products
   5. **WHO reference pricing badges** — inline multiplier badges on PriceGrid rows
+  6. **Investigation swarm** — per-product Exa research + WHO comparison auto-triggered by anomaly detection (Tier 5 INVESTIGATOR agents)
 - Well-integrated into search pipeline (non-blocking, parallel)
 - Graceful degradation: local variants + brand mappings work if Exa fails
 - Combined with local heuristics in `variants.py` (brand-to-generic map, Vietnamese manufacturers)

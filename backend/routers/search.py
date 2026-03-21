@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult
 from services.tinyfish import search_single_pharmacy_safe, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
-from services.exa import search_who_reference_price, search_drug_info, research_counterfeit_risk, detect_price_anomaly
+from services.exa import search_who_reference_price, search_drug_info, research_counterfeit_risk, detect_price_anomaly, investigate_anomalous_product
 from services.qwen import normalize_vietnamese_drug_text
 from services.agent_manager import AgentManager, AgentTier
 from services.confidence import compute_confidence, generate_analyst_verdict
@@ -216,8 +216,12 @@ async def search_drugs(
                     for event in mgr.drain_events():
                         yield f"data: {json.dumps(event)}\n\n"
 
+                    _variant_sid = f"t3:{variant[:15]}@{sid}"
                     task = asyncio.create_task(
-                        search_single_pharmacy_safe(sid, variant, settings.tinyfish_api_key)
+                        search_single_pharmacy_safe(
+                            sid, variant, settings.tinyfish_api_key,
+                            streaming_url_callback=lambda s, u, key=_variant_sid: on_streaming_url(key, u),
+                        )
                     )
                     tier3_tasks[(variant, sid)] = (task, t3_aid)
 
@@ -376,15 +380,60 @@ async def search_drugs(
                     yield f"data: {json.dumps(event)}\n\n"
                 logger.warning(f"Analyst verdict failed: {e}")
 
-        # Post-summary: fire Exa Research for counterfeit risk (streams as late event)
+        # Post-summary: Investigation Swarm for anomalous products
         if has_anomalies and settings.exa_api_key:
-            try:
-                counterfeit_report = await research_counterfeit_risk(query, settings.exa_api_key)
-                if counterfeit_report:
-                    yield f"data: {json.dumps({'type': 'counterfeit_risk', **counterfeit_report})}\n\n"
-                    yield f"data: {json.dumps({'type': 'model_used', 'step': 'counterfeit_research', 'model': 'exa-research', 'provider': 'Exa', 'latency_ms': None})}\n\n"
-            except Exception as e:
-                logger.warning(f"Counterfeit risk research failed: {e}")
+            product_manufacturer_map = {}
+            for p in all_products:
+                name = getattr(p, "product_name", "")
+                mfr = getattr(p, "manufacturer", None)
+                if name:
+                    product_manufacturer_map[name.lower().strip()] = mfr
+
+            investigation_tasks = {}
+            for anomaly in anomalies[:5]:
+                inv_aid = mgr.spawn(
+                    AgentTier.INVESTIGATOR,
+                    f"Investigate: {anomaly['product_name'][:30]}",
+                    anomaly['product_name'],
+                    parent_id=None,
+                )
+                for event in mgr.drain_events():
+                    yield f"data: {json.dumps(event)}\n\n"
+
+                mfr = product_manufacturer_map.get(anomaly['product_name'].lower().strip())
+                task = asyncio.create_task(
+                    investigate_anomalous_product(
+                        anomaly['product_name'],
+                        anomaly['unit_price'],
+                        anomaly['median_price'],
+                        mfr,
+                        settings.exa_api_key,
+                    )
+                )
+                investigation_tasks[inv_aid] = task
+
+            if investigation_tasks:
+                pending_inv = set(investigation_tasks.values())
+                aid_by_task = {t: aid for aid, t in investigation_tasks.items()}
+
+                while pending_inv:
+                    done_inv, pending_inv = await asyncio.wait(
+                        pending_inv, return_when=asyncio.FIRST_COMPLETED
+                    )
+                    for completed in done_inv:
+                        aid = aid_by_task[completed]
+                        try:
+                            findings = completed.result()
+                            mgr.complete(aid, 1)
+                            for event in mgr.drain_events():
+                                yield f"data: {json.dumps(event)}\n\n"
+                            yield f"data: {json.dumps({'type': 'anomaly_investigation', **findings})}\n\n"
+                            yield f"data: {json.dumps({'type': 'model_used', 'step': 'counterfeit_research', 'model': 'exa-research', 'provider': 'Exa', 'latency_ms': None})}\n\n"
+                        except Exception as e:
+                            mgr.fail(aid, str(e))
+                            for event in mgr.drain_events():
+                                yield f"data: {json.dumps(event)}\n\n"
+                            logger.warning(f"Investigation failed for {aid}: {e}")
 
     return StreamingResponse(
         event_generator(),

@@ -284,6 +284,51 @@ async def research_counterfeit_risk(drug_name: str, api_key: str) -> dict | None
         return None
 
 
+KNOWN_GOOD_MANUFACTURERS = {
+    "Sanofi", "Pfizer", "Novartis", "Roche", "AstraZeneca",
+    "GlaxoSmithKline", "Bayer", "Merck", "Abbott", "Teva",
+    "Stada", "DHG Pharma", "Hau Giang", "Pymepharco", "Domesco",
+    "Imexpharm", "OPV", "Mediplantex", "Danapha", "US Pharma",
+}
+
+
+async def investigate_anomalous_product(
+    product_name: str,
+    unit_price: float,
+    median_price: float,
+    manufacturer: str | None,
+    api_key: str,
+) -> dict:
+    """Run a 3-step investigation on a single anomalous product."""
+    results: dict = {
+        "product_name": product_name,
+        "unit_price": unit_price,
+        "median_price": median_price,
+    }
+
+    try:
+        results["counterfeit_research"] = await research_counterfeit_risk(product_name, api_key)
+    except Exception as e:
+        results["counterfeit_research"] = None
+        logger.warning(f"Investigation counterfeit check failed for {product_name}: {e}")
+
+    try:
+        results["who_comparison"] = await search_who_reference_price(product_name, api_key)
+    except Exception as e:
+        results["who_comparison"] = None
+        logger.warning(f"Investigation WHO check failed for {product_name}: {e}")
+
+    mfr = (manufacturer or "").strip()
+    mfr_known = any(known.lower() in mfr.lower() for known in KNOWN_GOOD_MANUFACTURERS) if mfr else False
+    results["manufacturer_check"] = {
+        "name": mfr or "Unknown",
+        "known_good": mfr_known,
+    }
+
+    return results
+
+
+
 def detect_price_anomaly(products: list, threshold: float = 0.5) -> list[dict]:
     """Detect suspiciously low-priced products that may indicate counterfeits.
 

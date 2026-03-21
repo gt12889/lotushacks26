@@ -50,10 +50,10 @@ All project docs live in [`docs/`](docs/INDEX.md):
 
 | Sponsor | Role |
 |---------|------|
-| **TinyFish** | 5 parallel stealth agents, 4-tier cascade, /run-batch, live browser preview |
+| **TinyFish** | 5 parallel stealth agents, 5-tier cascade, /run-batch, War Room live browser previews |
 | **BrightData** | Proxy on 3 chains with Vietnam geo-targeting |
 | **OpenRouter** | NL multi-drug search, Qwen + GPT-4o routing, fallback chain |
-| **Exa** | 5 use cases: variants, WHO pricing, drug info, counterfeit risk, scout-spawn |
+| **Exa** | 6 use cases: variants, WHO pricing, drug info, counterfeit risk, scout-spawn, investigation swarm |
 | **ElevenLabs** | Vietnamese TTS voice summaries + Discord voice alerts |
 | **OpenAI** | GPT-4o Vision + function calling for prescription OCR |
 | **Qwen** | 2.5 72B Vietnamese drug name normalization |

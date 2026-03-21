@@ -29,7 +29,7 @@ MegalodonMD deploys **5 parallel TinyFish stealth agents** across Vietnam's larg
 
 ## What Makes This Different
 
-### 4-Tier Agent Cascade
+### 5-Tier Agent Cascade
 
 | Tier | Agent | What It Does |
 |------|-------|-------------|
@@ -38,12 +38,15 @@ MegalodonMD deploys **5 parallel TinyFish stealth agents** across Vietnam's larg
 | **Tier 2** | Exa Semantic Search | Discovers generic alternatives (Metformin -> Glucophage, Metformin Stada) |
 | **Tier 3** | Scout-Spawn TinyFish Agents | Dynamically spawns NEW agents for each discovered variant |
 | **Tier 4** | Qwen 2.5 72B Analyst | Cross-validates all results, generates confidence score (0-100) |
+| **Tier 5** | Investigation Swarm | Auto-spawns per-product investigators for anomalous prices (counterfeit research, WHO benchmarks, manufacturer verification) |
 
-**Tier 3 is the killer feature**: the system discovers drugs it didn't know about at runtime, then autonomously deploys new agents to search for them.
+**Tier 3 is the scout-spawn**: the system discovers drugs it didn't know about at runtime, then autonomously deploys new agents to search for them.
 
-### Live Browser Preview
+**Tier 5 is the investigation swarm**: when anomalous pricing is detected, the system autonomously spawns one investigator agent per suspicious product — each running counterfeit risk research, WHO price benchmarking, and manufacturer verification in parallel.
 
-Every TinyFish run emits a **STREAMING_URL** — judges can **watch the AI clicking through Long Chau in real time** next to the price results.
+### Agent War Room (Live Browser Previews)
+
+Every TinyFish run emits a **STREAMING_URL** — the dashboard displays up to **5 live browser previews simultaneously** in a war room grid. Judges watch agents clicking through Long Chau, Pharmacity, An Khang in real time. Borders pulse cyan while active, turn green on success, and show results overlays on completion. Tier 3 variant agents also stream live previews.
 
 ### Enterprise-Grade Safety
 
@@ -51,7 +54,7 @@ We don't just find the cheapest price — we find the **safest cheapest price**:
 - **Price anomaly detection**: Statistical outlier flagging for potential counterfeit/near-expiry
 - **Government ceiling compliance**: Cross-reference against Vietnam's DAV declared prices
 - **WHO reference pricing**: International benchmark badges
-- **Counterfeit risk research**: Exa deep search on anomalous products
+- **Investigation swarm**: Auto-triggered per-product agents for anomalous prices — counterfeit research + WHO benchmarks + manufacturer verification
 - **Confidence scoring**: 5-signal weighted score (0-100)
 
 ---
@@ -62,8 +65,8 @@ We don't just find the cheapest price — we find the **safest cheapest price**:
 |--------|-------|
 | Pharmacy chains scraped simultaneously | 5 |
 | Total pharmacy stores covered | 3,751+ |
-| Agent tiers in cascade | 4 |
-| SSE event types | 23 |
+| Agent tiers in cascade | 5 (includes investigation swarm) |
+| SSE event types | 24+ |
 | Sponsor integrations | 9 |
 | Exa use cases | 5 |
 | API endpoints | 20+ |
