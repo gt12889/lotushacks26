@@ -40,7 +40,7 @@ Visit **http://localhost:3000**
 
 | Layer | Technology |
 |-------|-----------|
-| Web Agent | TinyFish (5 parallel agents) |
+| Web Agent | TinyFish (5 parallel stealth agents, /run-batch for optimizer) |
 | Backend | FastAPI + asyncio |
 | Database | SQLite (aiosqlite) |
 | Scheduler | APScheduler |
@@ -53,12 +53,13 @@ Visit **http://localhost:3000**
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/search?query=...` | SSE streaming price search |
+| POST | `/api/search?query=...` | SSE streaming price search (with live browser preview URLs) |
+| POST | `/api/optimize` | Prescription cost optimizer (atomic /run-batch for multi-drug) |
+| POST | `/api/optimize/prescription` | OCR prescription image → drug extraction → optimize |
 | GET | `/api/prices/{query}` | Cached price data |
 | GET | `/api/trends/{query}` | Historical price trends |
 | POST | `/api/alerts` | Configure price alerts |
 | POST | `/api/monitor` | Set up recurring monitor |
-| POST | `/api/optimize` | Prescription cost optimizer |
 | GET | `/health` | Health check |
 
 ## Pharmacy Sources
@@ -74,10 +75,12 @@ Visit **http://localhost:3000**
 ## Architecture
 
 ```
-Search Query → 5 Parallel TinyFish Agents → SSE Stream → Dashboard
-               ├─ Long Chau agent                         ├─ Pharmacy Cards
-               ├─ Pharmacity agent                         ├─ Price Grid
-               ├─ An Khang agent         → SQLite          ├─ Savings Banner
-               ├─ Than Thien agent       → APScheduler     ├─ Trend Charts
-               └─ Medicare agent         → Telegram/Voice  └─ Optimizer
+Search Query → 5 Parallel TinyFish Agents (stealth) → SSE Stream → Dashboard
+               ├─ Long Chau agent  [stealth+proxy]          ├─ Live Browser Preview (iframe)
+               ├─ Pharmacity agent [stealth+proxy]           ├─ Pharmacy Cards
+               ├─ An Khang agent   [stealth+proxy]           ├─ Price Grid
+               ├─ Than Thien agent [stealth]    → SQLite     ├─ Savings Banner
+               └─ Medicare agent   [stealth]    → Telegram   └─ Optimizer
+
+Prescription → /run-batch (atomic, up to 100 runs) → Poll Results → Optimized Sourcing
 ```
