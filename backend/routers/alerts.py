@@ -12,8 +12,8 @@ async def create_alert(config: AlertConfig):
     db = await get_db()
     try:
         cursor = await db.execute(
-            "INSERT INTO alerts (drug_query, price_threshold, telegram_chat_id) VALUES (?, ?, ?)",
-            (config.drug_query, config.price_threshold, config.telegram_chat_id),
+            "INSERT INTO alerts (drug_query, price_threshold) VALUES (?, ?)",
+            (config.drug_query, config.price_threshold),
         )
         await db.commit()
         return AlertResponse(

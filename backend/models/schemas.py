@@ -55,7 +55,6 @@ class TrendData(BaseModel):
 class AlertConfig(BaseModel):
     drug_query: str
     price_threshold: int  # VND
-    telegram_chat_id: Optional[str] = None
 
 class AlertResponse(BaseModel):
     id: int

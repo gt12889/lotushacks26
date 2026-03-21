@@ -8,7 +8,7 @@ from models.schemas import ProductResult, PharmacySearchResult
 
 logger = logging.getLogger(__name__)
 
-TINYFISH_API_URL = "https://api.tinyfish.io/v1/agent/run"
+TINYFISH_API_URL = "https://agent.tinyfish.ai/v1/automation/run-sse"
 
 PHARMACY_CONFIGS = {
     "long_chau": {
@@ -91,6 +91,50 @@ MOCK_RESULTS = {
     ],
 }
 
+# Additional mock data for other common drugs
+MOCK_AMOXICILLIN = {
+    "long_chau": [
+        ProductResult(product_name="Amoxicillin 500mg Domesco (hộp 100 viên)", price=65000, manufacturer="Domesco", dosage_form="capsule", pack_size=100, unit_price=650, in_stock=True, product_url="https://nhathuoclongchau.com.vn/amoxicillin-domesco"),
+    ],
+    "pharmacity": [
+        ProductResult(product_name="Amoxicillin Stada 500mg (hộp 20 viên)", price=28000, manufacturer="Stada", dosage_form="capsule", pack_size=20, unit_price=1400, in_stock=True, product_url="https://pharmacity.vn/amoxicillin-stada"),
+    ],
+    "an_khang": [
+        ProductResult(product_name="Amoxicillin 500mg DHG (hộp 100 viên)", price=72000, manufacturer="DHG Pharma", dosage_form="capsule", pack_size=100, unit_price=720, in_stock=True, product_url="https://ankhang.vn/amoxicillin-dhg"),
+    ],
+    "than_thien": [
+        ProductResult(product_name="Amoxicillin 500mg Vidipha (hộp 100 viên)", price=58000, manufacturer="Vidipha", dosage_form="capsule", pack_size=100, unit_price=580, in_stock=True, product_url="https://nhathuocthanhtien.vn/amoxicillin-vidipha"),
+    ],
+    "medicare": [
+        ProductResult(product_name="Augmentin 500mg/125mg GSK (hộp 14 viên)", price=185000, manufacturer="GSK", dosage_form="tablet", pack_size=14, unit_price=13214, in_stock=True, product_url="https://medicare.vn/augmentin-500mg"),
+    ],
+}
+
+MOCK_PARACETAMOL = {
+    "long_chau": [
+        ProductResult(product_name="Paracetamol 500mg Nadyphar (hộp 100 viên)", price=18000, manufacturer="Nadyphar", dosage_form="tablet", pack_size=100, unit_price=180, in_stock=True, product_url="https://nhathuoclongchau.com.vn/paracetamol-nadyphar"),
+    ],
+    "pharmacity": [
+        ProductResult(product_name="Panadol Extra (hộp 12 viên)", price=32000, original_price=36000, manufacturer="GSK", dosage_form="tablet", pack_size=12, unit_price=2667, in_stock=True, product_url="https://pharmacity.vn/panadol-extra"),
+    ],
+    "an_khang": [
+        ProductResult(product_name="Efferalgan 500mg (hộp 16 viên)", price=45000, manufacturer="Upsa", dosage_form="effervescent", pack_size=16, unit_price=2813, in_stock=True, product_url="https://ankhang.vn/efferalgan-500mg"),
+    ],
+    "than_thien": [
+        ProductResult(product_name="Paracetamol 500mg TV.Pharm (hộp 100 viên)", price=15000, manufacturer="TV.Pharm", dosage_form="tablet", pack_size=100, unit_price=150, in_stock=True, product_url="https://nhathuocthanhtien.vn/paracetamol-tvpharm"),
+    ],
+    "medicare": [
+        ProductResult(product_name="Tylenol 500mg (hộp 10 viên)", price=55000, manufacturer="Janssen", dosage_form="tablet", pack_size=10, unit_price=5500, in_stock=True, product_url="https://medicare.vn/tylenol-500mg"),
+    ],
+}
+
+MOCK_DATA_BY_QUERY = {
+    "metformin": MOCK_RESULTS,
+    "amoxicillin": MOCK_AMOXICILLIN,
+    "paracetamol": MOCK_PARACETAMOL,
+    "panadol": MOCK_PARACETAMOL,
+}
+
 
 async def search_single_pharmacy(
     source_id: str, query: str, api_key: str
@@ -105,9 +149,15 @@ async def search_single_pharmacy(
     start_time = time.time()
 
     if not api_key:
-        # Return mock data
+        # Return mock data based on query
         await asyncio.sleep(0.5 + hash(source_id) % 3)  # Simulate varied response times
-        mock_products = MOCK_RESULTS.get(source_id, [])
+        query_lower = query.lower()
+        mock_set = MOCK_RESULTS  # default
+        for key, data in MOCK_DATA_BY_QUERY.items():
+            if key in query_lower:
+                mock_set = data
+                break
+        mock_products = mock_set.get(source_id, [])
         elapsed = int((time.time() - start_time) * 1000)
         lowest = min((p.price for p in mock_products), default=None)
         return PharmacySearchResult(
@@ -124,65 +174,89 @@ async def search_single_pharmacy(
     goal = config["goal"].format(query=query)
 
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.post(
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            # TinyFish uses SSE streaming - collect all events
+            async with client.stream(
+                "POST",
                 TINYFISH_API_URL,
                 json={"goal": goal, "url": url},
                 headers={
-                    "Authorization": f"Bearer {api_key}",
+                    "X-API-Key": api_key,
                     "Content-Type": "application/json",
                 },
-            )
-            response.raise_for_status()
-            result = response.json()
+            ) as response:
+                response.raise_for_status()
+                output_text = ""
+                async for line in response.aiter_lines():
+                    if not line or line.startswith(":"):
+                        continue
+                    logger.info(f"TinyFish SSE [{source_id}]: {line[:200]}")
+                    if line.startswith("data: "):
+                        data = line[6:]
+                    elif line.startswith("data:"):
+                        data = line[5:]
+                    else:
+                        data = line
+                    try:
+                        event = json.loads(data)
+                        # Capture any field that might contain the result
+                        for key in ("result", "output", "data", "content", "text", "message"):
+                            if key in event and event[key]:
+                                output_text = event[key]
+                    except json.JSONDecodeError:
+                        # Raw text - might be the result itself
+                        if "[" in data or "{" in data:
+                            output_text = data
 
-            output_text = result.get("output", result.get("result", "[]"))
-            if isinstance(output_text, str):
-                try:
-                    start = output_text.index("[")
-                    end = output_text.rindex("]") + 1
-                    products_data = json.loads(output_text[start:end])
-                except (ValueError, json.JSONDecodeError):
-                    logger.error(f"Failed to parse TinyFish output for {source_id}")
-                    products_data = []
-            elif isinstance(output_text, list):
-                products_data = output_text
-            else:
+            if not output_text:
+                output_text = "[]"
+
+        if isinstance(output_text, str):
+            try:
+                start = output_text.index("[")
+                end = output_text.rindex("]") + 1
+                products_data = json.loads(output_text[start:end])
+            except (ValueError, json.JSONDecodeError):
+                logger.error(f"Failed to parse TinyFish output for {source_id}: {output_text[:200]}")
                 products_data = []
+        elif isinstance(output_text, list):
+            products_data = output_text
+        else:
+            products_data = []
 
-            products = []
-            for p in products_data:
-                try:
-                    price = int(str(p.get("price", 0)).replace(".", "").replace(",", ""))
-                    pack_size = int(p.get("pack_size", 1)) or 1
-                    orig = p.get("original_price")
-                    if orig:
-                        orig = int(str(orig).replace(".", "").replace(",", ""))
-                    products.append(ProductResult(
-                        product_name=p.get("product_name", "Unknown"),
-                        price=price,
-                        original_price=orig,
-                        manufacturer=p.get("manufacturer"),
-                        dosage_form=p.get("dosage_form"),
-                        pack_size=pack_size,
-                        unit_price=price / pack_size if pack_size else None,
-                        in_stock=p.get("in_stock", True),
-                        product_url=p.get("product_url"),
-                    ))
-                except Exception as e:
-                    logger.warning(f"Skipping product parse error: {e}")
+        products = []
+        for p in products_data:
+            try:
+                price = int(str(p.get("price", 0)).replace(".", "").replace(",", ""))
+                pack_size = int(p.get("pack_size", 1)) or 1
+                orig = p.get("original_price")
+                if orig:
+                    orig = int(str(orig).replace(".", "").replace(",", ""))
+                products.append(ProductResult(
+                    product_name=p.get("product_name", "Unknown"),
+                    price=price,
+                    original_price=orig,
+                    manufacturer=p.get("manufacturer"),
+                    dosage_form=p.get("dosage_form"),
+                    pack_size=pack_size,
+                    unit_price=price / pack_size if pack_size else None,
+                    in_stock=p.get("in_stock", True),
+                    product_url=p.get("product_url"),
+                ))
+            except Exception as e:
+                logger.warning(f"Skipping product parse error: {e}")
 
-            elapsed = int((time.time() - start_time) * 1000)
-            lowest = min((p.price for p in products), default=None)
-            return PharmacySearchResult(
-                source_id=source_id,
-                source_name=config["name"],
-                status="success",
-                products=products,
-                lowest_price=lowest,
-                result_count=len(products),
-                response_time_ms=elapsed,
-            )
+        elapsed = int((time.time() - start_time) * 1000)
+        lowest = min((p.price for p in products), default=None)
+        return PharmacySearchResult(
+            source_id=source_id,
+            source_name=config["name"],
+            status="success",
+            products=products,
+            lowest_price=lowest,
+            result_count=len(products),
+            response_time_ms=elapsed,
+        )
 
     except Exception as e:
         elapsed = int((time.time() - start_time) * 1000)

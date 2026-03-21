@@ -9,7 +9,7 @@ from config import settings
 router = APIRouter(prefix="/api")
 
 
-async def run_monitor_job(job_id: int, drug_query: str):
+async def run_monitor_job(monitor_id: int, drug_query: str):
     """Execute a monitoring job - search and check alerts."""
     from database import get_db as _get_db
     results = await search_all_pharmacies(drug_query, settings.tinyfish_api_key)
@@ -32,7 +32,7 @@ async def run_monitor_job(job_id: int, drug_query: str):
         # Update last_run_at
         await db.execute(
             "UPDATE monitor_jobs SET last_run_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (job_id,),
+            (monitor_id,),
         )
         await db.commit()
 
@@ -47,9 +47,21 @@ async def run_monitor_job(job_id: int, drug_query: str):
                 if r.status == "success":
                     all_prices.extend(p.price for p in r.products)
             if all_prices and min(all_prices) <= alert["price_threshold"]:
-                from services.telegram import send_alert
-                msg = f"🔔 <b>Price Alert!</b>\n{drug_query} dropped to {min(all_prices):,} VND\nThreshold: {alert['price_threshold']:,} VND"
-                await send_alert(msg, settings.telegram_bot_token, alert["telegram_chat_id"] or settings.telegram_chat_id)
+                from services.discord import send_alert, send_alert_with_audio
+                from services.elevenlabs import generate_audio
+                from config import settings as _settings
+
+                best = min(all_prices)
+                msg = f"🔔 **Price Alert!**\n{drug_query} dropped to {best:,} VND\nThreshold: {alert['price_threshold']:,} VND"
+
+                # Try to send with Vietnamese voice summary
+                vn_text = f"Giá {drug_query} vừa giảm xuống {best:,} đồng, thấp hơn ngưỡng cảnh báo {alert['price_threshold']:,} đồng."
+                audio = await generate_audio(vn_text, _settings.elevenlabs_api_key)
+
+                if audio:
+                    await send_alert_with_audio(msg, audio, _settings.discord_webhook_url)
+                else:
+                    await send_alert(msg, _settings.discord_webhook_url)
     finally:
         await db.close()
 
@@ -70,7 +82,7 @@ async def create_monitor(config: MonitorConfig):
             f"monitor_{job_id}",
             run_monitor_job,
             config.interval_minutes,
-            job_id=job_id,
+            monitor_id=job_id,
             drug_query=config.drug_query,
         )
 
