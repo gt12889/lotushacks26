@@ -1,8 +1,9 @@
 """Prescription optimizer endpoint"""
 import asyncio
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File
 from models.schemas import OptimizeRequest, OptimizeResponse, OptimizeDrugResult
 from services.tinyfish import search_all_pharmacies
+from services.ocr import extract_drugs_from_image
 from config import settings
 
 router = APIRouter(prefix="/api")
@@ -60,3 +61,22 @@ async def optimize_prescription(request: OptimizeRequest):
         savings=(best_single[1] - total_optimized) if best_single else None,
         best_single_source=best_single[0] if best_single else None,
     )
+
+
+@router.post("/optimize/prescription", response_model=OptimizeResponse)
+async def optimize_from_prescription(image: UploadFile = File(...)):
+    """Upload a prescription image → OCR extracts drugs → optimize across pharmacies.
+
+    Chains OpenAI GPT-4o function calling (OCR) with TinyFish parallel search.
+    """
+    image_data = await image.read()
+    api_key = settings.openai_api_key or settings.openrouter_api_key
+    drugs = await extract_drugs_from_image(image_data, api_key)
+
+    drug_names = [d["name"] for d in drugs if d.get("name")]
+    if not drug_names:
+        return OptimizeResponse(items=[], total_optimized=0)
+
+    # Reuse existing optimize logic
+    request = OptimizeRequest(drugs=drug_names)
+    return await optimize_prescription(request)

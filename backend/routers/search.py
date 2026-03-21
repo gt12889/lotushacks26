@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult
 from services.tinyfish import search_single_pharmacy_safe, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
+from services.qwen import normalize_vietnamese_drug_text
 from services.agent_manager import AgentManager, AgentTier
 from services import supermemory_mem
 from config import settings
@@ -56,6 +57,21 @@ async def search_drugs(
     ),
 ):
     """SSE streaming search with agent orchestration."""
+    # Normalize Vietnamese drug query via Qwen (OpenRouter) for better matching
+    if settings.openrouter_api_key:
+        normalized = await normalize_vietnamese_drug_text(query, settings.openrouter_api_key)
+        # Qwen returns JSON; extract the drug name if possible
+        if normalized != query:
+            try:
+                import json as _json
+                parsed = _json.loads(normalized)
+                if isinstance(parsed, dict) and parsed.get("drug"):
+                    query = parsed["drug"]
+                    logger.info(f"Qwen normalized query to: {query}")
+            except (ValueError, TypeError):
+                # If Qwen returned plain text, use it directly
+                if len(normalized) < 100:
+                    query = normalized
     target_sources = list(PHARMACY_CONFIGS.keys()) if sources == "all" else sources.split(",")
 
     async def event_generator():
