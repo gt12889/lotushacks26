@@ -14,6 +14,25 @@
   --color-t3: #64748B;
   --color-border: rgba(0, 219, 231, 0.1);
   --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  /* shadcn-style tokens (components/ui, cva variants) */
+  --color-background: #010e24;
+  --color-foreground: #d6e3ff;
+  --color-card-foreground: #d6e3ff;
+  --color-popover: #1c2a41;
+  --color-popover-foreground: #d6e3ff;
+  --color-primary: #00dbe7;
+  --color-primary-foreground: #010e24;
+  --color-secondary: #1c2a41;
+  --color-secondary-foreground: #d6e3ff;
+  --color-muted: #1c2a41;
+  --color-muted-foreground: #64748b;
+  --color-accent: rgba(0, 219, 231, 0.12);
+  --color-accent-foreground: #d6e3ff;
+  --color-destructive: #ee4042;
+  --color-destructive-foreground: #ffffff;
+  --color-input: rgba(0, 219, 231, 0.2);
+  --color-ring: #00dbe7;
 }
 
 /* ───────── Existing animations ───────── */

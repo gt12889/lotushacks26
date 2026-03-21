@@ -1,8 +1,9 @@
-﻿'use client';
+'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -37,19 +38,22 @@ export default function LandingPage() {
             {t('landing.heroSub')}
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <LiquidButton
               href="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 bg-cyan text-deep font-bold rounded-lg text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(0,219,231,0.2)]"
+              size="xl"
+              className="w-full min-w-[min(100%,16rem)] font-bold text-base text-cyan drop-shadow-[0_0_24px_rgba(0,219,231,0.35)] sm:w-auto"
             >
               {t('landing.enterDashboard')}
-            </Link>
-            <a 
+            </LiquidButton>
+            <LiquidButton
               href="#features"
-              className="w-full sm:w-auto px-8 py-4 bg-deep border border-border text-t2 font-bold rounded-lg text-lg hover:bg-card transition-colors"
+              variant="outline"
+              size="xl"
+              className="w-full min-w-[min(100%,16rem)] font-bold text-base text-t1 sm:w-auto"
             >
               {t('landing.viewMethodology')}
-            </a>
+            </LiquidButton>
           </div>
 
           {/* Floating Terminal Snippet */}
@@ -58,7 +62,7 @@ export default function LandingPage() {
               <div className="w-2.5 h-2.5 rounded-full bg-alert-red/40" />
               <div className="w-2.5 h-2.5 rounded-full bg-warn/40" />
               <div className="w-2.5 h-2.5 rounded-full bg-success/40" />
-              <div className="ml-2 text-[10px] font-mono text-t3">megladon-agent-v2.5 ΓÇö bash</div>
+              <div className="ml-2 text-[10px] font-mono text-t3">megladon-agent-v2.5 — bash</div>
             </div>
             <div className="p-6 text-left font-mono text-xs md:text-sm space-y-2">
               <div className="text-success">$ megladon scan --query &quot;Atorvastatin 20mg&quot; --market &quot;VN&quot;</div>
@@ -81,17 +85,17 @@ export default function LandingPage() {
               {
                 title: t('landing.feat1Title'),
                 desc: t('landing.feat1Desc'),
-                icon: 'ΓÜí',
+                icon: '⚡',
               },
               {
                 title: t('landing.feat2Title'),
                 desc: t('landing.feat2Desc'),
-                icon: '≡ƒö«',
+                icon: '🔮',
               },
               {
                 title: t('landing.feat3Title'),
                 desc: t('landing.feat3Desc'),
-                icon: '≡ƒôè',
+                icon: '📊',
               },
             ].map((f, i) => (
               <div key={i} className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
