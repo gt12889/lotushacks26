@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { Counter } from '@/components/ui/counter';
 import { Aurora } from '@/components/ui/aurora';
+import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -101,18 +102,22 @@ export default function LandingPage() {
                 icon: '≡ƒôè',
               },
             ].map((f, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
-                <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all">{f.icon}</div>
-                <h3 className="text-xl font-bold mb-4 text-t1">{f.title}</h3>
-                <p className="text-t3 leading-relaxed text-sm">{f.desc}</p>
-              </div>
+              <ScrollReveal key={i} delay={i * 120}>
+                <div className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
+                  <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all">{f.icon}</div>
+                  <h3 className="text-xl font-bold mb-4 text-t1">{f.title}</h3>
+                  <p className="text-t3 leading-relaxed text-sm">{f.desc}</p>
+                </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Stats/Social Proof */}
-      <StatsSection t={t} />
+      <ScrollReveal>
+        <StatsSection t={t} />
+      </ScrollReveal>
 
       {/* Infrastructure Visualization */}
       <section className="py-24 border-t border-border/20 bg-abyss">
@@ -174,18 +179,18 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section id="abyss" className="py-32 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+        <ScrollReveal className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-black mb-8">{t('landing.ctaTitle')}</h2>
           <p className="text-xl text-t3 mb-12">
             {t('landing.ctaSub')}
           </p>
-          <Link 
+          <Link
             href="/dashboard"
             className="inline-block px-12 py-5 bg-t1 text-deep font-black rounded-full text-xl hover:bg-cyan hover:text-deep transition-all shadow-2xl"
           >
             {t('landing.ctaButton')}
           </Link>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* Footer */}
