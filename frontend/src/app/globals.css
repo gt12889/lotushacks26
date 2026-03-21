@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+@theme inline {
+  --color-abyss: #0D1C32;
+  --color-deep: #010E24;
+  --color-card: #1C2A41;
+  --color-cyan: #00DBE7;
+  --color-alert-red: #EE4042;
+  --color-alert-bg: #3C0004;
+  --color-success: #2DD4BF;
+  --color-warn: #F97316;
+  --color-t1: #D6E3FF;
+  --color-t2: #94A3B8;
+  --color-t3: #64748B;
+  --color-border: rgba(0, 219, 231, 0.1);
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+}
+
+body {
+  background-color: #0D1C32;
+  color: #D6E3FF;
+}
