@@ -37,3 +37,15 @@
   - MegalodonBadge preserves the same prop interface (status, label) for drop-in replacement
 ---
 
+## 2026-03-21 - US-003
+- Refactored SponsorBadge.tsx to use shadcn Badge with outline variant and custom sponsor colors via inline style
+- Refactored ReferencePriceBadge.tsx to wrap WHO price display in shadcn Badge with outline variant
+- Added Supermemory (#8B5CF6) to SPONSOR_COLORS map (8th sponsor per PRD)
+- All USD→VND conversion logic and ratio indicator preserved
+- Files changed: SponsorBadge.tsx, ReferencePriceBadge.tsx
+- **Learnings for future iterations:**
+  - Badge `h-auto` override is needed when Badge content has custom padding — default h-5 constrains content
+  - SponsorBadge is imported in 5 files (PriceGrid, PharmacyCards, ModelRouterPanel, CounterfeitRiskPanel, ReferencePriceBadge) — refactoring in-place avoids touching all consumers
+  - ReferencePriceBadge internally uses SponsorBadge for the Exa attribution — nesting Badge inside Badge works fine
+---
+

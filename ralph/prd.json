@@ -49,7 +49,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 3,
-      "passes": false,
+      "passes": true,
       "notes": "These are small components (35 and 38 lines). Refactor in-place rather than delete — just swap the rendering to use Badge."
     },
     {
