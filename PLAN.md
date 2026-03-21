@@ -206,5 +206,5 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 | Frontend | Next.js + Tailwind |
 | Notifications | Discord Webhooks |
 | Voice | ElevenLabs |
-| Search | Exa |
+| Drug Intelligence | Exa (variant discovery, WHO reference pricing, drug info summaries) |
 | LLM | OpenRouter |

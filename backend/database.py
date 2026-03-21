@@ -147,3 +147,67 @@ async def check_price_compliance(drug_query: str, unit_price: float) -> dict | N
                 "above_ceiling": False,
             }
     return None
+
+
+async def check_price_compliance_bulk(drug_query: str, products: list) -> dict:
+    """Check all products against the government ceiling price for a drug.
+
+    Returns a compliance summary with violation details for each product.
+    """
+    result = {"has_ceiling": False, "drug_query": drug_query}
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # Fuzzy match: check if query contains drug name or vice versa
+        first_word = drug_query.strip().split()[0].lower() if drug_query.strip() else drug_query.lower()
+        cursor = await db.execute(
+            "SELECT * FROM gov_prices WHERE LOWER(drug_name) LIKE '%' || LOWER(?) || '%' LIMIT 1",
+            (first_word,),
+        )
+        row = await cursor.fetchone()
+        if not row:
+            return result
+
+        ceiling = row["ceiling_price"]
+        drug_name = row["drug_name"]
+        violations = []
+        compliant_count = 0
+        violation_count = 0
+
+        for p in products:
+            # Compute unit price: use stored unit_price if available, else price / pack_size
+            pack_size = getattr(p, "pack_size", 1) or 1
+            unit_price = getattr(p, "unit_price", None)
+            if unit_price is None or unit_price <= 0:
+                price = getattr(p, "price", 0) or 0
+                unit_price = price / pack_size if pack_size > 0 else price
+
+            if unit_price <= 0:
+                continue
+
+            delta_pct = round((unit_price - ceiling) / ceiling * 100, 1) if ceiling > 0 else 0
+            product_name = getattr(p, "product_name", str(p))
+            source_name = getattr(p, "source_name", "")
+
+            if unit_price > ceiling:
+                violation_count += 1
+                violations.append({
+                    "product": product_name,
+                    "unit_price": round(unit_price, 1),
+                    "delta_percent": delta_pct,
+                    "source": source_name,
+                })
+            else:
+                compliant_count += 1
+
+        return {
+            "has_ceiling": True,
+            "drug_name": drug_name,
+            "ceiling_price": ceiling,
+            "unit": row["unit"],
+            "source": row["source"],
+            "effective_date": row["effective_date"],
+            "violations": violations,
+            "compliant_count": compliant_count,
+            "violation_count": violation_count,
+        }

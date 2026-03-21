@@ -1,6 +1,6 @@
-# Megladon MD
+# 
 
-> **Megladon MD** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
+> **MegalodonMD**  Vietnamese pharmaceutical price intelligence with parallel AI web agents.
 
 > Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
@@ -17,22 +17,6 @@ Built for **LotusHacks 2026** | Enterprise Track
 
 ### 1. Environment Setup
 
-Copy `.env.example` to `.env` at the repo root (backend reads it via `backend/config.py`). Set at least `TINYFISH_API_KEY` for searches.
-
-The local SQLite database file is **`backend/megladon_md.db`**. If you still have an old `mediscrape.db`, rename it to `megladon_md.db` or run a fresh scan to repopulate.
-
-**Supermemory (optional)** — Per-browser recall of past drug searches on the dashboard:
-
-- `SUPERMEMORY_API_KEY` — API key from [Supermemory](https://supermemory.ai); when unset, recall and persistence are skipped.
-- Smoke test (from repo root, after the key is in `.env`):  
-  `python backend/scripts/verify_supermemory.py`
-
-**Production**
-
-- `CORS_ORIGINS` — Comma-separated browser origins allowed to call the API (e.g. `https://your-app.vercel.app,http://localhost:3000`). Defaults to localhost ports if unset in code.
-- Frontend: set `NEXT_PUBLIC_API_URL` to your deployed API base URL.
-
-**Personalized insights** — After each search, the dashboard calls `POST /api/insights` (English note from the current scan + optional Supermemory recall). Requires `OPENROUTER_API_KEY`. Optional: `INSIGHTS_MODEL` (see `.env.example`).
 
 ### 2. Backend
 ```bash
@@ -52,8 +36,6 @@ npm run dev
 
 Visit **http://localhost:3000**
 
-After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/trends` (SQLite history). Use **Open full trends** for longer ranges; deep-link **`/trends?q=DrugName`** pre-fills and loads 7-day data.
-
 ## Tech Stack
 
 | Layer | Technology |
@@ -65,17 +47,13 @@ After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/
 | Frontend | Next.js + Tailwind |
 | Notifications | Discord Webhooks |
 | Voice | ElevenLabs |
-| Search | Exa |
-| Memory | Supermemory (optional) |
+| Drug Intelligence | Exa (variant discovery, WHO reference pricing, drug info summaries) |
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/search?query=...` | SSE streaming price search; live `streaming_url` on results when TinyFish provides it; summary may include `price_fluctuations` |
-| POST | `/api/search?query=...&memory_user=...` | Same; when Supermemory is configured, stores summary + fluctuation text for recall |
-| GET | `/api/memory/recall?q=...&user=...` | Hybrid memory recall for the dashboard (requires `SUPERMEMORY_API_KEY`) |
-| POST | `/api/insights` | JSON body: `user`, `drug_query`, `current_scan` — English personalized note (requires `OPENROUTER_API_KEY`; Supermemory optional) |
+| POST | `/api/search?query=...` | SSE streaming price search (with live browser preview URLs) |
 | POST | `/api/optimize` | Prescription cost optimizer (atomic /run-batch for multi-drug) |
 | POST | `/api/optimize/prescription` | OCR prescription image → drug extraction → optimize |
 | GET | `/api/prices/{query}` | Cached price data |
@@ -86,8 +64,9 @@ After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/
 | DELETE | `/api/alerts/{id}` | Deactivate an alert |
 | GET | `/api/monitors` | List active monitors |
 | POST | `/api/ocr` | OCR prescription image → extract drug names |
-| POST | `/api/demo-alert` | Live demo: Discord + ElevenLabs alert (requires `DISCORD_*` / `ELEVENLABS_API_KEY`) |
-| GET | `/health` | Health check; includes `supermemory_configured` (bool, non-secret) |
+| POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
+| GET | `/api/memory/recall` | Supermemory context recall |
+| GET | `/health` | Health check |
 | GET | `/health/services` | Detailed service health status |
 
 ## Pharmacy Sources

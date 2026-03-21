@@ -1,6 +1,8 @@
 """Prescription optimizer endpoint"""
 import asyncio
+import json
 from fastapi import APIRouter, UploadFile, File
+from fastapi.responses import StreamingResponse
 from models.schemas import OptimizeRequest, OptimizeResponse, OptimizeDrugResult
 from services.tinyfish import search_all_pharmacies, search_all_pharmacies_batch
 from services.ocr import extract_drugs_from_image
@@ -71,6 +73,81 @@ async def optimize_prescription(request: OptimizeRequest):
         total_single_source=best_single[1] if best_single else None,
         savings=(best_single[1] - total_optimized) if best_single else None,
         best_single_source=best_single[0] if best_single else None,
+    )
+
+
+@router.post("/optimize/stream")
+async def optimize_prescription_stream(request: OptimizeRequest):
+    """SSE streaming version of optimize -- shows per-drug progress."""
+
+    async def event_generator():
+        drugs = request.drugs
+        yield f"data: {json.dumps({'type': 'optimize_start', 'drugs': drugs, 'total_drugs': len(drugs)})}\n\n"
+
+        all_results: dict = {}
+        for i, drug in enumerate(drugs):
+            yield f"data: {json.dumps({'type': 'drug_started', 'drug': drug, 'index': i})}\n\n"
+
+            results = await search_all_pharmacies(drug, settings.tinyfish_api_key)
+            all_results[drug] = results
+
+            best_price = None
+            best_source = ""
+            products_found = 0
+            for sid, result in results.items():
+                if result.status == "success":
+                    products_found += result.result_count
+                    for p in result.products:
+                        if best_price is None or p.price < best_price:
+                            best_price = p.price
+                            best_source = result.source_name
+
+            yield f"data: {json.dumps({'type': 'drug_complete', 'drug': drug, 'index': i, 'best_price': best_price, 'best_source': best_source, 'products_found': products_found})}\n\n"
+
+        # Build final optimize response (same logic as optimize_prescription)
+        items = []
+        for drug, results in all_results.items():
+            best_price = None
+            best_source_name = ""
+            best_name = ""
+            for source_id, result in results.items():
+                if result.status == "success":
+                    for product in result.products:
+                        if best_price is None or product.price < best_price:
+                            best_price = product.price
+                            best_source_name = result.source_name
+                            best_name = product.product_name
+            if best_price is not None:
+                items.append(OptimizeDrugResult(
+                    drug=drug,
+                    best_source=best_source_name,
+                    best_price=best_price,
+                    product_name=best_name,
+                ))
+
+        total_optimized = sum(item.best_price for item in items)
+
+        source_totals: dict[str, int] = {}
+        for drug, results in all_results.items():
+            for source_id, result in results.items():
+                if result.status == "success" and result.products:
+                    cheapest = min(p.price for p in result.products)
+                    source_totals.setdefault(result.source_name, 0)
+                    source_totals[result.source_name] += cheapest
+
+        best_single = min(source_totals.items(), key=lambda x: x[1]) if source_totals else None
+        savings = (best_single[1] - total_optimized) if best_single else None
+
+        yield f"data: {json.dumps({'type': 'optimize_complete', 'items': [item.model_dump() for item in items], 'total_optimized': total_optimized, 'total_single_source': best_single[1] if best_single else None, 'savings': savings, 'best_single_source': best_single[0] if best_single else None})}\n\n"
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 

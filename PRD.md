@@ -167,7 +167,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts |
 | Notifications | Discord Webhooks |
 | Voice | ElevenLabs API |
-| Search | Exa API |
+| Drug Intelligence | Exa API — variant discovery (generic alternatives), WHO reference pricing (research paper index), drug info summaries |
 | LLM | OpenRouter |
 | Memory | Supermemory (search context recall) |
 

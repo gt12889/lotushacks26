@@ -25,9 +25,25 @@ interface PharmacyResult {
   products: Product[];
 }
 
+interface VariantProduct {
+  product_name: string;
+  price: number;
+  original_price: number | null;
+  manufacturer: string | null;
+  dosage_form: string | null;
+  pack_size: number;
+  unit_price: number | null;
+  in_stock: boolean;
+  product_url: string | null;
+  source_id: string;
+  source_name: string;
+  variant_of: string;
+}
+
 interface PriceGridProps {
   results: Record<string, PharmacyResult>;
   bestPrice: number | null;
+  variantProducts?: VariantProduct[];
 }
 
 type SortKey = 'price' | 'unit_price' | 'source' | 'name';
@@ -40,16 +56,21 @@ const SOURCE_COLORS: Record<string, string> = {
   medicare: '#14B8A6',
 };
 
-export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
+export default function PriceGrid({ results, bestPrice, variantProducts = [] }: PriceGridProps) {
   const [sortBy, setSortBy] = useState<SortKey>('price');
 
-  const allProducts: (Product & { source_id: string; source_name: string })[] = [];
+  const allProducts: (Product & { source_id: string; source_name: string; variant_of?: string })[] = [];
   for (const [sourceId, result] of Object.entries(results)) {
     if (result.status === 'success') {
       for (const product of result.products) {
         allProducts.push({ ...product, source_id: sourceId, source_name: result.source_name });
       }
     }
+  }
+
+  // Merge Tier 3 variant products
+  for (const vp of variantProducts) {
+    allProducts.push({ ...vp, variant_of: vp.variant_of });
   }
 
   allProducts.sort((a, b) => {
@@ -101,7 +122,11 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
           </thead>
           <tbody>
             {allProducts.map((p, i) => (
-              <tr key={i} className="border-b border-border/50 hover:bg-card/50 transition-colors">
+              <tr
+                key={i}
+                className={`border-b border-border/50 hover:bg-card/50 transition-colors ${p.variant_of ? '' : ''}`}
+                style={p.variant_of ? { animation: 'fadeSlideIn 0.3s ease-out' } : undefined}
+              >
                 <td className="py-2.5 px-4">
                   {p.price === bestPrice && <StatusPill status="best" label="BEST" />}
                 </td>
@@ -111,7 +136,14 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
                       <a href={p.product_url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">{p.product_name}</a>
                     ) : p.product_name}
                   </div>
-                  {p.manufacturer && <div className="text-[10px] text-t3 font-mono">{p.manufacturer}</div>}
+                  <div className="flex items-center gap-2">
+                    {p.manufacturer && <span className="text-[10px] text-t3 font-mono">{p.manufacturer}</span>}
+                    {p.variant_of && (
+                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan/10 text-cyan border border-cyan/20">
+                        variant of {p.variant_of}
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="py-2.5 px-4">
                   <div className="flex items-center gap-2">
@@ -133,13 +165,25 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
                   {p.in_stock ? <StatusPill status="active" label="IN STOCK" /> : <StatusPill status="out-of-stock" label="OUT" />}
                 </td>
                 <td className="py-2.5 px-4">
-                  <SponsorBadge sponsors={BRIGHTDATA_SOURCES.has(p.source_id) ? ['TinyFish', 'BrightData'] : ['TinyFish']} />
+                  <SponsorBadge sponsors={p.variant_of ? ['TinyFish', 'Exa'] : BRIGHTDATA_SOURCES.has(p.source_id) ? ['TinyFish', 'BrightData'] : ['TinyFish']} />
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <style jsx global>{`
+        @keyframes fadeSlideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </div>
   );
 }

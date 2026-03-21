@@ -1,8 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import AgentActivityFeed from '@/components/AgentActivityFeed';
+import LiveMetricsBar from '@/components/LiveMetricsBar';
+import AgentCascade from '@/components/AgentCascade';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+interface AgentEvent {
+  id: string;
+  timestamp: number;
+  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  agent: string;
+  message: string;
+  source_id?: string;
+}
 
 interface OptimizeResult {
   items: { drug: string; best_source: string; best_price: number; product_name: string }[];
@@ -18,10 +30,27 @@ export default function OptimizePage() {
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
+  const [drugsTotal, setDrugsTotal] = useState(0);
+  const [drugsComplete, setDrugsComplete] = useState(0);
+  const [productsFound, setProductsFound] = useState(0);
+  const [streamActive, setStreamActive] = useState(false);
+  const eventIdRef = useRef(0);
 
   const addDrug = () => setDrugs([...drugs, '']);
   const removeDrug = (i: number) => setDrugs(drugs.filter((_, idx) => idx !== i));
   const updateDrug = (i: number, val: string) => { const u = [...drugs]; u[i] = val; setDrugs(u); };
+
+  const addAgentEvent = useCallback((type: AgentEvent['type'], agent: string, message: string) => {
+    const evt: AgentEvent = {
+      id: String(++eventIdRef.current),
+      timestamp: Date.now(),
+      type,
+      agent,
+      message,
+    };
+    setAgentEvents(prev => [...prev, evt]);
+  }, []);
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,27 +58,176 @@ export default function OptimizePage() {
     const reader = new FileReader();
     reader.onloadend = () => setImagePreview(reader.result as string);
     reader.readAsDataURL(file);
+
+    // Reset state
     setOcrLoading(true);
+    setResult(null);
+    setAgentEvents([]);
+    setDrugsTotal(0);
+    setDrugsComplete(0);
+    setProductsFound(0);
+    setStreamActive(true);
+    eventIdRef.current = 0;
+
+    addAgentEvent('spawn', 'OCR Agent', 'Extracting molecules from prescription image...');
+
     try {
       const formData = new FormData();
       formData.append('image', file);
       const res = await fetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
       const data = await res.json();
-      if (data.drugs?.length > 0) setDrugs(data.drugs);
-    } catch (e) { console.error('OCR error:', e); }
-    finally { setOcrLoading(false); }
+
+      if (data.drugs?.length > 0) {
+        setDrugs(data.drugs);
+        addAgentEvent('success', 'OCR Agent', `Extracted ${data.drugs.length} drug(s): ${data.drugs.join(', ')}`);
+      } else {
+        addAgentEvent('error', 'OCR Agent', 'No drugs detected in image');
+        setStreamActive(false);
+        setOcrLoading(false);
+        return;
+      }
+      setOcrLoading(false);
+
+      // Now stream optimize
+      setLoading(true);
+      addAgentEvent('spawn', 'Orchestrator', `Deploying pharmacy agents for ${data.drugs.length} drug(s)`);
+
+      const sseRes = await fetch(`${API_URL}/api/optimize/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drugs: data.drugs }),
+      });
+
+      if (!sseRes.ok || !sseRes.body) throw new Error('Stream failed');
+
+      const sseReader = sseRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await sseReader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const dataMatch = line.match(/^data: (.+)$/m);
+          if (!dataMatch) continue;
+          try {
+            const event = JSON.parse(dataMatch[1]);
+
+            if (event.type === 'optimize_start') {
+              setDrugsTotal(event.total_drugs);
+            } else if (event.type === 'drug_started') {
+              addAgentEvent('searching', `${event.drug} Agent`, `Scanning pharmacies for ${event.drug}...`);
+            } else if (event.type === 'drug_complete') {
+              setDrugsComplete(prev => prev + 1);
+              setProductsFound(prev => prev + (event.products_found || 0));
+              if (event.best_price !== null) {
+                addAgentEvent('success', `${event.drug} Agent`, `Best: ${event.best_price.toLocaleString()} VND @ ${event.best_source} (${event.products_found} products)`);
+              } else {
+                addAgentEvent('error', `${event.drug} Agent`, 'No results found');
+              }
+            } else if (event.type === 'optimize_complete') {
+              setResult({
+                items: event.items,
+                total_optimized: event.total_optimized,
+                total_single_source: event.total_single_source,
+                savings: event.savings,
+                best_single_source: event.best_single_source,
+              });
+              addAgentEvent('success', 'Orchestrator', `Optimization complete — saved ${event.savings?.toLocaleString() ?? 0} VND`);
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err) {
+      console.error('Optimize stream error:', err);
+      addAgentEvent('error', 'System', 'Stream connection lost');
+    } finally {
+      setOcrLoading(false);
+      setLoading(false);
+      setStreamActive(false);
+    }
   };
 
   const optimize = async () => {
     const validDrugs = drugs.filter((d) => d.trim());
     if (validDrugs.length === 0) return;
-    setLoading(true); setResult(null);
+    setLoading(true);
+    setResult(null);
+    setAgentEvents([]);
+    setDrugsTotal(validDrugs.length);
+    setDrugsComplete(0);
+    setProductsFound(0);
+    setStreamActive(true);
+    eventIdRef.current = 0;
+
+    addAgentEvent('spawn', 'Orchestrator', `Deploying pharmacy agents for ${validDrugs.length} drug(s)`);
+
     try {
-      const res = await fetch(`${API_URL}/api/optimize`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drugs: validDrugs }) });
-      setResult(await res.json());
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      const sseRes = await fetch(`${API_URL}/api/optimize/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drugs: validDrugs }),
+      });
+
+      if (!sseRes.ok || !sseRes.body) throw new Error('Stream failed');
+
+      const sseReader = sseRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await sseReader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const dataMatch = line.match(/^data: (.+)$/m);
+          if (!dataMatch) continue;
+          try {
+            const event = JSON.parse(dataMatch[1]);
+
+            if (event.type === 'optimize_start') {
+              setDrugsTotal(event.total_drugs);
+            } else if (event.type === 'drug_started') {
+              addAgentEvent('searching', `${event.drug} Agent`, `Scanning pharmacies for ${event.drug}...`);
+            } else if (event.type === 'drug_complete') {
+              setDrugsComplete(prev => prev + 1);
+              setProductsFound(prev => prev + (event.products_found || 0));
+              if (event.best_price !== null) {
+                addAgentEvent('success', `${event.drug} Agent`, `Best: ${event.best_price.toLocaleString()} VND @ ${event.best_source} (${event.products_found} products)`);
+              } else {
+                addAgentEvent('error', `${event.drug} Agent`, 'No results found');
+              }
+            } else if (event.type === 'optimize_complete') {
+              setResult({
+                items: event.items,
+                total_optimized: event.total_optimized,
+                total_single_source: event.total_single_source,
+                savings: event.savings,
+                best_single_source: event.best_single_source,
+              });
+              addAgentEvent('success', 'Orchestrator', `Optimization complete — saved ${event.savings?.toLocaleString() ?? 0} VND`);
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err) {
+      console.error('Optimize stream error:', err);
+      addAgentEvent('error', 'System', 'Stream connection lost');
+    } finally {
+      setLoading(false);
+      setStreamActive(false);
+    }
   };
+
+  const isActive = ocrLoading || loading || streamActive;
+  const agentsSpawned = agentEvents.filter(e => e.type === 'spawn').length;
 
   return (
     <div className="min-h-screen">
@@ -96,6 +274,33 @@ export default function OptimizePage() {
             </button>
           </div>
         </div>
+
+        {/* Agent Cascade Pipeline */}
+        <AgentCascade
+          tier0Active={ocrLoading}
+          tier1Active={loading ? drugsTotal - drugsComplete : 0}
+          tier1Complete={drugsComplete}
+          tier1Total={drugsTotal}
+          tier2Variants={0}
+          visible={isActive || !!result}
+        />
+
+        {/* Live Metrics Bar */}
+        {(isActive || result) && (
+          <LiveMetricsBar
+            agentsSpawned={agentsSpawned}
+            pharmaciesComplete={drugsComplete}
+            pharmaciesTotal={drugsTotal}
+            productsFound={productsFound}
+            savingsVnd={result?.savings ?? null}
+            isActive={isActive}
+          />
+        )}
+
+        {/* Agent Activity Feed */}
+        {agentEvents.length > 0 && (
+          <AgentActivityFeed events={agentEvents} isActive={isActive} />
+        )}
 
         {result && (
           <>
