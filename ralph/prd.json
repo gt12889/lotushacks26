@@ -226,7 +226,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 13,
-      "passes": false,
+      "passes": true,
       "notes": "ActionLabel is 98 lines. Only the expand/collapse for reasoning details needs to change."
     },
     {
@@ -242,7 +242,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 14,
-      "passes": false,
+      "passes": true,
       "notes": "This is a cleanup story — run after all other stories. Grep for each animation name before removing."
     }
   ]

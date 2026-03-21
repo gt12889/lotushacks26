@@ -18,6 +18,7 @@
 - Custom GlareHover component at ui/glare-hover.tsx adds mouse-tracking radial gradient glare effect on hover
 - Custom Dock component at ui/dock.tsx provides macOS-style magnification on hover via React context + cosine interpolation
 - Custom ScrollReveal component at ui/scroll-reveal.tsx wraps children with fade+slide-up animation triggered by IntersectionObserver
+- shadcn Accordion v4 auto-adds chevron icons — use `hover:no-underline` and `border-none` on AccordionItem to customize appearance
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -186,4 +187,33 @@
   - Staggered delays on grid items (120ms increments) create a pleasant cascade effect
   - ScrollReveal can replace a container div by passing className — avoids extra DOM nesting
   - StatsSection already has its own IntersectionObserver for Counter triggers — wrapping in ScrollReveal adds a fade-in without conflicting
+---
+
+## 2026-03-21 - US-013
+- Installed shadcn Accordion via `npx shadcn@latest add accordion -y`
+- Refactored ActionLabel.tsx: replaced manual useState expand/collapse with Accordion/AccordionItem/AccordionTrigger/AccordionContent
+- Risk level colors preserved via border-l-4 and bg classes on the Accordion root
+- Confidence score badge preserved in the trigger alongside the icon and labels
+- Status metadata (RISK, CONFIDENCE, BUY Y/N) preserved in AccordionContent
+- Chevron icons handled automatically by AccordionTrigger (ChevronDown/ChevronUp)
+- Removed useState import — Accordion manages open/close state internally
+- Files changed: ActionLabel.tsx, ui/accordion.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Accordion v4 wraps `@base-ui/react/accordion` — uses data-slot attributes and group-aria-expanded for chevron toggling
+  - AccordionTrigger auto-adds ChevronDown/ChevronUp icons — no need to manage them manually
+  - Use `hover:no-underline` on AccordionTrigger to override the default hover:underline style
+  - `border-none` on AccordionItem removes the default bottom border between items
+  - Accordion without `value`/`defaultValue` props allows free toggle (no controlled state needed)
+---
+
+## 2026-03-21 - US-014
+- Audited globals.css for unused custom CSS animations and classes after library component migration
+- Removed `terminalSlideIn` keyframe (replaced by `animatedListSlideIn` in US-008)
+- Removed `.video-bg-container` and `.video-bg-overlay` classes (replaced by Aurora component in US-009)
+- Confirmed all other animations still in use: pulse-left-border, fadeSlideIn, bioGlow/bioluminescent-card, sonarPulse/sonar-dot, animatedListSlideIn, blink, terminal-feed, gradientShift, completionFlash, flowPulse, shimmer
+- Files changed: globals.css
+- **Learnings for future iterations:**
+  - grep across all src/ files (not just components/) to catch usages in app/ pages like architecture/page.tsx
+  - Most custom animations survived the migration — library components added new animation patterns rather than replacing existing ones
+  - Only terminalSlideIn and video-bg styles were truly dead code after the 13 prior stories
 ---

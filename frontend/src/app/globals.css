@@ -143,12 +143,6 @@
 
 /* ───────── Section 3: Terminal Feed ───────── */
 
-@keyframes terminalSlideIn {
-  0% { opacity: 0; transform: translateY(6px); }
-  30% { opacity: 0.5; transform: translateY(3px); }
-  100% { opacity: 1; transform: translateY(0); }
-}
-
 @keyframes animatedListSlideIn {
   0% { opacity: 0; transform: translateY(6px); }
   30% { opacity: 0.5; transform: translateY(3px); }
@@ -256,27 +250,6 @@ summary {
 .sonar-dot {
   min-width: 16px;
   min-height: 16px;
-}
-
-.video-bg-container {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.video-bg-container video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 0.3;
-}
-
-.video-bg-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, rgba(13,28,50,0.7) 0%, rgba(1,14,36,0.95) 100%);
-  z-index: 1;
 }
 
 /* shadcn theme — abyss dark (always dark, no .dark class needed) */
