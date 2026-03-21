@@ -1,6 +1,6 @@
-# MediScrape
+# 
 
-> **Pitch: Crashout Cop** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
+> **MEGLADON MD**  Vietnamese pharmaceutical price intelligence with parallel AI web agents.
 >
 > Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
