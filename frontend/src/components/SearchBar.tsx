@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Search } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -100,9 +101,16 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
         <button
           type="submit"
           disabled={isSearching || !query.trim()}
-          className="px-6 py-3.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
         >
-          {isSearching ? t('search.scanning') : t('search.deploy')}
+          {isSearching ? (
+            <>
+              <LoadingSpinner size="sm" className="text-abyss [&_span]:border-abyss/30 [&_span]:border-t-abyss" />
+              {t('search.scanning')}
+            </>
+          ) : (
+            t('search.deploy')
+          )}
         </button>
       </form>
       <div className="flex gap-2 flex-wrap">

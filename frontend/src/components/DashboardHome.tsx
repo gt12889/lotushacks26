@@ -29,6 +29,8 @@ import CeilingPanel from '@/components/CeilingPanel';
 import VoiceSummary from '@/components/VoiceSummary';
 import ActionLabel from '@/components/ActionLabel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
+import { ApiErrorBanner } from '@/components/ApiErrorBanner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
 
@@ -156,6 +158,8 @@ export default function DashboardHome() {
   const [insightError, setInsightError] = useState<string | null>(null);
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [trendError, setTrendError] = useState<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [sparklineData, setSparklineData] = useState<Record<string, { source_name: string; points: { price: number; time: string }[] }>>({});
   const [syncTime, setSyncTime] = useState('');
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
@@ -258,19 +262,32 @@ export default function DashboardHome() {
     const q = scanSummary?.query?.trim();
     if (!q) {
       setTrendData([]);
+      setTrendError(null);
       return;
     }
     let cancelled = false;
     setTrendLoading(true);
+    setTrendError(null);
     void (async () => {
       try {
         const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        if (!res.ok) {
+          if (!cancelled) {
+            setTrendData([]);
+            setTrendError(t('error.server', { status: res.status }));
+          }
+          return;
+        }
         const json = await res.json();
         if (!cancelled) {
           setTrendData(Array.isArray(json.data) ? json.data : []);
+          setTrendError(null);
         }
       } catch {
-        if (!cancelled) setTrendData([]);
+        if (!cancelled) {
+          setTrendData([]);
+          setTrendError(t('error.trends'));
+        }
       } finally {
         if (!cancelled) setTrendLoading(false);
       }
@@ -278,7 +295,7 @@ export default function DashboardHome() {
     return () => {
       cancelled = true;
     };
-  }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results]);
+  }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results, t]);
 
   useEffect(() => {
     if (!scanSummary?.query) return;
@@ -295,6 +312,7 @@ export default function DashboardHome() {
   }, [scanSummary?.query]);
 
   const handleSearch = async (query: string) => {
+    setSearchError(null);
     setIsSearching(true);
     setResults({});
     setScanSummary(null);
@@ -343,7 +361,17 @@ export default function DashboardHome() {
         `${API_URL}/api/search?query=${encodeURIComponent(query)}${memQ}`,
         { method: 'POST' }
       );
-      if (!response.ok || !response.body) throw new Error('Search failed');
+      if (!response.ok || !response.body) {
+        addAgentEvent(
+          'error',
+          'Orchestrator',
+          response.ok ? t('error.searchStream') : t('error.server', { status: response.status })
+        );
+        setSearchError(
+          response.ok ? t('error.searchStream') : t('error.server', { status: response.status })
+        );
+        return;
+      }
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -485,6 +513,10 @@ export default function DashboardHome() {
       }
     } catch (error) {
       console.error('Search error:', error);
+      const msg =
+        error instanceof TypeError ? t('error.network') : t('error.searchStream');
+      setSearchError(msg);
+      addAgentEvent('error', 'Orchestrator', msg);
     } finally {
       setIsSearching(false);
     }
@@ -550,6 +582,13 @@ export default function DashboardHome() {
               <p className="text-xs text-t3 font-mono">{t('dash.supermemoryHint')}</p>
             )}
 
+            {searchError && (
+              <ApiErrorBanner
+                message={`${t('dash.searchErrorTitle')}: ${searchError}`}
+                onDismiss={() => setSearchError(null)}
+              />
+            )}
+
             <SearchBar onSearch={handleSearch} isSearching={isSearching} />
 
             {!hasResults && !isSearching && (
@@ -593,7 +632,10 @@ export default function DashboardHome() {
                     </h3>
                     {isSearching && (
                       <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
+                        <LoadingSpinner
+                          size="sm"
+                          className="[&_span]:border-cyan/20 [&_span]:border-t-cyan"
+                        />
                         <span className="text-[10px] text-t3 font-mono">{t('dash.agentsActive')}</span>
                       </div>
                     )}
@@ -662,7 +704,10 @@ export default function DashboardHome() {
                   <div className="rounded-lg border border-cyan/30 bg-deep px-4 py-3">
                     <p className="text-xs font-mono text-cyan mb-2">{t('dash.insightTitle')}</p>
                     {insightLoading && (
-                      <p className="text-xs text-t3 animate-pulse">{t('dash.insightLoading')}</p>
+                      <div className="flex items-center gap-2 text-xs text-t3">
+                        <LoadingSpinner size="sm" />
+                        <span>{t('dash.insightLoading')}</span>
+                      </div>
                     )}
                     {!insightLoading && insight && (
                       <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{insight}</p>
@@ -715,7 +760,13 @@ export default function DashboardHome() {
                   </Link>
                 </div>
                 {trendLoading && (
-                  <p className="text-xs text-t3 animate-pulse font-mono">{t('dash.trendsLoading')}</p>
+                  <div className="flex items-center gap-2 text-xs text-t3 font-mono">
+                    <LoadingSpinner size="sm" />
+                    <span>{t('dash.trendsLoading')}</span>
+                  </div>
+                )}
+                {!trendLoading && trendError && (
+                  <ApiErrorBanner message={trendError} onDismiss={() => setTrendError(null)} />
                 )}
                 {!trendLoading && trendData.length > 0 && <PricingChart data={trendData} />}
               </div>

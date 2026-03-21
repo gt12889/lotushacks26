@@ -7,6 +7,7 @@ import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { Counter } from '@/components/ui/counter';
 import { Aurora } from '@/components/ui/aurora';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -16,7 +17,14 @@ export default function LandingPage() {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-abyss flex flex-col items-center justify-center gap-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-xs font-mono text-t3 uppercase tracking-wider">{t('ui.loading')}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">

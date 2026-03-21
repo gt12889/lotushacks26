@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface NLSearchBarProps {
   onSearch: (query: string) => void;
@@ -40,9 +41,16 @@ export default function NLSearchBar({ onSearch, loading }: NLSearchBarProps) {
         <button
           onClick={() => query.trim() && onSearch(query.trim())}
           disabled={loading || !query.trim()}
-          className="px-6 py-2.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 transition-colors text-sm"
+          className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 transition-colors text-sm"
         >
-          {loading ? 'Analyzing...' : 'AI Search'}
+          {loading ? (
+            <>
+              <LoadingSpinner size="sm" className="[&_span]:border-abyss/30 [&_span]:border-t-abyss" />
+              Analyzing...
+            </>
+          ) : (
+            'AI Search'
+          )}
         </button>
         <span className="text-[10px] text-t3 font-mono">POWERED BY OPENROUTER</span>
       </div>

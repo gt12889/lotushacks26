@@ -134,6 +134,26 @@ export const messages: Record<Locale, Record<string, string>> = {
     'common.searchComplete': 'Search complete — {{count}} products',
     'common.foundProducts': 'Found {{count}} products ({{sec}}s)',
     'common.signalLost': 'Signal lost',
+
+    'ui.loadingPage': 'Loading page',
+    'ui.loading': 'Loading…',
+
+    'error.pageTitle': 'Something went wrong',
+    'error.pageFallback': 'An unexpected error occurred while rendering this page.',
+    'error.tryAgain': 'Try again',
+    'error.network': 'Could not reach the API. Check that the backend is running and CORS is configured.',
+    'error.server': 'Server error ({{status}}). Try again in a moment.',
+    'error.searchStream': 'Search stream failed or was interrupted.',
+    'error.trends': 'Could not load price history.',
+    'error.nlSearch': 'AI multi-search failed. Check the network or try again.',
+    'error.alertsLoad': 'Could not load alerts or monitors.',
+    'error.alertsAction': 'That action failed. Try again.',
+    'error.optimize': 'Optimization failed or the connection was lost.',
+
+    'dash.searchErrorTitle': 'Scan failed',
+    'trends.loadingHistory': 'Loading price history…',
+    'trends.nlWorking': 'Dispatching AI agents…',
+    'alerts.loading': 'Loading tripwires…',
   },
   vi: {
     'nav.dashboard': 'Bảng điều khiển',
@@ -266,5 +286,25 @@ export const messages: Record<Locale, Record<string, string>> = {
     'common.searchComplete': 'Hoàn tất quét — {{count}} sản phẩm',
     'common.foundProducts': 'Tìm thấy {{count}} sản phẩm ({{sec}}s)',
     'common.signalLost': 'Mất tín hiệu',
+
+    'ui.loadingPage': 'Đang tải trang',
+    'ui.loading': 'Đang tải…',
+
+    'error.pageTitle': 'Đã xảy ra lỗi',
+    'error.pageFallback': 'Trang gặp lỗi không mong muốn.',
+    'error.tryAgain': 'Thử lại',
+    'error.network': 'Không kết nối được API. Kiểm tra backend đang chạy và CORS.',
+    'error.server': 'Lỗi máy chủ ({{status}}). Thử lại sau.',
+    'error.searchStream': 'Luồng quét bị lỗi hoặc gián đoạn.',
+    'error.trends': 'Không tải được lịch sử giá.',
+    'error.nlSearch': 'Tìm đa thuốc AI thất bại. Kiểm tra mạng hoặc thử lại.',
+    'error.alertsLoad': 'Không tải được cảnh báo hoặc theo dõi.',
+    'error.alertsAction': 'Thao tác thất bại. Thử lại.',
+    'error.optimize': 'Tối ưu thất bại hoặc mất kết nối.',
+
+    'dash.searchErrorTitle': 'Quét thất bại',
+    'trends.loadingHistory': 'Đang tải lịch sử giá…',
+    'trends.nlWorking': 'Đang gửi tác tử AI…',
+    'alerts.loading': 'Đang tải cảnh báo…',
   },
 };

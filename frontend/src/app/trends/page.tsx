@@ -5,6 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import PricingChart from '@/components/PricingChart';
 import NLSearchBar from '@/components/NLSearchBar';
 import ComparisonMatrix from '@/components/ComparisonMatrix';
+import { ApiErrorBanner } from '@/components/ApiErrorBanner';
+import { LoadingPanel } from '@/components/ui/loading-spinner';
+import { useLocale } from '@/components/LocaleProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -31,11 +34,13 @@ const QUICK_SUGGESTIONS = [
 ];
 
 function TrendsContent() {
+  const { t } = useLocale();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
   const [days, setDays] = useState(7);
   const [data, setData] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // AI Multi-Search state
   const [mode, setMode] = useState<'single' | 'ai'>('single');
@@ -44,6 +49,7 @@ function TrendsContent() {
   const [nlResults, setNlResults] = useState<Record<string, any>>({});
   const [nlMatrix, setNlMatrix] = useState<any>(null);
   const [nlRecommendation, setNlRecommendation] = useState('');
+  const [nlError, setNlError] = useState<string | null>(null);
 
   useEffect(() => {
     const q = searchParams.get('q')?.trim();
@@ -51,14 +57,28 @@ function TrendsContent() {
     setQuery(q);
     let cancelled = false;
     setLoading(true);
+    setFetchError(null);
     void (async () => {
       try {
         const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        if (!res.ok) {
+          if (!cancelled) {
+            setData([]);
+            setFetchError(t('error.server', { status: res.status }));
+          }
+          return;
+        }
         const json = await res.json();
-        if (!cancelled) setData(json.data || []);
+        if (!cancelled) {
+          setData(json.data || []);
+          setFetchError(null);
+        }
       } catch (e) {
         console.error(e);
-        if (!cancelled) setData([]);
+        if (!cancelled) {
+          setData([]);
+          setFetchError(t('error.trends'));
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -66,18 +86,27 @@ function TrendsContent() {
     return () => {
       cancelled = true;
     };
-  }, [searchParams]);
+  }, [searchParams, t]);
 
   const fetchTrends = async (overrideQuery?: string) => {
     const q = (overrideQuery ?? query).trim();
     if (!q) return;
     setLoading(true);
+    setFetchError(null);
     try {
       const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=${days}`);
+      if (!res.ok) {
+        setData([]);
+        setFetchError(t('error.server', { status: res.status }));
+        return;
+      }
       const json = await res.json();
       setData(json.data || []);
+      setFetchError(null);
     } catch (e) {
       console.error(e);
+      setData([]);
+      setFetchError(t('error.trends'));
     } finally {
       setLoading(false);
     }
@@ -85,6 +114,7 @@ function TrendsContent() {
 
   const handleNLSearch = async (nlQuery: string) => {
     setNlLoading(true);
+    setNlError(null);
     setNlDrugs([]);
     setNlResults({});
     setNlMatrix(null);
@@ -92,8 +122,15 @@ function TrendsContent() {
 
     try {
       const res = await fetch(`${API_URL}/api/nl-search?query=${encodeURIComponent(nlQuery)}`, { method: 'POST' });
+      if (!res.ok) {
+        setNlError(t('error.server', { status: res.status }));
+        return;
+      }
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        setNlError(t('error.nlSearch'));
+        return;
+      }
       const decoder = new TextDecoder();
 
       while (true) {
@@ -120,6 +157,7 @@ function TrendsContent() {
       }
     } catch (e) {
       console.error(e);
+      setNlError(e instanceof TypeError ? t('error.network') : t('error.nlSearch'));
     } finally {
       setNlLoading(false);
     }
@@ -158,6 +196,9 @@ function TrendsContent() {
         {mode === 'ai' ? (
           <>
             <NLSearchBar onSearch={handleNLSearch} loading={nlLoading} />
+            {nlError && (
+              <ApiErrorBanner message={nlError} onDismiss={() => setNlError(null)} />
+            )}
 
             {nlDrugs.length > 0 && (
               <div className="flex gap-2 flex-wrap">
@@ -169,9 +210,7 @@ function TrendsContent() {
             )}
 
             {nlLoading && !nlMatrix && (
-              <div className="bg-deep border border-border rounded-lg p-8 text-center">
-                <div className="animate-pulse text-cyan font-mono text-sm">Dispatching AI agents...</div>
-              </div>
+              <LoadingPanel message={t('trends.nlWorking')} />
             )}
 
             {nlMatrix && (
@@ -247,6 +286,14 @@ function TrendsContent() {
               ))}
             </div>
 
+            {fetchError && (
+              <ApiErrorBanner message={fetchError} onDismiss={() => setFetchError(null)} />
+            )}
+
+            {loading && query.trim() && (
+              <LoadingPanel message={t('trends.loadingHistory')} />
+            )}
+
             {data.length > 0 && (
               <>
                 <PricingChart data={data} />
@@ -282,7 +329,7 @@ function TrendsContent() {
               </>
             )}
 
-            {data.length === 0 && !loading && (
+            {data.length === 0 && !loading && !fetchError && (
               <div className="bg-deep border border-border rounded-lg p-16 text-center space-y-4">
                 <div className="text-4xl">📊</div>
                 <p className="text-sm text-t1 font-bold">No price data yet</p>
@@ -303,7 +350,9 @@ export default function TrendsPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center text-t3 text-sm font-mono">Loading trends…</div>
+        <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-t3">
+          <LoadingPanel message="Loading trends…" />
+        </div>
       }
     >
       <TrendsContent />

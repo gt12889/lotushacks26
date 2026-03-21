@@ -4,6 +4,9 @@ import { useState, useCallback, useRef } from 'react';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
 import LiveMetricsBar from '@/components/LiveMetricsBar';
 import AgentCascade from '@/components/AgentCascade';
+import { ApiErrorBanner } from '@/components/ApiErrorBanner';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { useLocale } from '@/components/LocaleProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -25,9 +28,11 @@ interface OptimizeResult {
 }
 
 export default function OptimizePage() {
+  const { t } = useLocale();
   const [drugs, setDrugs] = useState(['']);
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
@@ -60,6 +65,7 @@ export default function OptimizePage() {
     reader.readAsDataURL(file);
 
     // Reset state
+    setPageError(null);
     setOcrLoading(true);
     setResult(null);
     setAgentEvents([]);
@@ -75,6 +81,12 @@ export default function OptimizePage() {
       const formData = new FormData();
       formData.append('image', file);
       const res = await fetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
+      if (!res.ok) {
+        setPageError(t('error.server', { status: res.status }));
+        setStreamActive(false);
+        setOcrLoading(false);
+        return;
+      }
       const data = await res.json();
 
       if (data.drugs?.length > 0) {
@@ -98,7 +110,10 @@ export default function OptimizePage() {
         body: JSON.stringify({ drugs: data.drugs }),
       });
 
-      if (!sseRes.ok || !sseRes.body) throw new Error('Stream failed');
+      if (!sseRes.ok || !sseRes.body) {
+        setPageError(t('error.server', { status: sseRes.status }));
+        return;
+      }
 
       const sseReader = sseRes.body.getReader();
       const decoder = new TextDecoder();
@@ -144,6 +159,8 @@ export default function OptimizePage() {
       }
     } catch (err) {
       console.error('Optimize stream error:', err);
+      const msg = err instanceof TypeError ? t('error.network') : t('error.optimize');
+      setPageError(msg);
       addAgentEvent('error', 'System', 'Stream connection lost');
     } finally {
       setOcrLoading(false);
@@ -155,6 +172,7 @@ export default function OptimizePage() {
   const optimize = async () => {
     const validDrugs = drugs.filter((d) => d.trim());
     if (validDrugs.length === 0) return;
+    setPageError(null);
     setLoading(true);
     setResult(null);
     setAgentEvents([]);
@@ -173,7 +191,10 @@ export default function OptimizePage() {
         body: JSON.stringify({ drugs: validDrugs }),
       });
 
-      if (!sseRes.ok || !sseRes.body) throw new Error('Stream failed');
+      if (!sseRes.ok || !sseRes.body) {
+        setPageError(t('error.server', { status: sseRes.status }));
+        return;
+      }
 
       const sseReader = sseRes.body.getReader();
       const decoder = new TextDecoder();
@@ -219,6 +240,8 @@ export default function OptimizePage() {
       }
     } catch (err) {
       console.error('Optimize stream error:', err);
+      const msg = err instanceof TypeError ? t('error.network') : t('error.optimize');
+      setPageError(msg);
       addAgentEvent('error', 'System', 'Stream connection lost');
     } finally {
       setLoading(false);
@@ -237,6 +260,10 @@ export default function OptimizePage() {
           <p className="text-xs text-t3 mt-1">Optimal sourcing routes across pharmacy networks</p>
         </div>
 
+        {pageError && (
+          <ApiErrorBanner message={pageError} onDismiss={() => setPageError(null)} />
+        )}
+
         <div className="bg-deep border border-border rounded-lg p-6 space-y-4">
           <div className="border-b border-border pb-6">
             <h4 className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-3">Upload Prescription Photo</h4>
@@ -251,7 +278,12 @@ export default function OptimizePage() {
                     <p className="text-[10px] text-t3 mt-1">AI will extract drug names automatically</p>
                   </div>
                 )}
-                {ocrLoading && <p className="text-xs text-cyan animate-pulse mt-2 font-mono">Extracting molecules from image...</p>}
+                {ocrLoading && (
+                  <div className="flex items-center justify-center gap-2 mt-3 text-xs text-cyan font-mono">
+                    <LoadingSpinner size="sm" />
+                    <span>Extracting molecules from image...</span>
+                  </div>
+                )}
               </div>
               <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
             </label>
@@ -269,8 +301,19 @@ export default function OptimizePage() {
           ))}
           <div className="flex gap-3 pt-2">
             <button onClick={addDrug} className="px-4 py-2 text-xs text-cyan hover:bg-cyan/10 rounded-lg font-mono transition-colors">+ Add Drug</button>
-            <button onClick={optimize} disabled={loading || drugs.every((d) => !d.trim())} className="px-6 py-2 bg-cyan text-abyss font-bold rounded-lg text-sm hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 transition-colors">
-              {loading ? 'Optimizing...' : 'Calculate Optimal Route'}
+            <button
+              onClick={optimize}
+              disabled={loading || drugs.every((d) => !d.trim())}
+              className="inline-flex items-center justify-center gap-2 px-6 py-2 bg-cyan text-abyss font-bold rounded-lg text-sm hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 transition-colors"
+            >
+              {loading ? (
+                <>
+                  <LoadingSpinner size="sm" className="[&_span]:border-abyss/30 [&_span]:border-t-abyss" />
+                  Optimizing...
+                </>
+              ) : (
+                'Calculate Optimal Route'
+              )}
             </button>
           </div>
         </div>
