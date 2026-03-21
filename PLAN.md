@@ -1,150 +1,99 @@
-# GhostDriver - Implementation Plan
+# MediScrape - Implementation Plan
 
 ## Context
 
-Building GhostDriver from scratch for LotusHacks 2026. Vietnamese traffic incident analysis platform: 3 parallel data fetches (violation history via TinyFish, scene analysis via Fal.AI, legal search via Exa), AI synthesis (GPT-4o + Qwen), and triple output (dashboard, voice, PDF).
+Pivoting from GhostDriver to MediScrape for LotusHacks 2026. Pharmaceutical price intelligence platform using parallel TinyFish agents to scrape 5+ Vietnamese pharmacy websites simultaneously.
 
 ---
 
-## Phase 1: Project Scaffolding & Environment
+## Phase 1: Project Restructure & Database
 
-**Goal**: Both frontend and backend running locally with all dependencies.
+**Goal**: Replace GhostDriver scaffolding, set up SQLite schema.
 
-- [ ] Initialize Next.js app in `frontend/` with Tailwind CSS
-- [ ] Initialize FastAPI app in `backend/` with modular structure (`routers/`, `services/`, `models/`)
-- [ ] Create `.env.example` with all API keys (TinyFish, Fal.AI, Exa, OpenAI, Qwen, JigsawStack, ElevenLabs, Redis)
-- [ ] Add `docker-compose.yml` for Redis
-- [ ] Add `requirements.txt` and `package.json` dependencies
-- [ ] **Verify**: both servers start, Redis connects
-
----
-
-## Phase 2: Backend Core -- API & Data Models
-
-**Goal**: `/analyze` endpoint accepts input, returns mock structured response.
-
-- [ ] Define Pydantic models: `AnalyzeRequest`, `ViolationRecord`, `SceneAnalysis`, `LegalReference`, `EvidenceReport`, `AnalyzeResponse`
-- [ ] Implement `/analyze` endpoint with mock data returns
-- [ ] Add CORS middleware and file upload handling
-- [ ] **Verify**: POST to `/analyze` returns mock JSON
+- [ ] Update backend structure for MediScrape (new services, models)
+- [ ] Implement SQLite database with schema (sources, drugs, prices, alerts, monitor_jobs)
+- [ ] Seed sources table with 5 Tier 1 pharmacies
+- [ ] Update .env.example and requirements.txt
+- [ ] **Verify**: Database creates, sources seeded
 
 ---
 
-## Phase 3: Frontend -- Input Form & Layout
+## Phase 2: TinyFish Pharmacy Agents
 
-**Goal**: Single-page UI that collects inputs and displays results.
+**Goal**: Parallel scraping of 5 pharmacy websites.
 
-- [ ] Build `AnalyzeForm` component: plate input, vehicle type dropdown, image upload, optional fields
-- [ ] Build `ProgressBar` component: 3-segment bar (Violations | Scene | Legal)
-- [ ] Build `Dashboard` component: risk score, violation table, scene card, legal list, fault summary
-- [ ] Wire form to backend `/analyze`
-- [ ] **Verify**: form submits, mock data renders
-
----
-
-## Phase 4: Backend Services -- Three Parallel Fetches
-
-**Goal**: Real API calls for all three data sources running in parallel.
-
-### Task 1: TinyFish (Violation History)
-- [ ] TinyFish API client with CAPTCHA-solving prompt for csgt.vn
-- [ ] Parse response into `ViolationRecord` list
-- [ ] Add vr.org.vn registration/inspection lookup
-
-### Task 2: Fal.AI (Scene Analysis)
-- [ ] Vision API client with damage/impact/conditions prompt
-- [ ] Parse into `SceneAnalysis` model
-
-### Task 3: Exa (Legal Search)
-- [ ] Search API client for Vietnamese traffic law
-- [ ] Parse into `LegalReference` list
-
-### Integration
-- [ ] Wire all three into `asyncio.gather()` with `return_exceptions=True`
-- [ ] **Verify**: real API calls return structured data
+- [ ] Define pharmacy configs (URL patterns, goal prompts) for all 5 sources
+- [ ] Implement TinyFish client with AsyncTinyFish pattern
+- [ ] Build `search_all_pharmacies()` with `asyncio.gather()`
+- [ ] Parse and normalize product results (name, price, manufacturer, pack_size, unit_price)
+- [ ] Drug name fuzzy matching / normalization
+- [ ] **Verify**: Search returns structured results from all 5 sources
 
 ---
 
-## Phase 5: Redis Caching
+## Phase 3: API Endpoints & SSE Streaming
 
-**Goal**: Cache TinyFish results by plate number.
+**Goal**: Core search API with real-time streaming.
 
-- [ ] Cache service with `aioredis`, key: `violations:{plate}`, 24-hour TTL
-- [ ] Check cache before TinyFish, store after
-- [ ] **Verify**: second request for same plate hits cache
-
----
-
-## Phase 6: AI Synthesis Layer
-
-**Goal**: GPT-4o + Qwen combine all sources into evidence report.
-
-- [ ] GPT-4o system prompt: Vietnamese traffic incident analyst
-- [ ] Feed all three outputs, produce 5-section report
-- [ ] Parallel Qwen call for Vietnamese text parsing from csgt.vn
-- [ ] **Verify**: synthesis produces violation summary, scene findings, legal codes, fault assessment, next steps
+- [ ] `POST /api/search` -- SSE stream of results per pharmacy
+- [ ] `GET /api/prices/{drug_query}` -- cached results from SQLite
+- [ ] `GET /api/trends/{drug_query}` -- historical price data
+- [ ] `POST /api/alerts` -- price threshold alerts
+- [ ] `POST /api/monitor` -- recurring monitor jobs
+- [ ] `GET /api/optimize` -- multi-drug prescription optimizer
+- [ ] **Verify**: SSE streams results as each pharmacy responds
 
 ---
 
-## Phase 7: Output Layer -- PDF & Voice
+## Phase 4: Frontend Dashboard
 
-**Goal**: PDF export and Vietnamese voice narration.
+**Goal**: React dashboard with live pharmacy cards and price grid.
 
-- [ ] JigsawStack: format report → PDF, add download endpoint
-- [ ] ElevenLabs: summary text → Vietnamese audio, add audio endpoint
-- [ ] Frontend: PDF download button + audio player
-- [ ] **Verify**: PDF downloads, audio plays
-
----
-
-## Phase 8: Live Progress Bar (SSE)
-
-**Goal**: Real-time progress as each fetch completes.
-
-- [ ] SSE endpoint: `GET /analyze/stream`
-- [ ] Emit progress events per task completion
-- [ ] Frontend `EventSource` updates progress bar
-- [ ] **Verify**: progress bar animates live
+- [ ] Search bar component with drug name input
+- [ ] Pharmacy cards (5 cards, light up on SSE events)
+- [ ] Price comparison grid (sortable table)
+- [ ] Savings calculator ("Save X VND by buying from Y")
+- [ ] Price trend chart component
+- [ ] Prescription optimizer UI (multi-drug input)
+- [ ] **Verify**: Full search-to-display flow working
 
 ---
 
-## Phase 9: Polish & Demo Prep
+## Phase 5: Monitoring & Notifications
 
-**Goal**: Demo-ready with real data.
+**Goal**: APScheduler + Telegram + ElevenLabs alerts.
 
-- [ ] Prepare test plate number + sample incident photo
-- [ ] Loading states, error handling, Vietnamese labels
-- [ ] Style dashboard for visual impact
-- [ ] End-to-end test against success metrics:
-  - [ ] Analysis < 15 seconds
-  - [ ] All 3 fetches resolve
-  - [ ] PDF has 5 sections
-  - [ ] Voice works
-  - [ ] Cache reduces repeat calls
-- [ ] Dry-run the 6-step demo script
+- [ ] APScheduler integration for recurring price checks
+- [ ] Telegram Bot setup for price drop notifications
+- [ ] ElevenLabs Vietnamese TTS for voice alerts
+- [ ] Alerts management UI
+- [ ] **Verify**: Automated monitor triggers Telegram + voice alert
 
 ---
 
-## Tech Stack Reference
+## Phase 6: Polish & Demo Prep
+
+**Goal**: Demo-ready with real pharmacy data.
+
+- [ ] Pre-cache demo data as fallback
+- [ ] Error handling, loading states
+- [ ] Mobile responsiveness
+- [ ] Vietnamese language labels
+- [ ] End-to-end test with real drug searches
+- [ ] **Verify**: 5-minute demo script runs smoothly
+
+---
+
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js + Tailwind |
+| Web Agent | TinyFish (parallel agents) |
 | Backend | FastAPI + asyncio |
-| Web Agent | TinyFish (csgt.vn + vr.org.vn) |
-| Vision | Fal.AI |
-| Legal Search | Exa |
-| Synthesis | OpenAI GPT-4o + Qwen |
-| Formatting | JigsawStack |
-| Caching | Redis |
+| Database | SQLite (aiosqlite) |
+| Scheduler | APScheduler |
+| Frontend | Next.js + Tailwind |
+| Notifications | Telegram Bot API |
 | Voice | ElevenLabs |
-
----
-
-## Key Decisions
-
-- **SSE over WebSocket** -- simpler for one-way progress, no bidirectional needed
-- **asyncio.gather with return_exceptions=True** -- one failed fetch doesn't block others
-- **Redis over in-memory** -- persists across restarts, standard caching
-- **Separate Qwen call** -- Vietnamese parsing is distinct from synthesis
-- **JigsawStack for PDF** -- avoids custom templates, uses built-in document structuring
+| Search | Exa |
+| LLM | OpenRouter |

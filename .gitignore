@@ -23,5 +23,8 @@ dist/
 .DS_Store
 Thumbs.db
 
+# Database
+*.db
+
 # Uploads
 uploads/

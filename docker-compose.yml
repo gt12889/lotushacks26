@@ -1,11 +1,3 @@
-services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-
-volumes:
-  redis_data:
+# MediScrape uses SQLite - no external database needed
+# This file is kept for future Redis/Postgres migration
+services: {}

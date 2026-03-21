@@ -1,161 +1,172 @@
-# GhostDriver - Product Requirements Document
+# MediScrape PRD
 
-## Overview
+## Pharmaceutical Price Intelligence Platform
 
-GhostDriver is a Vietnamese traffic incident analysis platform that takes a license plate number, vehicle type, and incident photo as input, runs three parallel data fetches, synthesizes the results with AI, and outputs a structured evidence package with violation history, scene analysis, legal references, fault assessment, and a shareable PDF report.
-
----
-
-## Problem Statement
-
-After a traffic incident in Vietnam, gathering evidence is manual, slow, and fragmented. Drivers must separately check violation history on government portals (csgt.vn), interpret scene damage, and look up relevant traffic laws. GhostDriver automates all three in a single query.
+### LotusHack 2026 | Enterprise Track (TinyFish)
 
 ---
 
-## User Flow
+## 1. Problem Statement
 
-1. User enters a license plate number, selects vehicle type (motorbike/car/truck), and uploads an incident photo
-2. Optionally adds free-text for location, time, and description
-3. Hits "Analyze" -- a live progress bar shows which of three parallel fetches have completed
-4. Dashboard populates with violation history, scene analysis, risk score, and legal references
-5. ElevenLabs reads the Vietnamese summary aloud
-6. User exports a PDF evidence package for police or insurance
+Vietnam has no unified pharmaceutical pricing infrastructure. The same medication can vary 100-300% in price across pharmacy chains, hospital pharmacies, and independent outlets. With 57,000+ pharmacies nationwide and only ~5.7% market share held by modern chains, pricing is fragmented and opaque.
+
+**Who feels this pain at the enterprise level:**
+
+- **Hospital procurement departments** (1,192 public hospitals) sourcing medications for hundreds to thousands of beds
+- **Clinic chain purchasing managers** running 20-100+ locations who need centralized sourcing intelligence
+- **Health insurance formulary analysts** building cost models across regions
+- **Pharmaceutical distributors** tracking competitor retail pricing across chains in real time
+
+Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually. Drug prices in Vietnam have been documented at up to 47x international reference prices for branded products.
+
+**Why this is unsolvable without TinyFish:**
+
+- Long Chau (2,117+ stores), Pharmacity (957+ stores), An Khang (527+ stores) all operate independent e-commerce websites with searchable drug catalogs
+- None expose public APIs
+- Prices change frequently (promotions, stock fluctuations, regional pricing)
+- The only way to get fresh, structured pricing data is to navigate these sites in real time -- exactly what TinyFish does
 
 ---
 
-## Architecture
+## 2. Product Vision
 
-### Pipeline
+**MediScrape** is an AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites simultaneously, returning unified, structured drug pricing data in real time.
 
-Linear and clean: one user input triggers 3 parallel data fetches, feeds into a synthesis engine, and outputs a structured evidence package.
+**One-liner:** "We turn every pharmacy website in Vietnam into a queryable, real-time pricing API using parallel AI web agents."
+
+---
+
+## 3. Target Pharmacy Sources
+
+### Tier 1: Must-have for demo (5 sources)
+
+| # | Chain | URL | Store Count |
+|---|-------|-----|-------------|
+| 1 | FPT Long Chau | nhathuoclongchau.com.vn | 2,117+ |
+| 2 | Pharmacity | pharmacity.vn | 957+ |
+| 3 | An Khang | ankhang.vn | 527+ |
+| 4 | Nha Thuoc Than Thien | nhathuocthanhtien.vn | 100+ |
+| 5 | Medicare Vietnam | medicare.vn | 50+ |
+
+### Tier 2: Stretch goals
+
+| # | Chain | URL |
+|---|-------|-----|
+| 6 | Phano Pharmacy | phano.vn |
+| 7 | ECO Pharmacy | ecopharma.com.vn |
+| 8 | Trung Son Pharma | trungtamthuoc.com |
+
+---
+
+## 4. Architecture
 
 ```
-User Input
-    |
-    +---> Task 1: TinyFish (violation history)
-    +---> Task 2: Fal.AI (scene analysis)
-    +---> Task 3: Exa (legal search)
-    |
-    v
-Synthesis (GPT-4o + Qwen)
-    |
-    v
-Formatting (JigsawStack)
-    |
-    +---> Dashboard UI
-    +---> ElevenLabs Voice
-    +---> PDF Export
+┌─────────────────────────────────────────────────────────┐
+│                    REACT DASHBOARD                       │
+│  Drug search → Price comparison grid → Trend charts     │
+│  Procurement alerts → Historical analytics              │
+└───────────────────────┬─────────────────────────────────┘
+                        │ REST API + SSE
+┌───────────────────────┴─────────────────────────────────┐
+│                   FASTAPI BACKEND                        │
+│                                                         │
+│  POST /api/search      - parallel price search          │
+│  GET  /api/prices      - cached results                 │
+│  GET  /api/trends      - historical price data          │
+│  POST /api/alerts      - price alerts                   │
+│  POST /api/monitor     - recurring monitor              │
+│  GET  /api/optimize    - prescription optimizer          │
+└──┬──────────┬──────────┬──────────┬─────────────────────┘
+   │          │          │          │
+   ▼          ▼          ▼          ▼
+┌──────┐ ┌──────┐ ┌──────┐ ┌──────────────┐
+│TinyF.│ │TinyF.│ │TinyF.│ │  APScheduler │
+│Agent │ │Agent │ │Agent │ │  (cron jobs)  │
+│Long  │ │Pharm │ │An    │ │  15-min cycle │
+│Chau  │ │acity │ │Khang │ │              │
+└──┬───┘ └──┬───┘ └──┬───┘ └──────┬───────┘
+   │        │        │             │
+   ▼        ▼        ▼             ▼
+┌─────────────────────────────────────────────────────────┐
+│                   SQLite DATABASE                        │
+│  drugs | prices | sources | alerts | monitor_jobs       │
+└─────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────┐
+│              NOTIFICATION LAYER                          │
+│  Telegram Bot API  →  procurement team alerts           │
+│  ElevenLabs TTS    →  Vietnamese voice summary          │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Components
+## 5. Core User Flows
 
-### Frontend -- Next.js + Tailwind
+### Flow 1: On-Demand Price Search (Primary Demo)
+1. Procurement manager types drug name (e.g., "Metformin 500mg")
+2. Backend dispatches 5+ TinyFish agents simultaneously
+3. Results stream back via SSE. Pharmacy cards light up as each responds.
+4. Dashboard displays unified comparison grid
+5. System highlights cheapest option and calculates savings
 
-- **Inputs**: License plate number, vehicle type selector (motorbike/car/truck matching csgt.vn's form), incident photo upload
-- **Optional fields**: Location, time, description (free-text)
-- **Layout**: Clean single-page design
-- **Progress**: Live progress bar showing completion status of each parallel fetch
+### Flow 2: Persistent Price Monitoring
+1. Set up monitor: "Track Metformin 500mg every 15 minutes"
+2. APScheduler triggers TinyFish agents on interval
+3. Price observations stored in SQLite with timestamps
+4. Telegram alert + ElevenLabs Vietnamese voice when price drops
 
-### Backend -- FastAPI + asyncio
-
-Single `/analyze` endpoint that fans out three async tasks simultaneously using `asyncio.gather()`. Total latency equals the slowest task, not their sum.
-
-#### Task 1: TinyFish Agent (Violation History)
-
-- Pass license plate number and vehicle type to TinyFish
-- Goal: "Navigate csgt.vn, enter this license plate, solve the CAPTCHA, and return all violation records as JSON"
-- TinyFish handles CAPTCHA natively as part of its anti-bot infrastructure
-- Simultaneously hit vr.org.vn for registration and inspection validity
-- **This is the core Enterprise Track argument** -- native CAPTCHA handling
-
-#### Task 2: Fal.AI (Scene Analysis)
-
-- Send uploaded incident image to a vision model
-- Prompt identifies: visible damage, point of impact, road conditions, vehicle positions, visible license plate confirmation
-- Returns structured JSON
-
-#### Task 3: Exa (Legal Search)
-
-- Search for relevant Vietnamese traffic law articles based on incident description
-- Returns cited legal references embedded in the final report
-
-### Synthesis -- OpenAI GPT-4o + Qwen
-
-- Feed all three task outputs into a single GPT-4o prompt
-- System prompt: act as a Vietnamese traffic incident analyst
-- Produces structured evidence report with:
-  - Violation history summary
-  - Scene analysis findings
-  - Applicable legal codes
-  - Fault assessment
-  - Recommended next steps
-- Qwen runs as a parallel call specifically for parsing Vietnamese-language text returned from csgt.vn (superior Vietnamese comprehension for government portal output)
-
-### Formatting -- JigsawStack
-
-- Structures synthesis output into a clean JSON evidence package
-- Handles PDF generation for shareable export
-- Natural fit: JigsawStack has document structuring built in
-
-### Caching -- Redis
-
-- Cache csgt.vn lookup results by plate number with 24-hour TTL
-- Same plate queried twice in a day hits cache, not TinyFish
-- Keeps costs down and demo speed high
-
-### Output Layer
-
-Three simultaneous outputs:
-
-1. **Dashboard UI** -- renders risk score and violation history visually
-2. **ElevenLabs Voice** -- reads summary aloud in Vietnamese
-3. **PDF Export** -- packages everything for sharing with police or insurance
+### Flow 3: Prescription Cost Optimizer
+1. Input full prescription (multiple drugs)
+2. Parallel searches for ALL drugs across ALL sources
+3. Returns optimized sourcing plan to minimize total cost
 
 ---
 
-## Tech Stack
+## 6. Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js + Tailwind |
-| Backend | FastAPI + asyncio |
-| Web Agent | TinyFish (csgt.vn + vr.org.vn) |
-| Vision | Fal.AI |
-| Legal Search | Exa |
-| Synthesis | OpenAI GPT-4o + Qwen |
-| Formatting | JigsawStack |
-| Caching | Redis |
-| Voice | ElevenLabs |
-| IDE | Trae |
+| Web Agent | TinyFish API (AsyncTinyFish) |
+| Backend | FastAPI (Python) |
+| Database | SQLite |
+| Scheduler | APScheduler |
+| Frontend | React (Next.js) + Tailwind |
+| Notifications | Telegram Bot API |
+| Voice | ElevenLabs API |
+| Search | Exa API |
+| LLM | OpenRouter |
 
 ---
 
-## Demo Script (for Judges)
+## 7. API Endpoints
 
-1. Type in a real Vietnamese plate number (prepare one with known violations)
-2. Upload a sample incident photo
-3. Hit Analyze -- show the live progress bar hitting all three fetches
-4. Dashboard populates with violation history, scene analysis, risk score
-5. ElevenLabs reads the Vietnamese summary aloud
-6. Export the PDF
-
----
-
-## Security Considerations
-
-- CAPTCHA solving is handled natively by TinyFish (no third-party CAPTCHA services)
-- Uploaded images should be validated and sanitized server-side
-- Redis cache should not store sensitive personal data beyond plate lookups
-- API keys for all services stored in environment variables, never committed
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/api/search` | Trigger parallel price search (SSE stream) |
+| GET | `/api/prices/{drug_query}` | Get cached results |
+| GET | `/api/trends/{drug_query}` | Historical price data |
+| POST | `/api/alerts` | Configure price alerts |
+| POST | `/api/monitor` | Set up recurring monitor |
+| GET | `/api/optimize` | Prescription cost optimizer |
 
 ---
 
-## Success Metrics
+## 8. Demo Script (5 Minutes)
 
-- End-to-end analysis completes in under 15 seconds
-- All three parallel fetches resolve successfully
-- PDF export contains all five report sections
-- Vietnamese voice output is intelligible and accurate
-- Cache hit rate reduces TinyFish calls by 50%+ during demo
+1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
+2. **0:30-2:00 | Live Demo**: Type "Metformin 500mg", watch 5 pharmacy cards light up in real time. Show 3x price difference. Run prescription optimizer.
+3. **2:00-2:45 | Architecture**: TinyFish parallel agents, asyncio.gather, SSE streaming, APScheduler monitoring.
+4. **2:45-3:15 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies.
+5. **3:15-4:00 | Sponsors & Future**: TinyFish + AWS + BrightData + ElevenLabs + Exa. Expand to 50+ sources, hospital ERP integration, regional expansion.
+
+---
+
+## 9. Success Metrics
+
+- 5+ pharmacy sources scraped simultaneously in <30 seconds
+- Real-time SSE streaming with pharmacy cards lighting up
+- Price variance >100% detected and displayed
+- Telegram alerts with Vietnamese voice summaries
+- Prescription optimizer shows measurable savings

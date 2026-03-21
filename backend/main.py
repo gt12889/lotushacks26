@@ -1,19 +1,24 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers.analyze import router as analyze_router
-from routers.reports import router as reports_router
-from routers.stream import router as stream_router
-from services.cache import close_redis
+from database import init_db
+from services.scheduler import start_scheduler, stop_scheduler
+from routers.search import router as search_router
+from routers.prices import router as prices_router
+from routers.alerts import router as alerts_router
+from routers.monitor import router as monitor_router
+from routers.optimize import router as optimize_router
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    await init_db()
+    start_scheduler()
     yield
-    await close_redis()
+    stop_scheduler()
 
 
-app = FastAPI(title="GhostDriver API", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="MediScrape API", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,11 +28,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(analyze_router)
-app.include_router(reports_router)
-app.include_router(stream_router)
+app.include_router(search_router)
+app.include_router(prices_router)
+app.include_router(alerts_router)
+app.include_router(monitor_router)
+app.include_router(optimize_router)
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "mediscrape"}

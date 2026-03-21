@@ -1,20 +1,16 @@
-"""ElevenLabs service - Vietnamese voice narration"""
+"""ElevenLabs service - Vietnamese voice alerts"""
 import httpx
 import logging
 
 logger = logging.getLogger(__name__)
 
 ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech"
-VIETNAMESE_VOICE_ID = "pFZP5JQG7iQjIQuC4Bku"  # Lily - multilingual voice
+VIETNAMESE_VOICE_ID = "pFZP5JQG7iQjIQuC4Bku"
 
 
 async def generate_audio(text: str, api_key: str) -> bytes | None:
-    """Generate Vietnamese speech audio from summary text."""
-    if not api_key:
-        logger.warning("ElevenLabs API key not configured")
-        return None
-
-    if not text:
+    """Generate Vietnamese speech audio."""
+    if not api_key or not text:
         return None
 
     try:
@@ -27,8 +23,6 @@ async def generate_audio(text: str, api_key: str) -> bytes | None:
                     "voice_settings": {
                         "stability": 0.5,
                         "similarity_boost": 0.75,
-                        "style": 0.0,
-                        "use_speaker_boost": True,
                     },
                 },
                 headers={
@@ -39,7 +33,6 @@ async def generate_audio(text: str, api_key: str) -> bytes | None:
             )
             response.raise_for_status()
             return response.content
-
     except Exception as e:
         logger.error(f"ElevenLabs error: {e}")
         return None

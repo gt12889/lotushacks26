@@ -1,48 +1,91 @@
+"""Pydantic models for MediScrape API"""
 from pydantic import BaseModel
-from enum import Enum
 from typing import Optional
 
+class PharmacySource(BaseModel):
+    id: str
+    name: str
+    base_url: str
+    store_count: Optional[int] = None
 
-class VehicleType(str, Enum):
-    motorbike = "motorbike"
-    car = "car"
-    truck = "truck"
+class ProductResult(BaseModel):
+    product_name: str
+    price: int  # VND
+    original_price: Optional[int] = None
+    manufacturer: Optional[str] = None
+    dosage_form: Optional[str] = None
+    pack_size: int = 1
+    unit_price: Optional[float] = None
+    in_stock: bool = True
+    product_url: Optional[str] = None
 
+class PharmacySearchResult(BaseModel):
+    source_id: str
+    source_name: str
+    status: str  # "success", "error", "pending", "searching"
+    products: list[ProductResult] = []
+    lowest_price: Optional[int] = None
+    result_count: int = 0
+    response_time_ms: Optional[int] = None
+    error: Optional[str] = None
 
-class ViolationRecord(BaseModel):
-    date: str
-    description: str
-    status: str  # "paid", "unpaid"
-    fine_amount: float
-    location: Optional[str] = None
+class SearchResponse(BaseModel):
+    query: str
+    results: dict[str, PharmacySearchResult]
+    best_price: Optional[int] = None
+    best_source: Optional[str] = None
+    price_range: Optional[str] = None
+    potential_savings: Optional[int] = None
 
+class PriceRecord(BaseModel):
+    source_id: str
+    source_name: str
+    product_name: str
+    price: int
+    unit_price: Optional[float] = None
+    manufacturer: Optional[str] = None
+    observed_at: str
 
-class SceneAnalysis(BaseModel):
-    damage_description: str
-    impact_point: str
-    road_conditions: str
-    vehicle_positions: str
-    plate_confirmed: bool
+class TrendData(BaseModel):
+    query: str
+    source_id: str
+    source_name: str
+    prices: list[PriceRecord]
 
+class AlertConfig(BaseModel):
+    drug_query: str
+    price_threshold: int  # VND
+    telegram_chat_id: Optional[str] = None
 
-class LegalReference(BaseModel):
-    article_number: str
-    title: str
-    summary: str
-    relevance: float  # 0-1 score
+class AlertResponse(BaseModel):
+    id: int
+    drug_query: str
+    price_threshold: int
+    is_active: bool
 
+class MonitorConfig(BaseModel):
+    drug_query: str
+    interval_minutes: int = 15
+    sources: str = "all"
 
-class EvidenceReport(BaseModel):
-    violation_history: list[ViolationRecord]
-    scene_analysis: SceneAnalysis
-    legal_references: list[LegalReference]
-    fault_assessment: str
-    risk_score: float  # 0-100
-    next_steps: list[str]
-    summary_text: str
+class MonitorResponse(BaseModel):
+    id: int
+    drug_query: str
+    interval_minutes: int
+    is_active: bool
 
+class OptimizeRequest(BaseModel):
+    drugs: list[str]  # list of drug names
 
-class AnalyzeResponse(BaseModel):
-    report: EvidenceReport
-    pdf_url: Optional[str] = None
-    audio_url: Optional[str] = None
+class OptimizeDrugResult(BaseModel):
+    drug: str
+    best_source: str
+    best_price: int
+    product_name: str
+
+class OptimizeResponse(BaseModel):
+    items: list[OptimizeDrugResult]
+    total_optimized: int
+    total_single_source: Optional[int] = None
+    savings: Optional[int] = None
+    best_single_source: Optional[str] = None

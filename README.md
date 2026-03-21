@@ -1,32 +1,26 @@
-# GhostDriver
+# MediScrape
 
-> **Pitch: Crashout Cop** — Vietnamese traffic incident analysis with vision models and predictive models.
+> **Pitch: Crashout Cop** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
 >
-> Vietnam has 72 million motorbikes. Zero protection when things go wrong.
+> Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
-AI-powered Vietnamese traffic incident analysis platform. Enter a license plate, upload an incident photo, and get a comprehensive evidence report with violation history, scene analysis, legal references, and fault assessment.
+AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites, returning unified drug pricing data in real time.
 
-Built for **LotusHacks 2026**.
+Built for **LotusHacks 2026** | Enterprise Track (TinyFish)
 
 ## Quick Start
 
 ### Prerequisites
 - Node.js 18+
 - Python 3.11+
-- Docker (for Redis)
 
 ### 1. Environment Setup
 ```bash
 cp .env.example .env
-# Fill in your API keys in .env
+# Fill in your API keys (TinyFish required, others optional)
 ```
 
-### 2. Start Redis
-```bash
-docker compose up -d
-```
-
-### 3. Backend
+### 2. Backend
 ```bash
 cd backend
 python -m venv .venv
@@ -35,7 +29,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-### 4. Frontend
+### 3. Frontend
 ```bash
 cd frontend
 npm install
@@ -48,31 +42,44 @@ Visit **http://localhost:3000**
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js + Tailwind |
+| Web Agent | TinyFish (5 parallel agents) |
 | Backend | FastAPI + asyncio |
-| Web Agent | TinyFish (csgt.vn + vr.org.vn) |
-| Vision | Fal.AI |
-| Legal Search | Exa |
-| Synthesis | OpenAI GPT-4o + Qwen |
-| Formatting | JigsawStack |
-| Caching | Redis |
+| Database | SQLite (aiosqlite) |
+| Scheduler | APScheduler |
+| Frontend | Next.js + Tailwind |
+| Notifications | Telegram Bot API |
 | Voice | ElevenLabs |
+| Search | Exa |
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/analyze` | Full analysis (JSON response) |
-| POST | `/analyze/stream` | SSE streaming analysis with live progress |
-| GET | `/reports/{id}/pdf` | Download PDF report |
-| GET | `/reports/{id}/audio` | Play Vietnamese audio summary |
+| POST | `/api/search?query=...` | SSE streaming price search |
+| GET | `/api/prices/{query}` | Cached price data |
+| GET | `/api/trends/{query}` | Historical price trends |
+| POST | `/api/alerts` | Configure price alerts |
+| POST | `/api/monitor` | Set up recurring monitor |
+| POST | `/api/optimize` | Prescription cost optimizer |
 | GET | `/health` | Health check |
+
+## Pharmacy Sources
+
+| Chain | Stores | URL |
+|-------|--------|-----|
+| FPT Long Chau | 2,117+ | nhathuoclongchau.com.vn |
+| Pharmacity | 957+ | pharmacity.vn |
+| An Khang | 527+ | ankhang.vn |
+| Than Thien | 100+ | nhathuocthanhtien.vn |
+| Medicare | 50+ | medicare.vn |
 
 ## Architecture
 
 ```
-User Input → 3 Parallel Fetches → AI Synthesis → Triple Output
-              ├─ TinyFish (violations)     GPT-4o + Qwen    ├─ Dashboard
-              ├─ Fal.AI (scene)                               ├─ Voice (ElevenLabs)
-              └─ Exa (legal)                                  └─ PDF (JigsawStack)
+Search Query → 5 Parallel TinyFish Agents → SSE Stream → Dashboard
+               ├─ Long Chau agent                         ├─ Pharmacy Cards
+               ├─ Pharmacity agent                         ├─ Price Grid
+               ├─ An Khang agent         → SQLite          ├─ Savings Banner
+               ├─ Than Thien agent       → APScheduler     ├─ Trend Charts
+               └─ Medicare agent         → Telegram/Voice  └─ Optimizer
 ```

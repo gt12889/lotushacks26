@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GhostDriver - Traffic Incident Analyzer",
-  description: "AI-powered Vietnamese traffic incident analysis platform",
+  title: "MediScrape - Pharmaceutical Price Intelligence",
+  description: "AI-powered drug price comparison across Vietnamese pharmacy chains",
 };
 
 export default function RootLayout({
