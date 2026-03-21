@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 interface LiveBrowserPreviewProps {
   streamingUrls: Record<string, string>;
@@ -19,15 +19,13 @@ const PHARMACY_NAME_MAP: Record<string, string> = {
 
 export default function LiveBrowserPreview({ streamingUrls, pharmacyNames, isSearching }: LiveBrowserPreviewProps) {
   const { t } = useLocale();
-  const [expanded, setExpanded] = useState(false);
   const entries = Object.entries(streamingUrls);
 
   if (entries.length === 0) return null;
 
   return (
-    <div className="bg-deep border border-cyan/20 rounded-lg overflow-hidden">
-      <button
-        onClick={() => setExpanded(!expanded)}
+    <Collapsible className="bg-deep border border-cyan/20 rounded-lg overflow-hidden">
+      <CollapsibleTrigger
         className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-card/30 transition-colors"
       >
         <div className="flex items-center gap-2">
@@ -40,15 +38,15 @@ export default function LiveBrowserPreview({ streamingUrls, pharmacyNames, isSea
           </span>
         </div>
         <svg
-          className={`w-3.5 h-3.5 text-t3 transition-transform ${expanded ? 'rotate-180' : ''}`}
+          className="w-3.5 h-3.5 text-t3 transition-transform [[data-panel-open]>&]:rotate-180"
           viewBox="0 0 20 20"
           fill="currentColor"
         >
           <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
         </svg>
-      </button>
+      </CollapsibleTrigger>
 
-      {expanded && (
+      <CollapsibleContent>
         <div className="px-4 pb-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {entries.map(([sourceId, url]) => (
             <div key={sourceId} className="border border-border/40 rounded-lg overflow-hidden">
@@ -67,7 +65,7 @@ export default function LiveBrowserPreview({ streamingUrls, pharmacyNames, isSea
             </div>
           ))}
         </div>
-      )}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
