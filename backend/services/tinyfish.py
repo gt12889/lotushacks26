@@ -1,14 +1,47 @@
 """TinyFish service - parallel pharmacy web scraping"""
 import asyncio
+import hashlib
 import httpx
 import json
 import logging
 import time
+from collections import OrderedDict
 from models.schemas import ProductResult, PharmacySearchResult
 from services.normalizer import normalize_drug_name, fuzzy_match_score
 from config import settings as app_settings
 
 logger = logging.getLogger(__name__)
+
+# In-memory cache: key=(query+source_id) -> (timestamp, PharmacySearchResult)
+_cache: OrderedDict[str, tuple[float, PharmacySearchResult]] = OrderedDict()
+CACHE_TTL = 900  # 15 minutes
+CACHE_MAX_SIZE = 200
+
+
+def _cache_key(query: str, source_id: str) -> str:
+    return hashlib.md5(f"{query.lower().strip()}:{source_id}".encode()).hexdigest()
+
+
+def _get_cached(query: str, source_id: str) -> PharmacySearchResult | None:
+    key = _cache_key(query, source_id)
+    if key in _cache:
+        ts, result = _cache[key]
+        if time.time() - ts < CACHE_TTL:
+            # Add cache metadata
+            age = int(time.time() - ts)
+            logger.info(f"Cache HIT for {source_id}:{query} (age: {age}s)")
+            return result
+        else:
+            del _cache[key]
+    return None
+
+
+def _set_cached(query: str, source_id: str, result: PharmacySearchResult):
+    key = _cache_key(query, source_id)
+    _cache[key] = (time.time(), result)
+    # Evict oldest entries if cache too large
+    while len(_cache) > CACHE_MAX_SIZE:
+        _cache.popitem(last=False)
 
 TINYFISH_API_URL = "https://agent.tinyfish.ai/v1/automation/run-sse"
 
@@ -138,6 +171,39 @@ MOCK_DATA_BY_QUERY = {
 }
 
 
+AGENT_TIMEOUT = 15.0  # seconds for mock mode, 120s for live TinyFish
+
+
+async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, timeout: float = 15.0) -> PharmacySearchResult:
+    """Timeout-isolated wrapper around search_single_pharmacy."""
+    config = PHARMACY_CONFIGS.get(source_id)
+    name = config["name"] if config else "Unknown"
+    try:
+        # Use longer timeout for real TinyFish (it navigates real sites)
+        effective_timeout = 180.0 if api_key else timeout
+        return await asyncio.wait_for(
+            search_single_pharmacy(source_id, query, api_key),
+            timeout=effective_timeout,
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"Agent timeout for {source_id} after {timeout}s")
+        return PharmacySearchResult(
+            source_id=source_id,
+            source_name=name,
+            status="error",
+            error=f"Timeout after {timeout}s",
+            response_time_ms=int(timeout * 1000),
+        )
+    except Exception as e:
+        logger.error(f"Agent error for {source_id}: {e}")
+        return PharmacySearchResult(
+            source_id=source_id,
+            source_name=name,
+            status="error",
+            error=str(e),
+        )
+
+
 async def search_single_pharmacy(
     source_id: str, query: str, api_key: str
 ) -> PharmacySearchResult:
@@ -147,6 +213,11 @@ async def search_single_pharmacy(
         return PharmacySearchResult(
             source_id=source_id, source_name="Unknown", status="error", error="Unknown source"
         )
+
+    # Check cache first
+    cached = _get_cached(query, source_id)
+    if cached is not None:
+        return cached
 
     start_time = time.time()
 
@@ -162,7 +233,7 @@ async def search_single_pharmacy(
         mock_products = mock_set.get(source_id, [])
         elapsed = int((time.time() - start_time) * 1000)
         lowest = min((p.price for p in mock_products), default=None)
-        return PharmacySearchResult(
+        result = PharmacySearchResult(
             source_id=source_id,
             source_name=config["name"],
             status="success",
@@ -171,6 +242,8 @@ async def search_single_pharmacy(
             result_count=len(mock_products),
             response_time_ms=elapsed,
         )
+        _set_cached(query, source_id, result)
+        return result
 
     url = config["search_url"].format(query=query)
     goal = config["goal"].format(query=query)
@@ -265,7 +338,7 @@ async def search_single_pharmacy(
 
         elapsed = int((time.time() - start_time) * 1000)
         lowest = min((p.price for p in products), default=None)
-        return PharmacySearchResult(
+        result = PharmacySearchResult(
             source_id=source_id,
             source_name=config["name"],
             status="success",
@@ -274,6 +347,8 @@ async def search_single_pharmacy(
             result_count=len(products),
             response_time_ms=elapsed,
         )
+        _set_cached(query, source_id, result)
+        return result
 
     except Exception as e:
         elapsed = int((time.time() - start_time) * 1000)
@@ -292,7 +367,7 @@ async def search_all_pharmacies(query: str, api_key: str, sources: list[str] | N
     target_sources = sources or list(PHARMACY_CONFIGS.keys())
 
     tasks = [
-        search_single_pharmacy(sid, query, api_key)
+        search_single_pharmacy_safe(sid, query, api_key)
         for sid in target_sources
     ]
 

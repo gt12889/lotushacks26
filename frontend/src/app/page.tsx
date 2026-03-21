@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
@@ -109,6 +109,34 @@ export default function Home() {
   const [currentQuery, setCurrentQuery] = useState('');
   const [memoryHints, setMemoryHints] = useState<string[]>([]);
   const [syncTime, setSyncTime] = useState('');
+  const eventBufferRef = useRef<Array<{type: string, data: any}>>([]);
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const flushEvents = useCallback(() => {
+    const buffer = eventBufferRef.current;
+    if (buffer.length === 0) return;
+
+    // Batch all state updates
+    const newResults: Record<string, any> = {};
+    let newSummary: Summary | null = null;
+
+    for (const evt of buffer) {
+      if (evt.type === 'pharmacy') {
+        newResults[evt.data.source_id] = evt.data;
+      } else if (evt.type === 'summary') {
+        newSummary = evt.data;
+      }
+    }
+
+    if (Object.keys(newResults).length > 0) {
+      setResults(prev => ({ ...prev, ...newResults }));
+    }
+    if (newSummary) {
+      setSummary(newSummary);
+    }
+
+    eventBufferRef.current = [];
+  }, []);
 
   const fetchMemoryHints = useCallback(async (q: string, userId: string) => {
     if (!q.trim()) { setMemoryHints([]); return; }
@@ -164,11 +192,28 @@ export default function Home() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.task === 'summary') setSummary(event);
-            else if (event.source_id) setResults(prev => ({ ...prev, [event.source_id]: event }));
+            if (event.task === 'summary' || event.type === 'search_complete') {
+              eventBufferRef.current.push({ type: 'summary', data: event });
+            } else if (event.source_id) {
+              eventBufferRef.current.push({ type: 'pharmacy', data: event });
+            }
+
+            // Debounce: flush every 200ms
+            if (!flushTimerRef.current) {
+              flushTimerRef.current = setTimeout(() => {
+                flushEvents();
+                flushTimerRef.current = null;
+              }, 200);
+            }
           } catch {}
         }
       }
+      // Final flush
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      flushEvents();
     } catch (error) {
       console.error('Search error:', error);
     } finally {
