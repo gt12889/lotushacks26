@@ -34,6 +34,55 @@ npm run dev
 
 Visit **http://localhost:3005**
 
+## Deploy on Railway (live demo URL)
+
+Two services from the **same GitHub repo**, different **Root Directory**s.
+
+1. **Backend (FastAPI)**  
+   - [Railway Dashboard](https://railway.app) → **New Project** → **Deploy from GitHub** → select this repo.  
+   - Open the service → **Settings** → **Root Directory** → `backend`.  
+   - **Variables**: copy names from `railway.env.example` (API keys + **`CORS_ORIGINS`**).  
+   - **`CORS_ORIGINS`** must list your frontend’s public URL (comma-separated), e.g. `https://your-frontend.up.railway.app,http://localhost:3005`. If unset, the API only allows `http://localhost:3005`.  
+   - **Settings → Networking → Generate Domain** → note the URL (e.g. `https://xxx.up.railway.app`).
+
+2. **Frontend (Next.js)**  
+   - **Add service** → same repo → **Root Directory** → `frontend`.  
+   - **Variables**: `NEXT_PUBLIC_API_URL` = backend public URL (**no** trailing slash).  
+   - Redeploy the frontend after setting or changing this (Next bakes it in at build time).  
+   - **Networking** → generate a public domain for the UI.
+
+3. **SQLite**  
+   - Default DB file lives on the service filesystem and can reset on redeploy. For a hackathon demo that is usually fine; for persistence, add a **Volume** in Railway and point `DATABASE_URL` at a path on that volume.
+
+4. **CLI (optional)**  
+   - `npm i -g @railway/cli` → `railway login` → from `backend/` or `frontend/` run `railway link` to attach a folder to an existing service.
+
+Config-as-code: `backend/railway.toml` and `frontend/railway.toml` use the **Dockerfile** builder (`backend/Dockerfile`, `frontend/Dockerfile`) so deploys work the same from GitHub, CLI, or a registry.
+
+### Without GitHub
+
+**A. Railway CLI (zip-style deploy from your laptop)**  
+1. Install: `npm i -g @railway/cli` → `railway login`.  
+2. Create an **empty** project in the dashboard (or `railway init` in a folder).  
+3. **Backend:** `cd backend` → `railway link` (pick/create the API service) → set **Root Directory** to `.` or leave service tied to this repo path (CLI uploads the current directory). Run `railway up` to build and deploy the Dockerfile.  
+4. **Frontend:** `cd frontend` → `railway link` (other service) → set **`NEXT_PUBLIC_API_URL`** in Variables to your API’s public URL → `railway up`.  
+5. Set **`CORS_ORIGINS`** on the backend service to include the frontend public URL.
+
+**B. Docker image (any registry)**  
+```bash
+# Backend
+docker build -t YOUR_USER/megladon-api:latest ./backend
+docker push YOUR_USER/megladon-api:latest
+
+# Frontend (set real API URL at build time)
+docker build --build-arg NEXT_PUBLIC_API_URL=https://YOUR-API.up.railway.app -t YOUR_USER/megladon-web:latest ./frontend
+docker push YOUR_USER/megladon-web:latest
+```  
+In Railway: **New** → **Docker Image** → paste image name → add env vars on the service (backend still needs `CORS_ORIGINS`, etc.).
+
+**C. Switch back to Nixpacks**  
+If you prefer Railway’s auto build without Docker, change `[build] builder = "NIXPACKS"` and remove `dockerfilePath` in each `railway.toml`, and set `startCommand` again as in git history.
+
 ## Tech Stack
 
 | Layer | Technology |

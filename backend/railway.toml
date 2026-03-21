@@ -1,0 +1,14 @@
+# Railway: Root Directory = `backend`.
+# Builder = Dockerfile (works without GitHub via CLI `railway up` or “Deploy from image”).
+# https://docs.railway.com/reference/config-as-code
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Uses CMD from Dockerfile (uvicorn + PORT)
+healthcheckPath = "/health"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
