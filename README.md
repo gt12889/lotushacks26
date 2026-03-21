@@ -1,6 +1,6 @@
 # Megladon MD
 
-> **MEGLADON MD** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
+> **Megladon MD** — Vietnamese pharmaceutical price intelligence with parallel AI web agents.
 
 > Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
@@ -63,7 +63,7 @@ After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/
 | Database | SQLite (aiosqlite) |
 | Scheduler | APScheduler |
 | Frontend | Next.js + Tailwind |
-| Notifications | Telegram Bot API |
+| Notifications | Discord Webhooks |
 | Voice | ElevenLabs |
 | Search | Exa |
 | Memory | Supermemory (optional) |
@@ -82,8 +82,13 @@ After a search, the dashboard loads a **7-day trajectory** chart from `GET /api/
 | GET | `/api/trends/{query}` | Historical price trends |
 | POST | `/api/alerts` | Configure price alerts |
 | POST | `/api/monitor` | Set up recurring monitor |
+| GET | `/api/alerts` | List active alerts |
+| DELETE | `/api/alerts/{id}` | Deactivate an alert |
+| GET | `/api/monitors` | List active monitors |
+| POST | `/api/ocr` | OCR prescription image → extract drug names |
 | POST | `/api/demo-alert` | Live demo: Discord + ElevenLabs alert (requires `DISCORD_*` / `ELEVENLABS_API_KEY`) |
 | GET | `/health` | Health check; includes `supermemory_configured` (bool, non-secret) |
+| GET | `/health/services` | Detailed service health status |
 
 ## Pharmacy Sources
 
@@ -103,7 +108,7 @@ Search Query → 5 Parallel TinyFish Agents (stealth) → SSE Stream → Dashboa
                ├─ Pharmacity agent [stealth+proxy]           ├─ Pharmacy Cards
                ├─ An Khang agent   [stealth+proxy]           ├─ Price Grid
                ├─ Than Thien agent [stealth]    → SQLite     ├─ Savings Banner
-               └─ Medicare agent   [stealth]    → Telegram   └─ Optimizer
+               └─ Medicare agent   [stealth]    → Discord    └─ Optimizer
 
 Prescription → /run-batch (atomic, up to 100 runs) → Poll Results → Optimized Sourcing
 ```

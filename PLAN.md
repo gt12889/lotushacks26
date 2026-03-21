@@ -10,11 +10,11 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 **Goal**: Replace GhostDriver scaffolding, set up SQLite schema.
 
-- [ ] Update backend structure for Megladon MD (new services, models)
-- [ ] Implement SQLite database with schema (sources, drugs, prices, alerts, monitor_jobs)
-- [ ] Seed sources table with 5 Tier 1 pharmacies
-- [ ] Update .env.example and requirements.txt
-- [ ] **Verify**: Database creates, sources seeded
+- [x] Update backend structure for Megladon MD (new services, models)
+- [x] Implement SQLite database with schema (sources, drugs, prices, alerts, monitor_jobs)
+- [x] Seed sources table with 5 Tier 1 pharmacies
+- [x] Update .env.example and requirements.txt
+- [x] **Verify**: Database creates, sources seeded
 
 ---
 
@@ -22,12 +22,12 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 **Goal**: Parallel scraping of 5 pharmacy websites.
 
-- [ ] Define pharmacy configs (URL patterns, goal prompts) for all 5 sources
-- [ ] Implement TinyFish client with AsyncTinyFish pattern
-- [ ] Build `search_all_pharmacies()` with `asyncio.gather()`
-- [ ] Parse and normalize product results (name, price, manufacturer, pack_size, unit_price)
-- [ ] Drug name fuzzy matching / normalization
-- [ ] **Verify**: Search returns structured results from all 5 sources
+- [x]Define pharmacy configs (URL patterns, goal prompts) for all 5 sources
+- [x]Implement TinyFish client with AsyncTinyFish pattern
+- [x]Build `search_all_pharmacies()` with `asyncio.gather()`
+- [x]Parse and normalize product results (name, price, manufacturer, pack_size, unit_price)
+- [x]Drug name fuzzy matching / normalization
+- [x]**Verify**: Search returns structured results from all 5 sources
 
 ---
 
@@ -35,13 +35,13 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 **Goal**: Core search API with real-time streaming.
 
-- [ ] `POST /api/search` -- SSE stream of results per pharmacy
-- [ ] `GET /api/prices/{drug_query}` -- cached results from SQLite
-- [ ] `GET /api/trends/{drug_query}` -- historical price data
-- [ ] `POST /api/alerts` -- price threshold alerts
-- [ ] `POST /api/monitor` -- recurring monitor jobs
-- [ ] `GET /api/optimize` -- multi-drug prescription optimizer
-- [ ] **Verify**: SSE streams results as each pharmacy responds
+- [x]`POST /api/search` -- SSE stream of results per pharmacy
+- [x]`GET /api/prices/{drug_query}` -- cached results from SQLite
+- [x]`GET /api/trends/{drug_query}` -- historical price data
+- [x]`POST /api/alerts` -- price threshold alerts
+- [x]`POST /api/monitor` -- recurring monitor jobs
+- [x]`POST /api/optimize` -- multi-drug prescription optimizer
+- [x]**Verify**: SSE streams results as each pharmacy responds
 
 ---
 
@@ -49,25 +49,25 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 **Goal**: React dashboard with live pharmacy cards and price grid.
 
-- [ ] Search bar component with drug name input
-- [ ] Pharmacy cards (5 cards, light up on SSE events)
-- [ ] Price comparison grid (sortable table)
-- [ ] Savings calculator ("Save X VND by buying from Y")
-- [ ] Price trend chart component
-- [ ] Prescription optimizer UI (multi-drug input)
-- [ ] **Verify**: Full search-to-display flow working
+- [x]Search bar component with drug name input
+- [x]Pharmacy cards (5 cards, light up on SSE events)
+- [x]Price comparison grid (sortable table)
+- [x]Savings calculator ("Save X VND by buying from Y")
+- [x]Price trend chart component
+- [x]Prescription optimizer UI (multi-drug input)
+- [x]**Verify**: Full search-to-display flow working
 
 ---
 
 ## Phase 5: Monitoring & Notifications
 
-**Goal**: APScheduler + Telegram + ElevenLabs alerts.
+**Goal**: APScheduler + Discord + ElevenLabs alerts.
 
-- [ ] APScheduler integration for recurring price checks
-- [ ] Telegram Bot setup for price drop notifications
-- [ ] ElevenLabs Vietnamese TTS for voice alerts
-- [ ] Alerts management UI
-- [ ] **Verify**: Automated monitor triggers Telegram + voice alert
+- [x]APScheduler integration for recurring price checks
+- [x]Discord webhook setup for price drop notifications
+- [x]ElevenLabs Vietnamese TTS for voice alerts
+- [x]Alerts management UI
+- [x]**Verify**: Automated monitor triggers Discord + voice alert
 
 ---
 
@@ -75,12 +75,12 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 
 **Goal**: Demo-ready with real pharmacy data.
 
-- [ ] Pre-cache demo data as fallback
-- [ ] Error handling, loading states
-- [ ] Mobile responsiveness
-- [ ] Vietnamese language labels
-- [ ] End-to-end test with real drug searches
-- [ ] **Verify**: 5-minute demo script runs smoothly
+- [x]Pre-cache demo data as fallback
+- [x]Error handling, loading states
+- [x]Mobile responsiveness
+- [x]Vietnamese language labels
+- [x]End-to-end test with real drug searches
+- [x]**Verify**: 5-minute demo script runs smoothly
 
 ### Demo-Critical Features (Post-Audit Build)
 
@@ -204,7 +204,7 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 | Database | SQLite (aiosqlite) |
 | Scheduler | APScheduler |
 | Frontend | Next.js + Tailwind |
-| Notifications | Telegram Bot API |
+| Notifications | Discord Webhooks |
 | Voice | ElevenLabs |
 | Search | Exa |
 | LLM | OpenRouter |

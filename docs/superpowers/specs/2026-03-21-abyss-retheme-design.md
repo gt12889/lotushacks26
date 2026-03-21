@@ -1,5 +1,7 @@
 # MediScrape "The Abyss" — Full Retheme Design Spec
 
+> **IMPLEMENTATION NOTE:** The Abyss retheme was applied by restyling existing components in place rather than creating the renamed components listed below (e.g., `AbyssNavBar` was not created — `NavBar` was restyled directly). Color token names also differ from this spec: code uses `cyan` (not `accent-cyan`), `t1`/`t2`/`t3` (not `text-primary`/`text-secondary`/`text-muted`). See `frontend/src/app/globals.css` for actual tokens.
+
 ## Context
 
 MediScrape is a pharmaceutical price intelligence platform for LotusHack 2026. The current frontend is a light-mode gray/white prototype with standard blue accents. The entire UI needs to be rebuilt with a deep-ocean "Abyss" dark theme — a data-dense, cyberpunk-pharmaceutical aesthetic with navy backgrounds, cyan accents, and dramatic red alerts.

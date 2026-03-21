@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS alerts (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     drug_query TEXT NOT NULL,
     price_threshold INTEGER,
-    telegram_chat_id TEXT,
+    discord_channel_id TEXT,
     is_active BOOLEAN DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

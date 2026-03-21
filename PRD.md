@@ -98,7 +98,7 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
          ▼
 ┌─────────────────────────────────────────────────────────┐
 │              NOTIFICATION LAYER                          │
-│  Telegram Bot API  →  procurement team alerts           │
+│  Discord Webhooks  →  procurement team alerts            │
 │  ElevenLabs TTS    →  Vietnamese voice summary          │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -118,7 +118,7 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 1. Set up monitor: "Track Metformin 500mg every 15 minutes"
 2. APScheduler triggers TinyFish agents on interval
 3. Price observations stored in SQLite with timestamps
-4. Telegram alert + ElevenLabs Vietnamese voice when price drops
+4. Discord alert + ElevenLabs Vietnamese voice when price drops
 
 ### Flow 3: Prescription Cost Optimizer
 1. Input full prescription (multiple drugs) or upload prescription image (OCR extraction via GPT-4o function calling)
@@ -165,7 +165,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 | Database | SQLite |
 | Scheduler | APScheduler |
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts |
-| Notifications | Telegram Bot API |
+| Notifications | Discord Webhooks |
 | Voice | ElevenLabs API |
 | Search | Exa API |
 | LLM | OpenRouter |
@@ -184,6 +184,14 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 | GET | `/api/trends/{drug_query}` | Historical price data |
 | POST | `/api/alerts` | Configure price alerts |
 | POST | `/api/monitor` | Set up recurring monitor |
+| GET | `/api/alerts` | List active alerts |
+| DELETE | `/api/alerts/{id}` | Deactivate an alert |
+| GET | `/api/monitors` | List active monitors |
+| POST | `/api/ocr` | OCR prescription image → extract drug names |
+| POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
+| GET | `/api/memory/recall` | Supermemory context recall |
+| GET | `/health` | Health check |
+| GET | `/health/services` | Detailed service health status |
 
 ---
 
@@ -265,7 +273,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
 - Real-time SSE streaming with pharmacy cards lighting up
 - Price variance >100% detected and displayed (Megalodon Alert)
-- Telegram alerts with Vietnamese voice summaries
+- Discord alerts with Vietnamese voice summaries
 - Prescription optimizer shows measurable savings
 - All 5 frontend routes render in Abyss dark theme without light-mode artifacts
 - Recharts price trend visualization working with real data
