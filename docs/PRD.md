@@ -65,7 +65,7 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 │                    REACT DASHBOARD                       │
 │  Drug search → Price comparison grid → Trend charts     │
 │  Agent activity feed → Live metrics → Agent cascade     │
-│  Voice input → Prescription OCR → Zalo share            │
+│  Voice input → Prescription OCR            │
 └───────────────────────┬─────────────────────────────────┘
                         │ REST API + SSE
 ┌───────────────────────┴─────────────────────────────────┐
@@ -133,7 +133,6 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 10. **SavingsBanner** shows concrete savings: "Save ₫340,000 (47%)"
 11. **Government Ceiling Panel** checks results against DAV declared prices, flags violations
 12. **WHO reference pricing** and **drug info cards** enrich results via Exa
-13. Results shareable via **Zalo deep link**
 
 ### Flow 2: Persistent Price Monitoring
 1. Set up monitor: "Track Metformin 500mg every 15 minutes"
@@ -179,7 +178,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 
 ## 6. Multi-Tier Agent Pipeline
 
-The search system uses a 4-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
+The search system uses a 5-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
 
 ### Tier 0: OCR Extract (optional)
 - Triggered by prescription image upload
@@ -219,6 +218,17 @@ The search system uses a 4-tier agent cascade, visualized in real-time via the *
 - **Rule-based fallback** if LLM fails — deterministic labels based on confidence score + anomaly/compliance flags
 - Tracked as "Analyst → Qwen 2.5 72B" in Model Router Panel
 - Streamed as late SSE event `analyst_verdict` — frontend shows `ActionLabel` component above SavingsBanner
+
+### Tier 5: Investigation Swarm (auto-triggered)
+- Activated when `detect_price_anomaly()` flags suspiciously low-priced products
+- Spawns one `AgentTier.INVESTIGATOR` agent per anomalous product (capped at 5)
+- Each investigator runs 3 parallel checks:
+  1. **Counterfeit risk research** via Exa Research API (`research_counterfeit_risk()`)
+  2. **WHO reference price comparison** via Exa semantic search (`search_who_reference_price()`)
+  3. **Manufacturer verification** against `KNOWN_GOOD_MANUFACTURERS` set (20 major Vietnamese + international pharma companies)
+- Results streamed as `anomaly_investigation` SSE events with per-product findings
+- Agents resolved via `asyncio.wait(FIRST_COMPLETED)` — results appear in real-time as each investigation completes
+- Frontend renders findings in `CounterfeitRiskPanel` with VERIFIED/UNVERIFIED manufacturer badges and risk levels
 
 ### Enrichment (parallel, non-blocking)
 - **WHO reference pricing**: Exa `category: "research paper"` search for international benchmarks
@@ -335,8 +345,8 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | Component | Purpose |
 |-----------|---------|
 | `SearchBar` | Drug search input with quick-search buttons and **voice input** (Web Speech API) |
-| `AgentActivityFeed` | Terminal-style real-time log of all agent events (spawn, searching, success, error, variant) with LIVE badge, sonar dots, blinking cursor |
-| `AgentCascade` | 3-tier pipeline visualization (OCR → Pharmacy → Variant) with sonar status dots |
+| `AgentActivityFeed` | Terminal-style real-time log of all agent events (spawn, searching, success, error, variant, investigate) with LIVE badge, sonar dots, amber investigate styling |
+| `AgentCascade` | 4-tier pipeline visualization (OCR → Pharmacy → Variant → Analyst) with sonar status dots |
 | `LiveMetricsBar` | 4 KPI counters: agents deployed, pharmacies scanned, products found, savings detected |
 | `ModelRouterPanel` | Collapsible panel showing which LLM handled each step, animated latency bars, sponsor attribution |
 | `PharmacyCards` | 5 agent status cards with bioluminescent glow, source colors, latency, result counts |
@@ -345,9 +355,9 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `CeilingPanel` | Government DAV price ceiling compliance analysis with violation severity |
 | `SponsorBadge` | Tech sponsor pills (TinyFish, BrightData, Exa, OpenRouter, etc.) on result cards |
 | `MegalodonAlert` | Red warning bar for price spikes (>100% spread) |
-| `LiveBrowserPreview` | Collapsible iframe panel showing live TinyFish browser sessions |
+| `LiveBrowserPreview` | **War Room** — auto-expanded 5-column grid of live TinyFish browser sessions with status-aware borders (cyan=active, green=success, red=error) and results overlays on completion. Supports Tier 3 variant agent previews via composite keys. |
 | `DemoAlertTrigger` | Button to fire Discord + ElevenLabs demo alert during presentation |
-| `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips |
+| `ComparisonBanner` | Speed comparison banner: manual search vs MegalodonMD with speedup multiplier |
 | `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
 | `AbyssFooter` | Live UTC sync clock, protocol links |
 | `Counter` | Animated number counting with easeOutExpo easing (used in LiveMetricsBar, landing stats) |
@@ -361,10 +371,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `LocaleProvider` | i18n context provider with VN/EN locale toggle and `useLocale()` hook |
 | `NavBar` | Top navigation bar with route links and locale toggle |
 | `MegalodonBadge` | Status badge system (best/critical/monitor/active/searching/error/out-of-stock) built on shadcn Badge |
-| `SupermemoryStatusBadge` | Supermemory connection status indicator |
 | `ActionLabel` | Tier 4 analyst verdict banner with Vietnamese action directive, confidence score badge, expandable reasoning |
-| `ComparisonBanner` | Cross-pharmacy comparison summary |
-| `SonarFilters` | Right sidebar with molecule selector, AWP/WAC toggle, time range, drug class chips |
 
 ### Accessibility
 
@@ -398,7 +405,6 @@ Built on **shadcn/ui** (v4, base-nova preset) with custom animated components:
 8. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
 9. **Architecture page** — 3-column node-connector diagram explaining full data flow with all sponsor credits.
 10. **Voice input** — Web Speech API for Vietnamese drug name input, accessibility differentiator.
-11. **Zalo share** — Deep link to share results via Vietnam's dominant messaging app.
 12. **Ocean video + Aurora layered background** — landing page hero with ocean footage underneath canvas-based aurora for bioluminescent shimmer.
 
 ---
@@ -485,17 +491,19 @@ The `/api/search` endpoint streams these typed events:
 | `{source_id, status, products, ...}` | Full `PharmacySearchResult` | Pharmacy results ready |
 | `search_complete` | Summary with best_price, savings, variants, compliance, agents, dedup | All tiers done |
 | `analyst_verdict` | `{action_label, action_label_en, risk_level, reasoning, confidence_score, buy_recommendation}` | Tier 4 cross-validation verdict (late event) |
-| `counterfeit_risk` | `{risk_level, sources, report}` | Post-summary Exa research (late event) |
+| `anomaly_investigation` | `{product_name, unit_price, median_price, counterfeit_research, who_comparison, manufacturer_check}` | Per-product investigation result (Tier 5) |
+| `counterfeit_risk` | `{risk_level, sources, report}` | Post-summary Exa research (legacy, replaced by investigation swarm) |
 
 ### Price Fluctuation Analysis (`services/price_fluctuation.py`)
 
 Detects price changes across scans by comparing current results against prior price records in the database. Emits human-readable fluctuation lines (e.g., "Metformin 500mg at Long Chau: 45,000 → 42,000 VND (-6.7%)") included in the `search_complete` summary event.
 
-### Counterfeit Risk Detection
+### Counterfeit Risk Detection (Investigation Swarm)
 
-Two-stage system:
+Three-stage system:
 1. **Price anomaly detection** (`services/exa.py:detect_price_anomaly()`): Flags products priced significantly below the median for their drug class
-2. **Exa deep research** (`services/exa.py:research_counterfeit_risk()`): If anomalies found, fires a post-summary Exa search for counterfeit risk intelligence, streamed as a late SSE event
+2. **Investigation swarm** (`services/exa.py:investigate_anomalous_product()`): Spawns one `INVESTIGATOR` agent per anomalous product (up to 5), each running counterfeit research, WHO price comparison, and manufacturer verification in parallel
+3. **Manufacturer verification**: Checks product manufacturer against `KNOWN_GOOD_MANUFACTURERS` set (Stada, DHG Pharma, Pfizer, etc.) — surfaces VERIFIED/UNVERIFIED badges in the CounterfeitRiskPanel
 
 Frontend displays via `CounterfeitRiskPanel.tsx` with severity-coded warnings.
 
