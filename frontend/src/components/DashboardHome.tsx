@@ -53,6 +53,7 @@ interface ScanSummary {
   total_results: number;
   variants?: string[];
   price_fluctuations?: string[];
+  who_reference?: { price_snippet?: string; source_title?: string; source_url?: string; highlights?: string[] } | null;
 }
 
 interface TrendPoint {
@@ -672,7 +673,7 @@ export default function DashboardHome() {
                   anomalies={(scanSummary as any)?.price_anomalies ?? null}
                   risk={(scanSummary as any)?.counterfeit_risk ?? null}
                 />
-                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
+                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} whoRef={scanSummary?.who_reference ?? null} />
                 <DemoAlertTrigger
                   drugName={currentQuery || 'Metformin 500mg'}
                   bestPrice={scanSummary?.best_price ?? undefined}

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import StatusPill from './StatusPill';
 import SponsorBadge from './SponsorBadge';
+import ReferencePriceBadge from './ReferencePriceBadge';
 
 const BRIGHTDATA_SOURCES = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
@@ -44,6 +45,7 @@ interface PriceGridProps {
   results: Record<string, PharmacyResult>;
   bestPrice: number | null;
   variantProducts?: VariantProduct[];
+  whoRef?: { price_snippet?: string; source_title?: string; source_url?: string; highlights?: string[] } | null;
 }
 
 type SortKey = 'price' | 'unit_price' | 'source' | 'name';
@@ -56,7 +58,7 @@ const SOURCE_COLORS: Record<string, string> = {
   medicare: '#14B8A6',
 };
 
-export default function PriceGrid({ results, bestPrice, variantProducts = [] }: PriceGridProps) {
+export default function PriceGrid({ results, bestPrice, variantProducts = [], whoRef = null }: PriceGridProps) {
   const [sortBy, setSortBy] = useState<SortKey>('price');
 
   const allProducts: (Product & { source_id: string; source_name: string; variant_of?: string })[] = [];
@@ -113,6 +115,7 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [] }: 
           Pricing Abyss Index
           <span className="text-t3 font-normal ml-2 normal-case tracking-normal">({allProducts.length} products)</span>
         </h3>
+        {whoRef && bestPrice && <ReferencePriceBadge whoRef={whoRef} currentPrice={bestPrice} />}
         <div className="flex gap-1 text-xs">
           {(['price', 'unit_price', 'source', 'name'] as SortKey[]).map((key) => (
             <button
