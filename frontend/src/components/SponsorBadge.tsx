@@ -1,5 +1,7 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
+
 interface SponsorBadgeProps {
   sponsors: string[];
 }
@@ -12,6 +14,7 @@ const SPONSOR_COLORS: Record<string, string> = {
   Exa: '#14B8A6',
   ElevenLabs: '#EC4899',
   OpenAI: '#94A3B8',
+  Supermemory: '#8B5CF6',
 };
 
 export default function SponsorBadge({ sponsors }: SponsorBadgeProps) {
@@ -20,13 +23,14 @@ export default function SponsorBadge({ sponsors }: SponsorBadgeProps) {
       {sponsors.map((sponsor) => {
         const color = SPONSOR_COLORS[sponsor] || '#64748B';
         return (
-          <span
+          <Badge
             key={sponsor}
-            className="px-1.5 py-0.5 rounded border bg-transparent text-[8px] uppercase font-mono font-bold"
+            variant="outline"
+            className="h-auto px-1.5 py-0.5 rounded bg-transparent text-[8px] uppercase font-mono font-bold"
             style={{ borderColor: color, color }}
           >
             {sponsor}
-          </span>
+          </Badge>
         );
       })}
     </div>

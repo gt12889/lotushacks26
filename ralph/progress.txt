@@ -1,24 +1,219 @@
-# Ralph Progress Log
-Started: Sat Mar 21 16:15:07 CDT 2026
----
+# Ralph Progress - 21st.dev + ReactBits Component Migration
+# Started: 2026-03-21
+# Branch: ralph/21st-reactbits-components
 
 ## Codebase Patterns
-- SSE events in search.py use `yield f"data: {json.dumps(...)}\n\n"` format
-- TinyFish SSE events have types: STARTED, STREAMING_URL, PROGRESS, HEARTBEAT, COMPLETE
-- `search_single_pharmacy_safe` wraps `search_single_pharmacy` with timeout and retry logic
-- `PharmacySearchResult.model_dump()` is used for serializing pharmacy results to SSE
-- Frontend DashboardHome.tsx parses SSE events by checking `event.type` first, then falls back to `event.source_id` for pharmacy results
-- `streaming_url_callback` pattern: pass a sync callback to async search functions for early event emission via asyncio.Queue
+- Frontend uses Tailwind v4 with `@tailwindcss/postcss` — no tailwind.config file
+- Custom theme colors defined via `@theme inline` block in globals.css (not tailwind.config)
+- Path alias `@/*` maps to `./src/*` in tsconfig.json
+- shadcn v4.1.0 uses `base-nova` style (not `new-york`/`default` — those are removed in v4+)
+- shadcn init with `-d -y` flags for non-interactive defaults
+- App is always dark-themed — no .dark class toggle needed, :root vars set to abyss theme directly
+- Components in src/components/ use mixed import styles: relative (`./Foo`) for siblings, alias (`@/components/Foo`) from app pages — replace both when swapping components
+- shadcn Badge v4 uses `useRender` from `@base-ui/react` — pass `className` overrides to customize colors
+- shadcn Collapsible v4 uses `defaultOpen` prop and manages state internally — no useState needed for expand/collapse
+- 21st.dev registry may return 500 errors — implement ReactBits components manually when needed
+- Custom Counter component at ui/counter.tsx provides animated number transitions (easeOutExpo, requestAnimationFrame)
+- Custom AnimatedList component at ui/animated-list.tsx wraps keyed children with CSS slide-in animation (plays once per mount)
+- Custom GlareHover component at ui/glare-hover.tsx adds mouse-tracking radial gradient glare effect on hover
+- Custom Dock component at ui/dock.tsx provides macOS-style magnification on hover via React context + cosine interpolation
+- Custom ScrollReveal component at ui/scroll-reveal.tsx wraps children with fade+slide-up animation triggered by IntersectionObserver
+- shadcn Accordion v4 auto-adds chevron icons — use `hover:no-underline` and `border-none` on AccordionItem to customize appearance
 
 ## 2026-03-21 - US-001
-- Implemented early emission of streaming_url in SSE events for Live Browser Preview
-- Added `streaming_url_callback` parameter to `search_single_pharmacy` and `search_single_pharmacy_safe` in tinyfish.py
-- In search.py, created asyncio.Queue + callback to emit `streaming_url` events as soon as TinyFish returns them (before search completes)
-- Added frontend handler for the new `streaming_url` event type in DashboardHome.tsx
-- The streaming_url is also still included in the pharmacy result event via model_dump() for backward compat
-- Files changed: backend/services/tinyfish.py, backend/routers/search.py, frontend/src/components/DashboardHome.tsx
+- Initialized shadcn/ui via `npx shadcn@latest init -d -y`
+- Customized shadcn CSS variables in :root to match abyss dark theme colors
+- Preserved all custom animations and theme variables in globals.css
+- Files changed: globals.css, components.json, src/lib/utils.ts, src/components/ui/button.tsx, package.json, package-lock.json
 - **Learnings for future iterations:**
-  - The streaming_url was already in PharmacySearchResult schema and model_dump() — the real issue was timing (emitting it early)
-  - asyncio.Queue is the right pattern for emitting intermediate events from async tasks back to an SSE generator
-  - Pre-existing ESLint `no-explicit-any` errors in DashboardHome.tsx — don't touch them unless asked
+  - shadcn v4+ no longer supports `--style` flag — uses `--preset` instead; `-d` gives `base-nova` preset
+  - shadcn init merges with existing globals.css rather than overwriting — appends :root/.dark vars at the bottom
+  - The app body colors are set via plain CSS (`body { background-color: #0D1C32; color: #D6E3FF; }`) not @apply
+  - clsx and tailwind-merge are auto-installed as dependencies by shadcn init
+---
+
+## 2026-03-21 - US-002
+- Installed shadcn Badge component via `npx shadcn@latest add badge -y`
+- Created MegalodonBadge wrapper in src/components/ui/megalodon-badge.tsx mapping all 7 status types to Badge with outline variant and custom theme colors
+- Replaced all StatusPill imports/usages in PharmacyCards.tsx, PriceGrid.tsx, DashboardHome.tsx, alerts/page.tsx
+- Deleted StatusPill.tsx
+- Files changed: ui/badge.tsx (new), ui/megalodon-badge.tsx (new), PharmacyCards.tsx, PriceGrid.tsx, DashboardHome.tsx, alerts/page.tsx, StatusPill.tsx (deleted)
+- **Learnings for future iterations:**
+  - shadcn v4 Badge uses `useRender` from `@base-ui/react` — different API than older shadcn versions
+  - StatusPill was used in 4 files with 8 total usages — always grep broadly when replacing components
+  - Some files import components with relative paths (`./StatusPill`), others use alias (`@/components/StatusPill`) — replace both patterns
+  - MegalodonBadge preserves the same prop interface (status, label) for drop-in replacement
+---
+
+## 2026-03-21 - US-003
+- Refactored SponsorBadge.tsx to use shadcn Badge with outline variant and custom sponsor colors via inline style
+- Refactored ReferencePriceBadge.tsx to wrap WHO price display in shadcn Badge with outline variant
+- Added Supermemory (#8B5CF6) to SPONSOR_COLORS map (8th sponsor per PRD)
+- All USD→VND conversion logic and ratio indicator preserved
+- Files changed: SponsorBadge.tsx, ReferencePriceBadge.tsx
+- **Learnings for future iterations:**
+  - Badge `h-auto` override is needed when Badge content has custom padding — default h-5 constrains content
+  - SponsorBadge is imported in 5 files (PriceGrid, PharmacyCards, ModelRouterPanel, CounterfeitRiskPanel, ReferencePriceBadge) — refactoring in-place avoids touching all consumers
+  - ReferencePriceBadge internally uses SponsorBadge for the Exa attribution — nesting Badge inside Badge works fine
+---
+
+## 2026-03-21 - US-004
+- Installed shadcn Alert component via `npx shadcn@latest add alert -y`
+- Refactored MegalodonAlert.tsx to use shadcn Alert with destructive variant
+- Replaced ⚠ emoji with AlertTriangle icon from lucide-react
+- Drug name displayed via AlertTitle, message via AlertDescription
+- Optional Intercept button preserved using AlertAction slot
+- Left border accent preserved via className override (border-l-4 border-alert-red)
+- Files changed: MegalodonAlert.tsx, ui/alert.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Alert v4 has AlertAction slot component for inline actions (positioned absolute top-right)
+  - Alert uses data-slot attributes for internal styling hooks — keep these intact
+  - `rounded-none border-0` overrides needed to strip default Alert border/radius when using custom border-left accent
+  - MegalodonAlert is only used in DashboardHome.tsx — refactoring in-place avoids touching consumers
+---
+
+## 2026-03-21 - US-005
+- Installed shadcn Collapsible via `npx shadcn@latest add collapsible -y`
+- Refactored ModelRouterPanel.tsx: replaced manual useState expand/collapse with Collapsible/CollapsibleTrigger/CollapsibleContent, defaultOpen for initial expanded state
+- Refactored LiveBrowserPreview.tsx: replaced manual useState expand/collapse with Collapsible components, starts collapsed (no defaultOpen)
+- Removed unused useState imports from both components
+- All existing content (pipeline steps, latency bars, sponsor badges, iframes) preserved
+- completionFlash and gradientShift animations preserved in ModelRouterPanel
+- Files changed: ModelRouterPanel.tsx, LiveBrowserPreview.tsx, ui/collapsible.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Collapsible v4 wraps `@base-ui/react/collapsible` — uses `defaultOpen` prop for initial state
+  - Collapsible manages its own open/close state internally — no need for useState
+  - For chevron rotation on open/close, use `[[data-panel-open]>&]:rotate-180` Tailwind selector targeting base-ui data attributes
+  - The ▾/▸ text indicators can't easily toggle with Collapsible — use a static indicator or CSS-based approach instead
+---
+
+## 2026-03-21 - US-006
+- Created custom Counter component in src/components/ui/counter.tsx (21st.dev registry returned 500 errors)
+- Counter uses requestAnimationFrame with easeOutExpo easing for smooth number animation
+- Refactored LiveMetricsBar.tsx: all 4 metric values use Counter component
+- Pharmacies Scanned uses inline Counter for numerator with static denominator
+- Savings Detected conditionally renders Counter (when value exists) or em dash placeholder
+- tabular-nums font variant and status-based coloring preserved via style/className props
+- Files changed: ui/counter.tsx (new), LiveMetricsBar.tsx
+- **Learnings for future iterations:**
+  - 21st.dev registry may be unreliable — be prepared to implement components manually
+  - Counter component supports value, duration, className, style, and formatter props
+  - For composite displays like "X/Y", use inline Counter without className and wrap in parent span for styling
+  - formatVnd can be passed as Counter's formatter prop for currency formatting
+---
+
+## 2026-03-21 - US-007
+- Added Counter animations to landing page stats section (< 30s, 14.2M+, 99.9%, Top 5)
+- Extracted StatsSection component with IntersectionObserver to trigger counters on scroll into view
+- Counters animate from 0 to target value with 1.5s duration; observer fires once at 0.3 threshold
+- Numbers format correctly: 14.2M+ and 99.9% use toFixed(1) formatter, 30s and Top 5 use integer default
+- tabular-nums font variant applied for stable alignment during animation
+- Files changed: frontend/src/app/page.tsx
+- **Learnings for future iterations:**
+  - Counter component works well with prefix/suffix text — just wrap Counter inline between string fragments
+  - IntersectionObserver with disconnect-on-first-intersect is the simplest scroll-trigger pattern
+  - For decimal values, pass a formatter to Counter since it rounds by default (Math.round)
+  - Extracting section to its own component keeps hooks (useRef, useState) isolated from the parent
+---
+
+## 2026-03-21 - US-008
+- Created custom AnimatedList component in src/components/ui/animated-list.tsx (21st.dev registry returned 500)
+- AnimatedList wraps keyed children with CSS animation that plays once per mount — no re-animation on re-render
+- Refactored AgentActivityFeed.tsx: event items render via AnimatedList with slide-in animation
+- Removed inline terminalSlideIn animation style from event items
+- Added animatedListSlideIn keyframe to globals.css (same easing as terminalSlideIn)
+- All terminal styling preserved: mac dots, LIVE badge, sonar dots, event colors, blinking cursor, 50-event limit
+- Files changed: ui/animated-list.tsx (new), AgentActivityFeed.tsx, globals.css
+- **Learnings for future iterations:**
+  - AnimatedList relies on stable React keys — items with the same key won't re-mount or re-animate
+  - CSS animation with `both` fill-mode plays once on mount, which is the correct behavior for list entry animations
+  - terminalSlideIn keyframe is still in globals.css — US-014 cleanup story should audit whether it's still used elsewhere
+  - 21st.dev registry continues to be unreliable (500 errors) — always be prepared to implement manually
+---
+
+## 2026-03-21 - US-009
+- Created custom Aurora component in src/components/ui/aurora.tsx (21st.dev registry returned 500)
+- Aurora uses canvas with radial gradients, animated ellipses in cyan/teal colors matching abyss theme
+- Replaced video background (video element + video-bg-container/overlay) with Aurora component
+- Added gradient overlay on top of Aurora for text readability (from-abyss/60 via-transparent to-deep/95)
+- Removed grainy noise SVG overlay and static radial gradient (Aurora provides organic movement instead)
+- Files changed: ui/aurora.tsx (new), page.tsx
+- **Learnings for future iterations:**
+  - Canvas-based backgrounds need resize handlers and cleanup (cancelAnimationFrame + removeEventListener)
+  - blur CSS filter on canvas creates smooth aurora effect — 80-100px blur works well for organic look
+  - Gradient overlay on top of animated background is essential for text readability
+  - video-bg-container and video-bg-overlay CSS classes in globals.css are now unused — US-014 cleanup should audit
+---
+
+## 2026-03-21 - US-010
+- Created custom GlareHover component in src/components/ui/glare-hover.tsx
+- GlareHover tracks mouse position and renders a radial gradient glare effect that follows the cursor
+- Wrapped each pharmacy card in PharmacyCards.tsx with GlareHover, using pharmacy-specific colors for the glare
+- Existing glow animation on result arrival preserved (boxShadow pulse still works alongside GlareHover)
+- Card content, responsive grid layout (2-5 columns), and all functionality unchanged
+- Files changed: ui/glare-hover.tsx (new), PharmacyCards.tsx
+- **Learnings for future iterations:**
+  - GlareHover uses radial-gradient positioned at mouse coordinates for the glare effect — simple CSS, no canvas needed
+  - overflow-hidden on the container is essential to clip the glare gradient at card edges
+  - borderRadius='inherit' or explicit value needed so glare overlay matches card corners
+  - GlareHover wraps the card div — key prop moves to GlareHover since it's now the outermost element in the map
+  - Using pharmacy-specific color with low alpha (e.g. `${color}25`) for glare creates a themed hover effect per card
+---
+
+## 2026-03-21 - US-011
+- Created custom Dock component in src/components/ui/dock.tsx with macOS-style magnification effect
+- Dock uses React context to share mouse position; DockItem calculates proximity-based scale with cosine interpolation
+- Refactored NavBar.tsx: nav links wrapped in Dock/DockItem components for magnification on hover
+- Logo, language toggle, active link highlighting, and sticky positioning all preserved
+- Files changed: ui/dock.tsx (new), NavBar.tsx
+- **Learnings for future iterations:**
+  - Dock magnification uses cosine curve for natural falloff — smoother than linear interpolation
+  - DockItem needs parentElement.getBoundingClientRect() to calculate relative position within the Dock
+  - magnification=1.15 is subtle enough for nav links (1.2+ works better for icon docks)
+  - origin-bottom on transform keeps items anchored to the navbar bottom edge during scale
+---
+
+
+## 2026-03-21 - US-012
+- Created custom ScrollReveal component in src/components/ui/scroll-reveal.tsx using IntersectionObserver
+- ScrollReveal uses opacity + translate-y transition (fade + slide up) triggered once on scroll into view
+- Wrapped features grid items with ScrollReveal and staggered delay (120ms per item)
+- Wrapped StatsSection with ScrollReveal (StatsSection already had its own IntersectionObserver for Counter animation)
+- Wrapped CTA section content with ScrollReveal, replacing the inner div to avoid extra nesting
+- No layout shift — elements start with opacity-0 and translate-y-8, transition to visible state
+- Files changed: ui/scroll-reveal.tsx (new), page.tsx
+- **Learnings for future iterations:**
+  - ScrollReveal is a thin wrapper — IntersectionObserver fires once, then disconnects
+  - Staggered delays on grid items (120ms increments) create a pleasant cascade effect
+  - ScrollReveal can replace a container div by passing className — avoids extra DOM nesting
+  - StatsSection already has its own IntersectionObserver for Counter triggers — wrapping in ScrollReveal adds a fade-in without conflicting
+---
+
+## 2026-03-21 - US-013
+- Installed shadcn Accordion via `npx shadcn@latest add accordion -y`
+- Refactored ActionLabel.tsx: replaced manual useState expand/collapse with Accordion/AccordionItem/AccordionTrigger/AccordionContent
+- Risk level colors preserved via border-l-4 and bg classes on the Accordion root
+- Confidence score badge preserved in the trigger alongside the icon and labels
+- Status metadata (RISK, CONFIDENCE, BUY Y/N) preserved in AccordionContent
+- Chevron icons handled automatically by AccordionTrigger (ChevronDown/ChevronUp)
+- Removed useState import — Accordion manages open/close state internally
+- Files changed: ActionLabel.tsx, ui/accordion.tsx (new)
+- **Learnings for future iterations:**
+  - shadcn Accordion v4 wraps `@base-ui/react/accordion` — uses data-slot attributes and group-aria-expanded for chevron toggling
+  - AccordionTrigger auto-adds ChevronDown/ChevronUp icons — no need to manage them manually
+  - Use `hover:no-underline` on AccordionTrigger to override the default hover:underline style
+  - `border-none` on AccordionItem removes the default bottom border between items
+  - Accordion without `value`/`defaultValue` props allows free toggle (no controlled state needed)
+---
+
+## 2026-03-21 - US-014
+- Audited globals.css for unused custom CSS animations and classes after library component migration
+- Removed `terminalSlideIn` keyframe (replaced by `animatedListSlideIn` in US-008)
+- Removed `.video-bg-container` and `.video-bg-overlay` classes (replaced by Aurora component in US-009)
+- Confirmed all other animations still in use: pulse-left-border, fadeSlideIn, bioGlow/bioluminescent-card, sonarPulse/sonar-dot, animatedListSlideIn, blink, terminal-feed, gradientShift, completionFlash, flowPulse, shimmer
+- Files changed: globals.css
+- **Learnings for future iterations:**
+  - grep across all src/ files (not just components/) to catch usages in app/ pages like architecture/page.tsx
+  - Most custom animations survived the migration — library components added new animation patterns rather than replacing existing ones
+  - Only terminalSlideIn and video-bg styles were truly dead code after the 13 prior stories
 ---

@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useEffect, useMemo } from 'react';
+import { AnimatedList } from '@/components/ui/animated-list';
 
 interface AgentEvent {
   id: string;
@@ -99,46 +100,47 @@ export default function AgentActivityFeed({ events, isActive }: AgentActivityFee
             Waiting for agent events...
           </div>
         ) : (
-          visibleEvents.map((event) => {
-            const isSearching = event.type === 'searching';
-            return (
-              <div
-                key={event.id}
-                className="flex items-start gap-2 py-[3px]"
-                style={{
-                  animation: 'terminalSlideIn 0.3s ease-out',
-                  textShadow: '0 0 4px rgba(0, 255, 204, 0.3)',
-                }}
-              >
-                {/* Prompt char */}
-                <span className="text-[10px] text-cyan/40 shrink-0 leading-4 select-none">&gt;</span>
-
-                {/* Timestamp */}
-                <span className="text-[10px] text-t3 shrink-0 leading-4">
-                  {formatTimestamp(event.timestamp)}
-                </span>
-
-                {/* Status dot with sonar */}
-                <span
-                  className={`${isSearching ? 'sonar-dot' : 'sonar-dot sonar-dot--idle'} flex h-[6px] w-[6px] mt-[5px] shrink-0`}
-                  style={{ '--sonar-color': SONAR_COLORS[event.type] } as React.CSSProperties}
+          <AnimatedList animationDuration={300}>
+            {visibleEvents.map((event) => {
+              const isSearching = event.type === 'searching';
+              return (
+                <div
+                  key={event.id}
+                  className="flex items-start gap-2 py-[3px]"
+                  style={{
+                    textShadow: '0 0 4px rgba(0, 255, 204, 0.3)',
+                  }}
                 >
-                  <span
-                    className={`inline-flex rounded-full h-[6px] w-[6px] ${TYPE_COLORS[event.type]}`}
-                  />
-                </span>
+                  {/* Prompt char */}
+                  <span className="text-[10px] text-cyan/40 shrink-0 leading-4 select-none">&gt;</span>
 
-                {/* Agent + message */}
-                <span className="text-[10px] leading-4 min-w-0">
-                  <span className={`${TYPE_TEXT_COLORS[event.type]} font-semibold`}>
-                    {event.agent}
+                  {/* Timestamp */}
+                  <span className="text-[10px] text-t3 shrink-0 leading-4">
+                    {formatTimestamp(event.timestamp)}
                   </span>
-                  <span className="text-t3 mx-1">&middot;</span>
-                  <span className="text-t2">{event.message}</span>
-                </span>
-              </div>
-            );
-          })
+
+                  {/* Status dot with sonar */}
+                  <span
+                    className={`${isSearching ? 'sonar-dot' : 'sonar-dot sonar-dot--idle'} flex h-[6px] w-[6px] mt-[5px] shrink-0`}
+                    style={{ '--sonar-color': SONAR_COLORS[event.type] } as React.CSSProperties}
+                  >
+                    <span
+                      className={`inline-flex rounded-full h-[6px] w-[6px] ${TYPE_COLORS[event.type]}`}
+                    />
+                  </span>
+
+                  {/* Agent + message */}
+                  <span className="text-[10px] leading-4 min-w-0">
+                    <span className={`${TYPE_TEXT_COLORS[event.type]} font-semibold`}>
+                      {event.agent}
+                    </span>
+                    <span className="text-t3 mx-1">&middot;</span>
+                    <span className="text-t2">{event.message}</span>
+                  </span>
+                </div>
+              );
+            })}
+          </AnimatedList>
         )}
 
         {/* Blinking cursor */}

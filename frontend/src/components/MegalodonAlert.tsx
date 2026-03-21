@@ -1,5 +1,7 @@
 'use client';
 
+import { AlertTriangle } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription, AlertAction } from '@/components/ui/alert';
 import { useLocale } from '@/components/LocaleProvider';
 
 interface MegalodonAlertProps {
@@ -11,22 +13,27 @@ interface MegalodonAlertProps {
 export default function MegalodonAlert({ drugName, message, onIntercept }: MegalodonAlertProps) {
   const { t } = useLocale();
   return (
-    <div className="bg-alert-bg border-l-4 border-alert-red px-6 py-3 flex items-center gap-4">
-      <span className="text-alert-red text-lg">⚠</span>
-      <div className="flex-1">
-        <span className="text-alert-red font-bold text-xs uppercase tracking-wider">{t('megalodon.title')}</span>
-        <span className="text-alert-red text-xs ml-3">
-          {drugName} — {message}
-        </span>
-      </div>
+    <Alert
+      variant="destructive"
+      className="rounded-none border-0 border-l-4 border-alert-red bg-alert-bg px-6 py-3"
+    >
+      <AlertTriangle className="size-5 text-alert-red" />
+      <AlertTitle className="text-alert-red font-bold text-xs uppercase tracking-wider">
+        {t('megalodon.title')}
+      </AlertTitle>
+      <AlertDescription className="text-alert-red text-xs">
+        {drugName} — {message}
+      </AlertDescription>
       {onIntercept && (
-        <button
-          onClick={onIntercept}
-          className="bg-alert-red text-alert-bg px-4 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-alert-red/80 transition-colors"
-        >
-          {t('megalodon.intercept')}
-        </button>
+        <AlertAction>
+          <button
+            onClick={onIntercept}
+            className="bg-alert-red text-alert-bg px-4 py-1.5 text-xs font-bold uppercase tracking-wider hover:bg-alert-red/80 transition-colors"
+          >
+            {t('megalodon.intercept')}
+          </button>
+        </AlertAction>
       )}
-    </div>
+    </Alert>
   );
 }

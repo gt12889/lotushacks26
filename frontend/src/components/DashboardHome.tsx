@@ -16,7 +16,7 @@ import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
 import SavingsBanner from '@/components/SavingsBanner';
 import MegalodonAlert from '@/components/MegalodonAlert';
-import StatusPill from '@/components/StatusPill';
+import MegalodonBadge from '@/components/ui/megalodon-badge';
 import SonarFilters from '@/components/SonarFilters';
 import PricingChart from '@/components/PricingChart';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
@@ -27,6 +27,7 @@ import AgentCascade from '@/components/AgentCascade';
 import ModelRouterPanel from '@/components/ModelRouterPanel';
 import CeilingPanel from '@/components/CeilingPanel';
 import VoiceSummary from '@/components/VoiceSummary';
+import ActionLabel from '@/components/ActionLabel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
@@ -164,7 +165,9 @@ export default function DashboardHome() {
     { step: 'search', model: 'TinyFish Agent', provider: 'TinyFish', latency_ms: null, status: 'pending', count: 0 },
     { step: 'discovery', model: 'Neural Search', provider: 'Exa', latency_ms: null, status: 'pending', count: 0 },
     { step: 'ocr', model: 'gpt-4o', provider: 'OpenAI', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'analyst', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
   ]);
+  const [analystVerdict, setAnalystVerdict] = useState<any>(null);
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
@@ -301,6 +304,7 @@ export default function DashboardHome() {
     setInsightLoading(false);
     setCurrentQuery(query);
     setAgentEvents([]);
+    setAnalystVerdict(null);
     setStreamingUrls({});
     setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
     eventIdRef.current = 0;
@@ -355,7 +359,9 @@ export default function DashboardHome() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.type === 'counterfeit_risk') {
+            if (event.type === 'analyst_verdict') {
+              setAnalystVerdict(event);
+            } else if (event.type === 'counterfeit_risk') {
               // Late-arriving counterfeit risk report from Exa Research
               setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
             } else if (event.type === 'model_used') {
@@ -624,11 +630,16 @@ export default function DashboardHome() {
                   tier1Complete={pharmaciesComplete}
                   tier1Total={5}
                   tier2Variants={scanSummary?.variants?.length ?? 0}
+                  tier3AnalystActive={!!scanSummary && !analystVerdict}
+                  tier3AnalystComplete={!!analystVerdict}
                   visible={isSearching || hasResults}
                 />
                 <PharmacyCards results={results} sparklines={sparklineData} />
                 <AgentActivityFeed events={agentEvents} isActive={isSearching} />
                 <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
+                {analystVerdict && (
+                  <ActionLabel verdict={analystVerdict} />
+                )}
                 {scanSummary && (
                   <>
                     <SavingsBanner
@@ -849,7 +860,7 @@ export default function DashboardHome() {
                       )}
                     </div>
                     <div>
-                      <StatusPill status={row.status} label={row.statusLabel} />
+                      <MegalodonBadge status={row.status} label={row.statusLabel} />
                     </div>
                   </div>
 

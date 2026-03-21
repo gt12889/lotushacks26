@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import StatusPill from './StatusPill';
+import MegalodonBadge from './ui/megalodon-badge';
 import SponsorBadge from './SponsorBadge';
 import ReferencePriceBadge from './ReferencePriceBadge';
 
@@ -153,7 +153,7 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [], wh
               >
                 <td className="py-2.5 px-4">
                   <div className="flex flex-col gap-1">
-                    {p.price === bestPrice && <StatusPill status="best" label="BEST" />}
+                    {p.price === bestPrice && <MegalodonBadge status="best" label="BEST" />}
                     {(() => {
                       const badge = getAnomalyBadge(p.price);
                       return badge ? (
@@ -196,7 +196,7 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [], wh
                 </td>
                 <td className="py-2.5 px-4 text-t3 text-xs">{p.manufacturer || '—'}</td>
                 <td className="py-2.5 px-4 text-center">
-                  {p.in_stock ? <StatusPill status="active" label="IN STOCK" /> : <StatusPill status="out-of-stock" label="OUT" />}
+                  {p.in_stock ? <MegalodonBadge status="active" label="IN STOCK" /> : <MegalodonBadge status="out-of-stock" label="OUT" />}
                 </td>
                 <td className="py-2.5 px-4">
                   <SponsorBadge sponsors={p.variant_of ? ['TinyFish', 'Exa'] : BRIGHTDATA_SOURCES.has(p.source_id) ? ['TinyFish', 'BrightData'] : ['TinyFish']} />

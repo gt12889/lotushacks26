@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
+import { Dock, DockItem } from '@/components/ui/dock';
 
 const linkKeys = [
   { href: '/dashboard', key: 'nav.dashboard' as const },
@@ -28,20 +29,23 @@ export default function NavBar() {
             <p className="text-[10px] text-t3 leading-tight">{t('nav.tagline')}</p>
           </div>
         </Link>
-        <nav className="flex gap-1 flex-wrap justify-center">
-          {linkKeys.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                pathname === link.href
-                  ? 'text-cyan bg-cyan/10'
-                  : 'text-t2 hover:text-t1 hover:bg-white/5'
-              }`}
-            >
-              {t(link.key)}
-            </Link>
-          ))}
+        <nav className="flex flex-wrap justify-center">
+          <Dock magnification={1.15} distance={2}>
+            {linkKeys.map((link) => (
+              <DockItem key={link.href}>
+                <Link
+                  href={link.href}
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors block ${
+                    pathname === link.href
+                      ? 'text-cyan bg-cyan/10'
+                      : 'text-t2 hover:text-t1 hover:bg-white/5'
+                  }`}
+                >
+                  {t(link.key)}
+                </Link>
+              </DockItem>
+            ))}
+          </Dock>
         </nav>
         <div
           className="flex rounded border border-border overflow-hidden text-xs font-mono shrink-0"
