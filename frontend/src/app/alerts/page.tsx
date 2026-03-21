@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import StatusPill from '@/components/StatusPill';
+import MegalodonBadge from '@/components/ui/megalodon-badge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -51,7 +51,7 @@ export default function AlertsPage() {
                     <span className="text-warn text-xs font-mono">below {alert.price_threshold.toLocaleString()} VND</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <StatusPill status="active" label="ARMED" />
+                    <MegalodonBadge status="active" label="ARMED" />
                     <button onClick={() => deleteAlert(alert.id)} className="text-xs text-alert-red hover:text-alert-red/80 transition-colors">Disarm</button>
                   </div>
                 </div>
@@ -88,7 +88,7 @@ export default function AlertsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-success rounded-full animate-pulse" />
-                    <StatusPill status="active" label="ACTIVE" />
+                    <MegalodonBadge status="active" label="ACTIVE" />
                   </div>
                 </div>
               ))}

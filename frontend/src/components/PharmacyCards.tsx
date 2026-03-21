@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import StatusPill from './StatusPill';
+import MegalodonBadge from './ui/megalodon-badge';
 import SponsorBadge from './SponsorBadge';
+import SparklineChart from './SparklineChart';
+import GlareHover from './ui/glare-hover';
 
 interface PharmacyResult {
   source_id: string;
@@ -17,6 +19,7 @@ interface PharmacyResult {
 
 interface PharmacyCardsProps {
   results: Record<string, PharmacyResult>;
+  sparklines?: Record<string, { source_name: string; points: { price: number; time: string }[] }>;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -37,7 +40,7 @@ const PHARMACY_INITIALS: Record<string, string> = {
 
 const BRIGHTDATA_PHARMACIES = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
-export default function PharmacyCards({ results }: PharmacyCardsProps) {
+export default function PharmacyCards({ results, sparklines }: PharmacyCardsProps) {
   const pharmacies = ['long_chau', 'pharmacity', 'an_khang', 'than_thien', 'medicare'];
   const [glowing, setGlowing] = useState<Record<string, boolean>>({});
   const prevResults = useRef<Record<string, boolean>>({});
@@ -74,46 +77,55 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
         const sponsors = BRIGHTDATA_PHARMACIES.has(id) ? ['TinyFish', 'BrightData'] : ['TinyFish'];
 
         return (
-          <div
+          <GlareHover
             key={id}
-            className={`bioluminescent-card p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
-            style={{
-              '--bio-color': `${color}15`,
-              borderLeftColor: hasResult ? color : undefined,
-              borderLeftWidth: hasResult ? 3 : 1,
-              boxShadow: isGlowing ? `0 0 20px ${color}40, 0 0 40px ${color}20` : 'none',
-            } as React.CSSProperties}
+            glareColor={`${color}25`}
+            glareSize={180}
+            borderRadius="0.5rem"
           >
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
-              {result && <StatusPill status={statusType} />}
-            </div>
-            <div className="text-[10px] text-t3 mb-2">{result?.source_name || id}</div>
-            {result?.status === 'searching' && (
-              <div className="text-xs text-warn animate-pulse font-mono">Scanning...</div>
-            )}
-            {result?.status === 'success' && (
-              <>
-                <div className="text-xs text-t2 font-mono">{result.result_count} results</div>
-                {result.lowest_price && (
-                  <div className="text-base font-bold font-mono text-t1 mt-1">
-                    {result.lowest_price.toLocaleString()}đ
-                  </div>
-                )}
-                {result.response_time_ms && (
-                  <div className="text-[10px] text-t3 font-mono">{(result.response_time_ms / 1000).toFixed(1)}s latency</div>
-                )}
-              </>
-            )}
-            {result?.status === 'error' && (
-              <div className="text-[10px] text-alert-red font-mono">Signal lost</div>
-            )}
-            {hasResult && (
-              <div className="mt-2">
-                <SponsorBadge sponsors={sponsors} />
+            <div
+              className={`bioluminescent-card p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
+              style={{
+                '--bio-color': `${color}15`,
+                borderLeftColor: hasResult ? color : undefined,
+                borderLeftWidth: hasResult ? 3 : 1,
+                boxShadow: isGlowing ? `0 0 20px ${color}40, 0 0 40px ${color}20` : 'none',
+              } as React.CSSProperties}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
+                {result && <MegalodonBadge status={statusType} />}
               </div>
-            )}
-          </div>
+              <div className="text-[10px] text-t3 mb-2">{result?.source_name || id}</div>
+              {result?.status === 'searching' && (
+                <div className="text-xs text-warn animate-pulse font-mono">Scanning...</div>
+              )}
+              {result?.status === 'success' && (
+                <>
+                  <div className="text-xs text-t2 font-mono">{result.result_count} results</div>
+                  {result.lowest_price && (
+                    <div className="text-base font-bold font-mono text-t1 mt-1">
+                      {result.lowest_price.toLocaleString()}đ
+                    </div>
+                  )}
+                  {result.response_time_ms && (
+                    <div className="text-[10px] text-t3 font-mono">{(result.response_time_ms / 1000).toFixed(1)}s latency</div>
+                  )}
+                  {sparklines?.[id]?.points && sparklines[id].points.length >= 2 && (
+                    <SparklineChart data={sparklines[id].points} color={color} />
+                  )}
+                </>
+              )}
+              {result?.status === 'error' && (
+                <div className="text-[10px] text-alert-red font-mono">Signal lost</div>
+              )}
+              {hasResult && (
+                <div className="mt-2">
+                  <SponsorBadge sponsors={sponsors} />
+                </div>
+              )}
+            </div>
+          </GlareHover>
         );
       })}
     </div>

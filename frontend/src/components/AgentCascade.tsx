@@ -1,6 +1,6 @@
 'use client';
 
-import { Camera, Search, Dna } from 'lucide-react';
+import { Camera, Search, Dna, Brain } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface AgentCascadeProps {
@@ -9,10 +9,12 @@ interface AgentCascadeProps {
   tier1Complete: number; // number completed
   tier1Total: number;    // total pharmacy agents
   tier2Variants: number; // number of variants discovered
+  tier3AnalystActive: boolean;
+  tier3AnalystComplete: boolean;
   visible: boolean;
 }
 
-export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, tier1Total, tier2Variants, visible }: AgentCascadeProps) {
+export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, tier1Total, tier2Variants, tier3AnalystActive, tier3AnalystComplete, visible }: AgentCascadeProps) {
   if (!visible) return null;
 
   const tiers: { label: string; name: string; status: string; detail: string; Icon: LucideIcon }[] = [
@@ -40,6 +42,15 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
         ? `${tier2Variants} alternative${tier2Variants !== 1 ? 's' : ''} found`
         : 'Scanning generics...',
       Icon: Dna,
+    },
+    {
+      label: 'Tier 3',
+      name: 'Analyst Verdict',
+      status: tier3AnalystComplete ? 'done' : (tier3AnalystActive ? 'active' : 'idle'),
+      detail: tier3AnalystComplete
+        ? 'Verdict delivered'
+        : tier3AnalystActive ? 'Cross-validating...' : 'Awaiting data',
+      Icon: Brain,
     },
   ];
 

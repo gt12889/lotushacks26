@@ -16,7 +16,7 @@ import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
 import SavingsBanner from '@/components/SavingsBanner';
 import MegalodonAlert from '@/components/MegalodonAlert';
-import StatusPill from '@/components/StatusPill';
+import MegalodonBadge from '@/components/ui/megalodon-badge';
 import SonarFilters from '@/components/SonarFilters';
 import PricingChart from '@/components/PricingChart';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
@@ -27,6 +27,7 @@ import AgentCascade from '@/components/AgentCascade';
 import ModelRouterPanel from '@/components/ModelRouterPanel';
 import CeilingPanel from '@/components/CeilingPanel';
 import VoiceSummary from '@/components/VoiceSummary';
+import ActionLabel from '@/components/ActionLabel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
@@ -53,6 +54,7 @@ interface ScanSummary {
   total_results: number;
   variants?: string[];
   price_fluctuations?: string[];
+  who_reference?: { price_snippet?: string; source_title?: string; source_url?: string; highlights?: string[] } | null;
 }
 
 interface TrendPoint {
@@ -154,6 +156,7 @@ export default function DashboardHome() {
   const [insightError, setInsightError] = useState<string | null>(null);
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [sparklineData, setSparklineData] = useState<Record<string, { source_name: string; points: { price: number; time: string }[] }>>({});
   const [syncTime, setSyncTime] = useState('');
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
@@ -162,7 +165,9 @@ export default function DashboardHome() {
     { step: 'search', model: 'TinyFish Agent', provider: 'TinyFish', latency_ms: null, status: 'pending', count: 0 },
     { step: 'discovery', model: 'Neural Search', provider: 'Exa', latency_ms: null, status: 'pending', count: 0 },
     { step: 'ocr', model: 'gpt-4o', provider: 'OpenAI', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'analyst', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
   ]);
+  const [analystVerdict, setAnalystVerdict] = useState<any>(null);
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
@@ -275,6 +280,20 @@ export default function DashboardHome() {
     };
   }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results]);
 
+  useEffect(() => {
+    if (!scanSummary?.query) return;
+    const q = scanSummary.query;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/sparklines/${encodeURIComponent(q)}?days=7`);
+        const json = await res.json();
+        if (json.sparklines) setSparklineData(json.sparklines);
+      } catch (e) {
+        console.warn('Sparkline fetch failed:', e);
+      }
+    })();
+  }, [scanSummary?.query]);
+
   const handleSearch = async (query: string) => {
     setIsSearching(true);
     setResults({});
@@ -285,6 +304,7 @@ export default function DashboardHome() {
     setInsightLoading(false);
     setCurrentQuery(query);
     setAgentEvents([]);
+    setAnalystVerdict(null);
     setStreamingUrls({});
     setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
     eventIdRef.current = 0;
@@ -339,7 +359,9 @@ export default function DashboardHome() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.type === 'counterfeit_risk') {
+            if (event.type === 'analyst_verdict') {
+              setAnalystVerdict(event);
+            } else if (event.type === 'counterfeit_risk') {
               // Late-arriving counterfeit risk report from Exa Research
               setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
             } else if (event.type === 'model_used') {
@@ -603,11 +625,16 @@ export default function DashboardHome() {
                   tier1Complete={pharmaciesComplete}
                   tier1Total={5}
                   tier2Variants={scanSummary?.variants?.length ?? 0}
+                  tier3AnalystActive={!!scanSummary && !analystVerdict}
+                  tier3AnalystComplete={!!analystVerdict}
                   visible={isSearching || hasResults}
                 />
-                <PharmacyCards results={results} />
+                <PharmacyCards results={results} sparklines={sparklineData} />
                 <AgentActivityFeed events={agentEvents} isActive={isSearching} />
                 <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
+                {analystVerdict && (
+                  <ActionLabel verdict={analystVerdict} />
+                )}
                 {scanSummary && (
                   <>
                     <SavingsBanner
@@ -672,7 +699,7 @@ export default function DashboardHome() {
                   anomalies={(scanSummary as any)?.price_anomalies ?? null}
                   risk={(scanSummary as any)?.counterfeit_risk ?? null}
                 />
-                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
+                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} whoRef={scanSummary?.who_reference ?? null} />
                 <DemoAlertTrigger
                   drugName={currentQuery || 'Metformin 500mg'}
                   bestPrice={scanSummary?.best_price ?? undefined}
@@ -828,7 +855,7 @@ export default function DashboardHome() {
                       )}
                     </div>
                     <div>
-                      <StatusPill status={row.status} label={row.statusLabel} />
+                      <MegalodonBadge status={row.status} label={row.statusLabel} />
                     </div>
                   </div>
 

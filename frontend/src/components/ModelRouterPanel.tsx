@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import SponsorBadge from './SponsorBadge';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
 export interface ModelStep {
   step: string;
@@ -101,8 +101,6 @@ function LatencyBar({ status, latency_ms }: { status: ModelStep['status']; laten
 }
 
 export default function ModelRouterPanel({ steps, isActive }: ModelRouterPanelProps) {
-  const [expanded, setExpanded] = useState(true);
-
   const statusColor = (status: ModelStep['status']) => {
     if (status === 'done') return 'text-[#2DD4BF]';
     if (status === 'active') return 'text-[#F97316]';
@@ -110,11 +108,9 @@ export default function ModelRouterPanel({ steps, isActive }: ModelRouterPanelPr
   };
 
   return (
-    <div className="bioluminescent-card overflow-hidden">
+    <Collapsible defaultOpen className="bioluminescent-card overflow-hidden">
       {/* Header */}
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
+      <CollapsibleTrigger
         className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-[rgba(0,219,231,0.03)] transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -122,23 +118,21 @@ export default function ModelRouterPanel({ steps, isActive }: ModelRouterPanelPr
             MODEL ROUTER
           </span>
           <span className="text-[#64748B] font-mono text-xs">
-            {expanded ? '▾' : '▸'}
+            ▾
           </span>
         </div>
         <SponsorBadge sponsors={['OpenRouter', 'OpenAI', 'Exa', 'TinyFish']} />
-      </button>
+      </CollapsibleTrigger>
 
-      {/* OpenRouter branding */}
-      {expanded && (
+      <CollapsibleContent>
+        {/* OpenRouter branding */}
         <div className="px-4 pb-1">
           <div className="text-[9px] font-mono text-t2 pl-2 border-l-2 border-warn/50">
             ⚡ Routed via OpenRouter
           </div>
         </div>
-      )}
 
-      {/* Body */}
-      {expanded && (
+        {/* Body */}
         <div className="px-4 pb-3 pt-2 space-y-2">
           {steps.map((step, i) => {
             const label = STEP_LABELS[step.step] || step.step;
@@ -198,7 +192,7 @@ export default function ModelRouterPanel({ steps, isActive }: ModelRouterPanelPr
             </p>
           )}
         </div>
-      )}
-    </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

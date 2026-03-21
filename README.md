@@ -6,3 +6,5 @@ Vietnamese pharmaceutical price intelligence with parallel AI web agents — **L
 
 **Deploy checklist (env names only):** [railway.env.example](railway.env.example)  
 **Docker Compose (VPS / laptop):** [docker-compose.yml](docker-compose.yml) + [`.env.docker.example`](.env.docker.example) + [docs/DOCKER-COMPOSE.md](docs/DOCKER-COMPOSE.md)
+
+Feature list, API table, and architecture overview live in **[docs/README.md](docs/README.md)** (includes Ralph branch additions such as NL search / sparklines when documented there).

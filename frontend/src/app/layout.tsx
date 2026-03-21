@@ -3,6 +3,10 @@ import "./globals.css";
 import NavBar from "@/components/NavBar";
 import AbyssFooter from "@/components/AbyssFooter";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import { Geist } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Megladon MD — The Abyss",
@@ -16,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={cn("font-sans", geist.variable)}>
       <body className="antialiased bg-abyss text-t1 min-h-screen flex flex-col" suppressHydrationWarning>
         <LocaleProvider>
           <NavBar />

@@ -179,7 +179,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 
 ## 6. Multi-Tier Agent Pipeline
 
-The search system uses a 3-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
+The search system uses a 4-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
 
 ### Tier 0: OCR Extract (optional)
 - Triggered by prescription image upload
@@ -202,6 +202,23 @@ The search system uses a 3-tier agent cascade, visualized in real-time via the *
 - Top 3 discovered variants are re-searched across successful pharmacies
 - Results tagged as `is_variant_result: true` with `variant_of` label
 - This is the dynamic agent spawning from runtime discoveries that makes TinyFish irreplaceable
+
+### Tier 4: Analyst Verdict (cross-validation + actionable labels)
+- Spawned after summary is built — cross-validates all prior tier results
+- **Confidence scoring engine** computes a 0-100 score from 5 weighted signals:
+  - Source agreement (30%): How many pharmacies returned results
+  - Price convergence (20%): Low coefficient of variation = high confidence
+  - Compliance clear (15%): Government ceiling alignment
+  - Anomaly free (20%): Absence of counterfeit flags
+  - Variant coverage (15%): Exa discovered alternative drugs
+- **LLM analyst** (Qwen 2.5 72B via OpenRouter) generates actionable Vietnamese verdict:
+  - `action_label`: Vietnamese imperative directive (e.g., "Mua tại Long Châu. Giá tốt nhất, đáng tin cậy.")
+  - `risk_level`: safe / caution / warning / danger
+  - `reasoning`: 2-3 sentence English explanation
+  - `buy_recommendation`: boolean
+- **Rule-based fallback** if LLM fails — deterministic labels based on confidence score + anomaly/compliance flags
+- Tracked as "Analyst → Qwen 2.5 72B" in Model Router Panel
+- Streamed as late SSE event `analyst_verdict` — frontend shows `ActionLabel` component above SavingsBanner
 
 ### Enrichment (parallel, non-blocking)
 - **WHO reference pricing**: Exa `category: "research paper"` search for international benchmarks
@@ -338,6 +355,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `NavBar` | Top navigation bar with route links and locale toggle |
 | `StatusPill` | Reusable status badge (best/critical/monitor) with color coding |
 | `SupermemoryStatusBadge` | Supermemory connection status indicator |
+| `ActionLabel` | Tier 4 analyst verdict banner with Vietnamese action directive, confidence score badge, expandable reasoning |
 | `ComparisonBanner` | Cross-pharmacy comparison summary |
 | `SonarFilters` | Right sidebar with molecule selector, AWP/WAC toggle, time range, drug class chips |
 
@@ -417,6 +435,7 @@ The `/api/search` endpoint streams these typed events:
 | `model_used` | `{step, model, provider, latency_ms}` | LLM/service call completed |
 | `{source_id, status, products, ...}` | Full `PharmacySearchResult` | Pharmacy results ready |
 | `search_complete` | Summary with best_price, savings, variants, compliance, agents, dedup | All tiers done |
+| `analyst_verdict` | `{action_label, action_label_en, risk_level, reasoning, confidence_score, buy_recommendation}` | Tier 4 cross-validation verdict (late event) |
 | `counterfeit_risk` | `{risk_level, sources, report}` | Post-summary Exa research (late event) |
 
 ### Price Fluctuation Analysis (`services/price_fluctuation.py`)
@@ -501,7 +520,56 @@ SQLite with WAL mode. Tables:
 
 ---
 
-## 13. Success Metrics
+## 13. Phase 9: Hackathon Power Features
+
+### 13.1 — NL Multi-Drug Search via OpenRouter
+
+**Endpoint**: `POST /api/nl-search`
+
+Flow:
+1. User submits a natural language query (e.g., "compare Metformin and Glucophage across all pharmacies")
+2. OpenRouter LLM parses the query and extracts a list of drug names
+3. Backend dispatches parallel TinyFish searches for each drug simultaneously
+4. Results are assembled into a structured sourcing matrix
+5. AI generates a procurement recommendation summarizing optimal sourcing per drug
+
+Frontend additions: `NLSearchBar` component on Trends page, `ComparisonMatrix` table with mode toggle between single-drug and multi-drug views. Qualifies for OpenRouter sponsor prize.
+
+### 13.2 — Exa International Reference Pricing Badges
+
+WHO reference price badges displayed on `PriceGrid` product rows:
+- Shows the international reference price alongside the Vietnamese pharmacy price
+- Calculates a multiplier: "1.2× WHO price" or "3.7× WHO price"
+- Sourced via Exa `category: "research paper"` search for WHO/MSH price benchmarks
+- Provides immediate visual context for whether Vietnam prices are globally competitive
+
+Qualifies for Exa sponsor prize by adding a fifth distinct Exa use case.
+
+### 13.3 — Historical Price Sparklines
+
+**Endpoint**: `GET /api/sparklines/{drug}`
+
+Returns per-source price history from the SQLite `prices` table. Frontend `SparklineChart` component rendered inline on `PharmacyCards`, showing a mini trend line for each pharmacy source. Provides visual proof of the platform's monitoring capability over time.
+
+### 13.4 — Ocean Video Landing Page
+
+Progressive enhancement on the hero section of the landing page (`/`):
+- Video background plays if the video file is present
+- Falls back gracefully to existing static background if video is absent
+- No hard dependency on video asset for build or deployment
+
+### 13.5 — Multi-Drug Comparison Matrix
+
+Comparison matrix on the Trends page showing:
+- Rows: each drug in the query
+- Columns: each pharmacy source
+- Cells: best available price per drug per source
+- Footer row: optimal sourcing route with total cost and savings vs single-source
+- AI-generated procurement recommendation paragraph via OpenRouter
+
+---
+
+## 14. Success Metrics
 
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
 - Real-time SSE streaming with pharmacy cards lighting up + agent activity feed
@@ -518,5 +586,7 @@ SQLite with WAL mode. Tables:
 - Vietnamese voice summary auto-plays after search (ElevenLabs sponsor prize)
 - Counterfeit risk detection flags anomalously cheap products
 - Price fluctuation tracking across scans with human-readable trend lines
+- Cross-validation confidence scoring (0-100) from 5 weighted signals across all agent tiers
+- Actionable Vietnamese labels via Tier 4 Analyst agent ("Mua tại Long Châu" not "Best price: 45,000 VND")
 - Personalized shopping insights via Supermemory cross-session context
 - All sponsor integrations visible via SponsorBadge on result cards

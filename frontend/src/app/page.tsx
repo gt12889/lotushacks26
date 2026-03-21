@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
+import { Counter } from '@/components/ui/counter';
+import { Aurora } from '@/components/ui/aurora';
+import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -19,9 +22,14 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero Section */}
       <section className="relative pt-12 md:pt-16 pb-20 overflow-hidden">
-        {/* Background Grid/Effect */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,219,231,0.08)_0%,transparent_70%)]" />
+        {/* Aurora Background */}
+        <Aurora
+          colors={['#00DBE7', '#0E7490', '#2DD4BF', '#0D4F6B', '#064E6E']}
+          speed={0.8}
+          opacity={0.35}
+          blur={100}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-abyss/60 via-transparent to-deep/95 pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan/30 bg-cyan/5 text-[10px] font-mono text-cyan mb-8 uppercase tracking-widest animate-pulse">
@@ -98,32 +106,22 @@ export default function LandingPage() {
                 icon: '📊',
               },
             ].map((f, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
-                <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all">{f.icon}</div>
-                <h3 className="text-xl font-bold mb-4 text-t1">{f.title}</h3>
-                <p className="text-t3 leading-relaxed text-sm">{f.desc}</p>
-              </div>
+              <ScrollReveal key={i} delay={i * 120}>
+                <div className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
+                  <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all">{f.icon}</div>
+                  <h3 className="text-xl font-bold mb-4 text-t1">{f.title}</h3>
+                  <p className="text-t3 leading-relaxed text-sm">{f.desc}</p>
+                </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
       {/* Stats/Social Proof */}
-      <section id="intelligence" className="py-24 border-y border-border/20">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-center">
-          {[
-            { label: t('landing.statLatency'), val: '< 30s' },
-            { label: t('landing.statData'), val: '14.2M+' },
-            { label: t('landing.statAccuracy'), val: '99.9%' },
-            { label: t('landing.statCoverage'), val: 'Top 5' },
-          ].map((s, i) => (
-            <div key={i}>
-              <div className="text-4xl font-black text-cyan mb-2">{s.val}</div>
-              <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <ScrollReveal>
+        <StatsSection t={t} />
+      </ScrollReveal>
 
       {/* Infrastructure Visualization */}
       <section className="py-24 border-t border-border/20 bg-abyss">
@@ -185,18 +183,18 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section id="abyss" className="py-32 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+        <ScrollReveal className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-black mb-8">{t('landing.ctaTitle')}</h2>
           <p className="text-xl text-t3 mb-12">
             {t('landing.ctaSub')}
           </p>
-          <Link 
+          <Link
             href="/dashboard"
             className="inline-block px-12 py-5 bg-t1 text-deep font-black rounded-full text-xl hover:bg-cyan hover:text-deep transition-all shadow-2xl"
           >
             {t('landing.ctaButton')}
           </Link>
-        </div>
+        </ScrollReveal>
       </section>
 
       {/* Footer */}
@@ -222,5 +220,54 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function StatsSection({ t }: { t: (key: string) => string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const stats = [
+    { label: t('landing.statLatency'), prefix: '< ', value: 30, suffix: 's' },
+    { label: t('landing.statData'), value: 14.2, suffix: 'M+', formatter: (v: number) => v.toFixed(1) },
+    { label: t('landing.statAccuracy'), value: 99.9, suffix: '%', formatter: (v: number) => v.toFixed(1) },
+    { label: t('landing.statCoverage'), prefix: 'Top ', value: 5, suffix: '' },
+  ];
+
+  return (
+    <section id="intelligence" className="py-24 border-y border-border/20">
+      <div ref={ref} className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-center">
+        {stats.map((s, i) => (
+          <div key={i}>
+            <div className="text-4xl font-black text-cyan mb-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {s.prefix}
+              {visible ? (
+                <Counter value={s.value} duration={1500} formatter={s.formatter} />
+              ) : (
+                '0'
+              )}
+              {s.suffix}
+            </div>
+            <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
