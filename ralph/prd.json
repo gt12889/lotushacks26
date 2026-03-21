@@ -209,7 +209,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 12,
-      "passes": false,
+      "passes": true,
       "notes": "page.tsx is 230 lines. Wrap major sections — don't animate every element individually."
     },
     {

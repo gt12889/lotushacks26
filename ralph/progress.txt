@@ -17,6 +17,7 @@
 - Custom AnimatedList component at ui/animated-list.tsx wraps keyed children with CSS slide-in animation (plays once per mount)
 - Custom GlareHover component at ui/glare-hover.tsx adds mouse-tracking radial gradient glare effect on hover
 - Custom Dock component at ui/dock.tsx provides macOS-style magnification on hover via React context + cosine interpolation
+- Custom ScrollReveal component at ui/scroll-reveal.tsx wraps children with fade+slide-up animation triggered by IntersectionObserver
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -171,3 +172,18 @@
   - origin-bottom on transform keeps items anchored to the navbar bottom edge during scale
 ---
 
+
+## 2026-03-21 - US-012
+- Created custom ScrollReveal component in src/components/ui/scroll-reveal.tsx using IntersectionObserver
+- ScrollReveal uses opacity + translate-y transition (fade + slide up) triggered once on scroll into view
+- Wrapped features grid items with ScrollReveal and staggered delay (120ms per item)
+- Wrapped StatsSection with ScrollReveal (StatsSection already had its own IntersectionObserver for Counter animation)
+- Wrapped CTA section content with ScrollReveal, replacing the inner div to avoid extra nesting
+- No layout shift — elements start with opacity-0 and translate-y-8, transition to visible state
+- Files changed: ui/scroll-reveal.tsx (new), page.tsx
+- **Learnings for future iterations:**
+  - ScrollReveal is a thin wrapper — IntersectionObserver fires once, then disconnects
+  - Staggered delays on grid items (120ms increments) create a pleasant cascade effect
+  - ScrollReveal can replace a container div by passing className — avoids extra DOM nesting
+  - StatsSection already has its own IntersectionObserver for Counter triggers — wrapping in ScrollReveal adds a fade-in without conflicting
+---
