@@ -63,22 +63,9 @@ export default function AgentActivityFeed({ events, isActive }: AgentActivityFee
   }, [visibleEvents]);
 
   return (
-    <div className="bioluminescent-card font-mono overflow-hidden">
-      {/* Terminal chrome header */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        {/* Window dots */}
-        <div className="flex items-center gap-1.5 mr-2">
-          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#EE4042' }} />
-          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#FFBD2E' }} />
-          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#2DD4BF' }} />
-        </div>
-
-        {/* Terminal title */}
-        <span className="text-[9px] uppercase tracking-widest text-t3 font-semibold flex-1">
-          MEGALODON :: AGENT_FEED v2.1
-        </span>
-
-        {/* LIVE badge */}
+    <div className="panel font-mono overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
+        <span className="text-xs font-mono text-t3">AGENT FEED</span>
         {isActive && (
           <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-cyan/30 bg-cyan/5">
             <span

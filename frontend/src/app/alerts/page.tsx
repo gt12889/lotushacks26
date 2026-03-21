@@ -29,11 +29,11 @@ export default function AlertsPage() {
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
         <div>
           <h2 className="text-xl font-bold text-t1">Megalodon Alert System</h2>
-          <p className="text-xs text-t3 mt-1">Configuring deep-sea price tripwires</p>
+          <p className="text-xs text-t3 mt-1">Set price alerts and monitoring schedules</p>
         </div>
 
         <div className="bg-deep border border-border rounded-lg p-6">
-          <h3 className="text-xs font-bold text-cyan uppercase tracking-wider mb-4">Active Tripwires</h3>
+          <h3 className="text-xs font-bold text-cyan uppercase tracking-wider mb-4">Price Alerts</h3>
           <p className="text-xs text-t3 mb-4">Get notified on Discord when a drug drops below your threshold.</p>
           <div className="flex gap-3 mb-6">
             <input type="text" value={newAlertDrug} onChange={(e) => setNewAlertDrug(e.target.value)} placeholder="Drug name" className="flex-1 px-4 py-2.5 bg-abyss border border-border rounded-lg text-t1 font-mono placeholder-t3 focus:ring-1 focus:ring-cyan focus:border-cyan outline-none text-sm" />
@@ -41,7 +41,7 @@ export default function AlertsPage() {
             <button onClick={createAlert} className="px-5 py-2.5 bg-cyan text-abyss rounded-lg font-bold text-sm hover:bg-cyan/80 transition-colors">Deploy</button>
           </div>
           {alerts.length === 0 ? (
-            <p className="text-t3 text-xs font-mono">No active tripwires</p>
+            <p className="text-t3 text-xs font-mono">No alerts configured</p>
           ) : (
             <div className="space-y-2">
               {alerts.map((alert) => (
@@ -61,7 +61,7 @@ export default function AlertsPage() {
         </div>
 
         <div className="bg-deep border border-border rounded-lg p-6">
-          <h3 className="text-xs font-bold text-cyan uppercase tracking-wider mb-4">Sonar Probes</h3>
+          <h3 className="text-xs font-bold text-cyan uppercase tracking-wider mb-4">Price Monitors</h3>
           <p className="text-xs text-t3 mb-4">Automatically track prices at regular intervals.</p>
           <div className="flex gap-3 mb-6">
             <input type="text" value={newMonitorDrug} onChange={(e) => setNewMonitorDrug(e.target.value)} placeholder="Drug name" className="flex-1 px-4 py-2.5 bg-abyss border border-border rounded-lg text-t1 font-mono placeholder-t3 focus:ring-1 focus:ring-cyan focus:border-cyan outline-none text-sm" />
@@ -76,7 +76,7 @@ export default function AlertsPage() {
             <button onClick={createMonitor} className="px-5 py-2.5 bg-cyan text-abyss rounded-lg font-bold text-sm hover:bg-cyan/80 transition-colors">Deploy</button>
           </div>
           {monitors.length === 0 ? (
-            <p className="text-t3 text-xs font-mono">No active probes</p>
+            <p className="text-t3 text-xs font-mono">No monitors active</p>
           ) : (
             <div className="space-y-2">
               {monitors.map((mon) => (
@@ -84,7 +84,7 @@ export default function AlertsPage() {
                   <div className="flex items-center gap-3">
                     <span className="font-medium text-t1 text-sm">{mon.drug_query}</span>
                     <span className="text-t3 text-xs font-mono">every {mon.interval_minutes}min</span>
-                    {mon.last_run_at && <span className="text-[10px] text-t3 font-mono">last: {new Date(mon.last_run_at).toLocaleString()}</span>}
+                    {mon.last_run_at && <span className="text-xs text-t3 font-mono">last: {new Date(mon.last_run_at).toLocaleString()}</span>}
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-success rounded-full animate-pulse" />

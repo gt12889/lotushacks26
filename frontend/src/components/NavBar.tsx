@@ -3,7 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useLocale } from '@/components/LocaleProvider';
-import { Dock, DockItem } from '@/components/ui/dock';
+import { Fish } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const linkKeys = [
   { href: '/dashboard', key: 'nav.dashboard' as const },
@@ -18,61 +19,42 @@ export default function NavBar() {
   const { locale, setLocale, t } = useLocale();
 
   return (
-    <header className="bg-abyss border-b border-border sticky top-0 z-50">
+    <header className="bg-abyss border-b border-border sticky top-0 z-50 backdrop-blur-md">
       <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 bg-cyan rounded-lg flex items-center justify-center">
-            <span className="text-abyss font-bold text-base">M</span>
+          <div className="flex items-center justify-center w-8 h-8 bg-cyan/10 border border-cyan/20 rounded-md">
+            <Fish className="w-4 h-4 text-cyan" />
           </div>
           <div>
             <h1 className="text-sm font-bold text-t1 leading-tight">Megladon MD</h1>
             <p className="text-[10px] text-t3 leading-tight">{t('nav.tagline')}</p>
           </div>
         </Link>
-        <nav className="flex flex-wrap justify-center">
-          <Dock magnification={1.15} distance={2}>
-            {linkKeys.map((link) => (
-              <DockItem key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors block ${
-                    pathname === link.href
-                      ? 'text-cyan bg-cyan/10'
-                      : 'text-t2 hover:text-t1 hover:bg-white/5'
-                  }`}
-                >
-                  {t(link.key)}
-                </Link>
-              </DockItem>
-            ))}
-          </Dock>
+        <nav className="flex items-center gap-1">
+          {linkKeys.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
+                pathname === link.href
+                  ? 'bg-cyan/10 text-cyan'
+                  : 'text-t3 hover:text-t1'
+              )}
+            >
+              {t(link.key)}
+            </Link>
+          ))}
         </nav>
-        <div
-          className="flex rounded border border-border overflow-hidden text-xs font-mono shrink-0"
-          role="group"
-          aria-label="Language"
-        >
-          <button
-            type="button"
-            onClick={() => setLocale('vi')}
-            className={`px-2.5 py-1 transition-colors ${
-              locale === 'vi'
-                ? 'bg-cyan/20 text-cyan border-r border-border'
-                : 'text-t3 hover:text-t1 bg-transparent border-r border-border'
-            }`}
-          >
+        <span className="flex items-center gap-1 text-xs shrink-0">
+          <button onClick={() => setLocale('vi')} className={locale === 'vi' ? 'text-cyan font-medium' : 'text-t3 hover:text-t1'}>
             VN
           </button>
-          <button
-            type="button"
-            onClick={() => setLocale('en')}
-            className={`px-2.5 py-1 transition-colors ${
-              locale === 'en' ? 'bg-cyan/20 text-cyan' : 'text-t3 hover:text-t1 bg-transparent'
-            }`}
-          >
+          <span className="text-t3">/</span>
+          <button onClick={() => setLocale('en')} className={locale === 'en' ? 'text-cyan font-medium' : 'text-t3 hover:text-t1'}>
             EN
           </button>
-        </div>
+        </span>
       </div>
     </header>
   );

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import Link from 'next/link';
 import {
   Line,
   XAxis,
@@ -11,6 +10,7 @@ import {
   Area,
   ComposedChart,
 } from 'recharts';
+import Link from 'next/link';
 import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
@@ -31,6 +31,7 @@ import ActionLabel from '@/components/ActionLabel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
+import { Zap, BarChart3, Pill } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -516,17 +517,14 @@ export default function DashboardHome() {
       <div className="border-b border-border">
         <div className="max-w-[1400px] mx-auto px-6 py-4">
           <div className="flex items-start justify-between">
-            <Link href="/" className="group flex items-center gap-2">
-              <div className="w-8 h-8 bg-cyan rounded flex items-center justify-center font-bold text-deep group-hover:scale-110 transition-transform">M</div>
-              <div>
-                <h2 className="text-lg font-bold text-t1 tracking-tight">
-                  {t('dash.title')} <span className="text-cyan">{t('dash.abyss')}</span>
-                </h2>
-                <p className="text-[11px] text-t3 mt-0.5 italic">
-                  {t('dash.subtitle')}
-                </p>
-              </div>
-            </Link>
+            <div>
+              <h2 className="text-lg font-bold text-t1 tracking-tight">
+                {t('dash.title')} <span className="text-cyan">{t('dash.abyss')}</span>
+              </h2>
+              <p className="text-[11px] text-t3 mt-0.5 italic">
+                {t('dash.subtitle')}
+              </p>
+            </div>
             <div className="flex gap-2 mt-1">
               <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
                 {t('dash.exportIntel')}
@@ -566,26 +564,29 @@ export default function DashboardHome() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                 {[
                   {
-                    icon: '⚡',
+                    key: 'agents',
+                    icon: <Zap className="w-5 h-5 text-cyan" />,
                     title: t('dash.cardAgentsTitle'),
                     desc: t('dash.cardAgentsDesc'),
                   },
                   {
-                    icon: '📊',
+                    key: 'intel',
+                    icon: <BarChart3 className="w-5 h-5 text-cyan" />,
                     title: t('dash.cardIntelTitle'),
                     desc: t('dash.cardIntelDesc'),
                   },
                   {
-                    icon: '💊',
+                    key: 'opt',
+                    icon: <Pill className="w-5 h-5 text-cyan" />,
                     title: t('dash.cardOptTitle'),
                     desc: t('dash.cardOptDesc'),
                   },
                 ].map((card) => (
                   <div
-                    key={card.icon}
+                    key={card.key}
                     className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors"
                   >
-                    <div className="text-2xl mb-3">{card.icon}</div>
+                    <div className="mb-3">{card.icon}</div>
                     <h3 className="font-bold text-t1 text-sm mb-2">{card.title}</h3>
                     <p className="text-xs text-t3">{card.desc}</p>
                   </div>

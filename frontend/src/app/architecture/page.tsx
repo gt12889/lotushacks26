@@ -26,11 +26,11 @@ function ArchNode({ Icon, name, desc, badge, color }: {
       </div>
       <h3
         className="font-bold text-sm font-mono"
-        style={{ color: c, textShadow: `0 0 8px ${c}40` }}
+        style={{ color: c, textShadow: `0 0 8px ${c}20` }}
       >
         {name}
       </h3>
-      <p className="text-[10px] text-t2 mt-0.5">{desc}</p>
+      <p className="text-xs text-t2 mt-0.5">{desc}</p>
       {badge && (
         <p className="text-[8px] text-t3/60 font-mono mt-1 tracking-wide">{badge}</p>
       )}
@@ -60,7 +60,7 @@ export default function ArchitecturePage() {
         </div>
 
         {/* 3-Column Architecture Flow */}
-        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-0">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-0">
           {/* Column 1: Input */}
           <div className="flex flex-col items-center gap-0">
             <ArchNode Icon={User} name="User" desc="Drug search query" color="#D6E3FF" />
@@ -118,7 +118,7 @@ export default function ArchitecturePage() {
             <div key={m.label} className="bioluminescent-card p-6 text-center">
               <div className="text-3xl font-bold font-mono text-cyan">{m.value}</div>
               <div className="text-xs font-bold text-t1 mt-2">{m.label}</div>
-              <div className="text-[10px] text-t3 mt-1">{m.desc}</div>
+              <div className="text-xs text-t3 mt-1">{m.desc}</div>
             </div>
           ))}
         </div>

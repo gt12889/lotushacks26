@@ -7,8 +7,10 @@
 @theme inline {
   --color-abyss: #0D1C32;
   --color-deep: #010E24;
-  --color-card: #1C2A41;
+  --color-card: #111D2E;
+  --color-surface: #0F1923;
   --color-cyan: #00DBE7;
+  --color-glow: rgba(0, 219, 231, 0.06);
   --color-alert-red: #EE4042;
   --color-alert-bg: #3C0004;
   --color-success: #2DD4BF;
@@ -16,8 +18,8 @@
   --color-t1: #D6E3FF;
   --color-t2: #94A3B8;
   --color-t3: #64748B;
-  --color-border: rgba(0, 219, 231, 0.1);
-  --font-mono: 'Geist Mono', ui-monospace, monospace;
+  --color-border: rgba(214, 227, 255, 0.06);
+  --font-mono: var(--font-data, 'Fira Code'), 'Geist Mono', ui-monospace, monospace;
   --font-heading: var(--font-sans);
   --font-sans: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -82,23 +84,29 @@
   }
 }
 
-/* ───────── Section 1: Bioluminescent Cards ───────── */
+/* ───────── Section 1: Panel (replaces bioluminescent-card) ───────── */
 
-@keyframes bioGlow {
-  0%, 100% { box-shadow: 0 0 0px 0px var(--bio-color, rgba(0, 219, 231, 0.05)); }
-  50% { box-shadow: 0 0 8px 4px var(--bio-color, rgba(0, 219, 231, 0.05)); }
+.panel {
+  background: rgba(1, 14, 36, 0.85);
+  border: 1px solid rgba(214, 227, 255, 0.06);
+  border-radius: 0.5rem;
+  transition: border-color 0.3s ease;
 }
 
+.panel:hover {
+  border-color: rgba(214, 227, 255, 0.12);
+}
+
+/* Backwards compat alias */
 .bioluminescent-card {
   background: rgba(1, 14, 36, 0.85);
-  border: 1px solid rgba(0, 219, 231, 0.15);
+  border: 1px solid rgba(214, 227, 255, 0.06);
   border-radius: 0.5rem;
-  animation: bioGlow 4s ease-in-out infinite;
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 
 .bioluminescent-card:hover {
-  border-color: rgba(0, 219, 231, 0.3);
+  border-color: rgba(214, 227, 255, 0.12);
 }
 
 /* ───────── Section 2: Sonar Pulse ───────── */
@@ -158,20 +166,7 @@
   position: relative;
 }
 
-.terminal-feed::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 255, 204, 0.03) 2px,
-    rgba(0, 255, 204, 0.03) 4px
-  );
-  pointer-events: none;
-  border-radius: inherit;
-}
+/* Scanline overlay removed — cleaner look */
 
 .terminal-feed::-webkit-scrollbar {
   width: 4px;
@@ -256,21 +251,21 @@ summary {
 :root {
   --background: #0D1C32;
   --foreground: #D6E3FF;
-  --card: #1C2A41;
+  --card: #111D2E;
   --card-foreground: #D6E3FF;
-  --popover: #1C2A41;
+  --popover: #111D2E;
   --popover-foreground: #D6E3FF;
   --primary: #00DBE7;
   --primary-foreground: #010E24;
-  --secondary: #1C2A41;
+  --secondary: #111D2E;
   --secondary-foreground: #D6E3FF;
-  --muted: #1C2A41;
+  --muted: #111D2E;
   --muted-foreground: #94A3B8;
-  --accent: #1C2A41;
+  --accent: #111D2E;
   --accent-foreground: #D6E3FF;
   --destructive: #EE4042;
-  --border: rgba(0, 219, 231, 0.1);
-  --input: rgba(0, 219, 231, 0.15);
+  --border: rgba(214, 227, 255, 0.06);
+  --input: rgba(214, 227, 255, 0.1);
   --ring: #00DBE7;
   --chart-1: #00DBE7;
   --chart-2: #2DD4BF;
@@ -282,7 +277,7 @@ summary {
   --sidebar-foreground: #D6E3FF;
   --sidebar-primary: #00DBE7;
   --sidebar-primary-foreground: #010E24;
-  --sidebar-accent: #1C2A41;
+  --sidebar-accent: #111D2E;
   --sidebar-accent-foreground: #D6E3FF;
   --sidebar-border: rgba(0, 219, 231, 0.1);
   --sidebar-ring: #00DBE7;

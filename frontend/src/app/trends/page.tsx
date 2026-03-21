@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { Bot, BarChart3 } from 'lucide-react';
 import PricingChart from '@/components/PricingChart';
 import NLSearchBar from '@/components/NLSearchBar';
 import ComparisonMatrix from '@/components/ComparisonMatrix';
@@ -136,7 +137,7 @@ function TrendsContent() {
       <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-t1">Depth Analysis</h2>
+            <h2 className="text-lg font-semibold text-t1">Depth Analysis</h2>
             <p className="text-xs text-t3 mt-1">Molecular price trajectory over time</p>
           </div>
           <div className="flex items-center gap-2">
@@ -161,7 +162,7 @@ function TrendsContent() {
 
             {nlDrugs.length > 0 && (
               <div className="flex gap-2 flex-wrap">
-                <span className="text-[10px] uppercase tracking-wider text-t3 font-mono">Searching:</span>
+                <span className="text-xs uppercase tracking-wider text-t3 font-mono">Searching:</span>
                 {nlDrugs.map(d => (
                   <span key={d} className="px-3 py-1 text-xs bg-cyan/10 text-cyan rounded border border-cyan/30 font-mono">{d}</span>
                 ))}
@@ -170,7 +171,7 @@ function TrendsContent() {
 
             {nlLoading && !nlMatrix && (
               <div className="bg-deep border border-border rounded-lg p-8 text-center">
-                <div className="animate-pulse text-cyan font-mono text-sm">Dispatching AI agents...</div>
+                <div className="animate-pulse text-cyan font-mono text-sm">Searching...</div>
               </div>
             )}
 
@@ -185,7 +186,7 @@ function TrendsContent() {
 
             {!nlLoading && !nlMatrix && nlDrugs.length === 0 && (
               <div className="bg-deep border border-border rounded-lg p-16 text-center space-y-4">
-                <div className="text-4xl">🤖</div>
+                <Bot size={32} className="text-cyan mx-auto" />
                 <p className="text-sm text-t1 font-bold">AI-Powered Multi-Drug Search</p>
                 <p className="text-xs text-t3 max-w-md mx-auto">
                   Describe what medications you need in plain English. Our AI will parse your request,
@@ -198,7 +199,7 @@ function TrendsContent() {
           <>
             <div className="flex gap-3 items-end">
               <div className="flex-1">
-                <label className="block text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Drug Name</label>
+                <label className="block text-xs uppercase tracking-wider text-t3 font-mono mb-1">Drug Name</label>
                 <input
                   type="text"
                   value={query}
@@ -209,7 +210,7 @@ function TrendsContent() {
                 />
               </div>
               <div>
-                <label className="block text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Time Range</label>
+                <label className="block text-xs uppercase tracking-wider text-t3 font-mono mb-1">Time Range</label>
                 <div className="flex gap-1">
                   {TIME_RANGES.map((r) => (
                     <button
@@ -234,7 +235,7 @@ function TrendsContent() {
             </div>
 
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="text-[10px] uppercase tracking-wider text-t3 font-mono">Try:</span>
+              <span className="text-xs uppercase tracking-wider text-t3 font-mono">Try:</span>
               {QUICK_SUGGESTIONS.map((drug) => (
                 <button
                   key={drug}
@@ -258,10 +259,10 @@ function TrendsContent() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border">
-                        <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Pharmacy</th>
-                        <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Product</th>
-                        <th className="text-right py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Latest Price</th>
-                        <th className="text-right py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Observations</th>
+                        <th className="text-left py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Pharmacy</th>
+                        <th className="text-left py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Product</th>
+                        <th className="text-right py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Latest Price</th>
+                        <th className="text-right py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Observations</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -284,7 +285,7 @@ function TrendsContent() {
 
             {data.length === 0 && !loading && (
               <div className="bg-deep border border-border rounded-lg p-16 text-center space-y-4">
-                <div className="text-4xl">📊</div>
+                <BarChart3 size={32} className="text-cyan mx-auto" />
                 <p className="text-sm text-t1 font-bold">No price data yet</p>
                 <p className="text-xs text-t3 max-w-md mx-auto">
                   Search for a drug above to see how its price has changed over time across Vietnamese pharmacies.
