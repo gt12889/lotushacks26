@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;
@@ -8,6 +9,7 @@ interface SearchBarProps {
 }
 
 export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
+  const { t } = useLocale();
   const [query, setQuery] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -25,7 +27,7 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Scan molecular signals..."
+            placeholder={t('search.placeholder')}
             className="w-full px-5 py-3.5 text-base bg-deep border border-border rounded-lg focus:ring-1 focus:ring-cyan focus:border-cyan text-t1 placeholder-t3 font-mono outline-none transition-colors"
             disabled={isSearching}
           />
@@ -38,11 +40,11 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
           disabled={isSearching || !query.trim()}
           className="px-6 py-3.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
         >
-          {isSearching ? 'Scanning...' : 'Deploy Probe'}
+          {isSearching ? t('search.scanning') : t('search.deploy')}
         </button>
       </form>
       <div className="flex gap-2 flex-wrap">
-        <span className="text-xs text-t3">Quick scan:</span>
+        <span className="text-xs text-t3">{t('search.quickScan')}</span>
         {quickSearches.map((drug) => (
           <button
             key={drug}

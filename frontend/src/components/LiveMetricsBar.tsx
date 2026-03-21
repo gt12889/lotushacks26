@@ -1,5 +1,7 @@
 'use client';
 
+import { useLocale } from '@/components/LocaleProvider';
+
 interface LiveMetricsBarProps {
   agentsSpawned: number;
   pharmaciesComplete: number;
@@ -21,6 +23,7 @@ export default function LiveMetricsBar({
   savingsVnd,
   isActive,
 }: LiveMetricsBarProps) {
+  const { t } = useLocale();
   const pharmaciesDone = pharmaciesComplete >= pharmaciesTotal && pharmaciesTotal > 0;
 
   return (
@@ -53,7 +56,7 @@ export default function LiveMetricsBar({
       {/* Pharmacies Scanned */}
       <div className="flex flex-col items-center gap-0.5">
         <span className="text-[9px] uppercase tracking-wider text-t3">
-          Pharmacies Scanned
+          {t('metrics.pharmaciesScanned')}
         </span>
         <span
           className={`text-lg font-bold ${pharmaciesDone ? 'text-success' : 'text-warn'}`}
@@ -66,7 +69,7 @@ export default function LiveMetricsBar({
       {/* Products Found */}
       <div className="flex flex-col items-center gap-0.5">
         <span className="text-[9px] uppercase tracking-wider text-t3">
-          Products Found
+          {t('metrics.productsFound')}
         </span>
         <span
           className="text-lg font-bold text-t1"
@@ -79,7 +82,7 @@ export default function LiveMetricsBar({
       {/* Savings Detected */}
       <div className="flex flex-col items-center gap-0.5">
         <span className="text-[9px] uppercase tracking-wider text-t3">
-          Savings Detected
+          {t('metrics.savingsDetected')}
         </span>
         <span
           className="text-lg font-bold text-warn"

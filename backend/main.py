@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def _cors_origin_list() -> list[str]:
     raw = (settings.cors_origins or "").strip()
     if not raw:
-        return ["http://localhost:3000"]
+        return ["http://localhost:3005"]
     return [o.strip() for o in raw.split(",") if o.strip()]
 
 

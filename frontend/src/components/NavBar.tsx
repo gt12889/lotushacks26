@@ -2,32 +2,34 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLocale } from '@/components/LocaleProvider';
 
-const links = [
-  { href: '/dashboard', label: 'Dashboard' },
-  { href: '/trends', label: 'Trends' },
-  { href: '/alerts', label: 'Alerts' },
-  { href: '/optimize', label: 'Optimize' },
-  { href: '/architecture', label: 'How It Works' },
+const linkKeys = [
+  { href: '/dashboard', key: 'nav.dashboard' as const },
+  { href: '/trends', key: 'nav.trends' as const },
+  { href: '/alerts', key: 'nav.alerts' as const },
+  { href: '/optimize', key: 'nav.optimize' as const },
+  { href: '/architecture', key: 'nav.howItWorks' as const },
 ];
 
 export default function NavBar() {
   const pathname = usePathname();
+  const { locale, setLocale, t } = useLocale();
 
   return (
     <header className="bg-abyss border-b border-border sticky top-0 z-50">
-      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-3 shrink-0">
           <div className="w-9 h-9 bg-cyan rounded-lg flex items-center justify-center">
             <span className="text-abyss font-bold text-base">M</span>
           </div>
           <div>
             <h1 className="text-sm font-bold text-t1 leading-tight">Megladon MD</h1>
-            <p className="text-[10px] text-t3 leading-tight">Pharmaceutical Price Intelligence</p>
+            <p className="text-[10px] text-t3 leading-tight">{t('nav.tagline')}</p>
           </div>
         </Link>
-        <nav className="flex gap-1">
-          {links.map((link) => (
+        <nav className="flex gap-1 flex-wrap justify-center">
+          {linkKeys.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -37,13 +39,36 @@ export default function NavBar() {
                   : 'text-t2 hover:text-t1 hover:bg-white/5'
               }`}
             >
-              {link.label}
+              {t(link.key)}
             </Link>
           ))}
         </nav>
-        <button className="text-xs text-t3 border border-border rounded px-2 py-1 hover:text-t1 hover:border-cyan/30 transition-colors">
-          VN / EN
-        </button>
+        <div
+          className="flex rounded border border-border overflow-hidden text-xs font-mono shrink-0"
+          role="group"
+          aria-label="Language"
+        >
+          <button
+            type="button"
+            onClick={() => setLocale('vi')}
+            className={`px-2.5 py-1 transition-colors ${
+              locale === 'vi'
+                ? 'bg-cyan/20 text-cyan border-r border-border'
+                : 'text-t3 hover:text-t1 bg-transparent border-r border-border'
+            }`}
+          >
+            VN
+          </button>
+          <button
+            type="button"
+            onClick={() => setLocale('en')}
+            className={`px-2.5 py-1 transition-colors ${
+              locale === 'en' ? 'bg-cyan/20 text-cyan' : 'text-t3 hover:text-t1 bg-transparent'
+            }`}
+          >
+            EN
+          </button>
+        </div>
       </div>
     </header>
   );

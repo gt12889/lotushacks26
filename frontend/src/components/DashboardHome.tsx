@@ -28,6 +28,7 @@ import ModelRouterPanel from '@/components/ModelRouterPanel';
 import CeilingPanel from '@/components/CeilingPanel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
+import { useLocale } from '@/components/LocaleProvider';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -140,6 +141,7 @@ const MOCK_TABLE_DATA = [
 ];
 
 export default function DashboardHome() {
+  const { t } = useLocale();
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Record<string, PharmacyResult>>({});
   const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null);
@@ -285,7 +287,7 @@ export default function DashboardHome() {
     setStreamingUrls({});
     setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
     eventIdRef.current = 0;
-    addAgentEvent('spawn', 'Orchestrator', `Deploying agents for "${query}"`);
+    addAgentEvent('spawn', 'Orchestrator', t('dash.deployOrchestrator', { query }));
 
     try {
       const memoryUserId = ensureMemoryUserId();
@@ -362,8 +364,8 @@ export default function DashboardHome() {
             } else if (event.type === 'pharmacy_status' && event.status === 'searching') {
               addAgentEvent(
                 'searching',
-                `${event.source_name || 'Pharmacy'}`,
-                'Scanning…',
+                `${event.source_name || t('common.pharmacy')}`,
+                t('common.scanning'),
                 event.source_id
               );
               eventBufferRef.current.push({ type: 'pharmacy', data: event });
@@ -372,7 +374,7 @@ export default function DashboardHome() {
               addAgentEvent(
                 'success',
                 'Orchestrator',
-                `Search complete — ${event.total_results ?? 0} products`
+                t('common.searchComplete', { count: event.total_results ?? 0 })
               );
             } else if (event.source_id) {
               eventBufferRef.current.push({ type: 'pharmacy', data: event });
@@ -385,15 +387,18 @@ export default function DashboardHome() {
               if (event.status === 'success') {
                 addAgentEvent(
                   'success',
-                  `${event.source_name || 'Pharmacy'} Agent`,
-                  `Found ${event.result_count ?? 0} products (${((event.response_time_ms || 0) / 1000).toFixed(1)}s)`,
+                  `${event.source_name || t('common.pharmacy')} Agent`,
+                  t('common.foundProducts', {
+                    count: event.result_count ?? 0,
+                    sec: ((event.response_time_ms || 0) / 1000).toFixed(1),
+                  }),
                   event.source_id
                 );
               } else if (event.status === 'error') {
                 addAgentEvent(
                   'error',
-                  `${event.source_name || 'Pharmacy'} Agent`,
-                  String(event.error || 'Signal lost'),
+                  `${event.source_name || t('common.pharmacy')} Agent`,
+                  String(event.error || t('common.signalLost')),
                   event.source_id
                 );
               }
@@ -446,11 +451,11 @@ export default function DashboardHome() {
             setInsightError(null);
           } else {
             setInsight('');
-            setInsightError(data.error || 'No personalized note returned.');
+            setInsightError(data.error || t('dash.insightNone'));
           }
         } catch {
           setInsight('');
-          setInsightError('Could not load personalized note.');
+          setInsightError(t('dash.insightError'));
         } finally {
           setInsightLoading(false);
         }
@@ -474,7 +479,9 @@ export default function DashboardHome() {
       {hasMegalodon && scanSummary && (
         <MegalodonAlert
           drugName={scanSummary.query}
-          message={`Price spread of ${scanSummary.potential_savings?.toLocaleString()} VND detected across sources`}
+          message={t('dash.megalodonSpread', {
+            amount: scanSummary.potential_savings?.toLocaleString() ?? '',
+          })}
         />
       )}
 
@@ -485,22 +492,22 @@ export default function DashboardHome() {
               <div className="w-8 h-8 bg-cyan rounded flex items-center justify-center font-bold text-deep group-hover:scale-110 transition-transform">M</div>
               <div>
                 <h2 className="text-lg font-bold text-t1 tracking-tight">
-                  Megladon MD: <span className="text-cyan">The Abyss</span>
+                  {t('dash.title')} <span className="text-cyan">{t('dash.abyss')}</span>
                 </h2>
                 <p className="text-[11px] text-t3 mt-0.5 italic">
-                  Surfacing deep market trajectories and molecular cost-signals.
+                  {t('dash.subtitle')}
                 </p>
               </div>
             </Link>
             <div className="flex gap-2 mt-1">
               <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
-                Export Intel
+                {t('dash.exportIntel')}
               </button>
               <button
                 onClick={() => (currentQuery ? handleSearch(currentQuery) : null)}
                 className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider"
               >
-                Deploy New Probe
+                {t('dash.deployNewProbe')}
               </button>
             </div>
           </div>
@@ -512,7 +519,7 @@ export default function DashboardHome() {
           <div className="p-6 space-y-5">
             {memoryHints.length > 0 && (
               <div className="rounded-lg border border-cyan/25 bg-cyan/5 px-4 py-3">
-                <p className="text-xs font-mono text-cyan mb-2">Supermemory — related context</p>
+                <p className="text-xs font-mono text-cyan mb-2">{t('dash.supermemoryTitle')}</p>
                 <ul className="text-xs text-t2 space-y-1 list-disc list-inside">
                   {memoryHints.slice(0, 5).map((s, i) => (
                     <li key={i}>{s}</li>
@@ -522,10 +529,7 @@ export default function DashboardHome() {
             )}
 
             {memoryEmptyHint && memoryHints.length === 0 && (
-              <p className="text-xs text-t3 font-mono">
-                Supermemory is on — past searches for similar drugs may appear after indexing (a few
-                seconds).
-              </p>
+              <p className="text-xs text-t3 font-mono">{t('dash.supermemoryHint')}</p>
             )}
 
             <SearchBar onSearch={handleSearch} isSearching={isSearching} />
@@ -535,22 +539,22 @@ export default function DashboardHome() {
                 {[
                   {
                     icon: '⚡',
-                    title: 'Parallel Agents',
-                    desc: '5 AI agents search pharmacy websites simultaneously in under 30 seconds.',
+                    title: t('dash.cardAgentsTitle'),
+                    desc: t('dash.cardAgentsDesc'),
                   },
                   {
                     icon: '📊',
-                    title: 'Price Intelligence',
-                    desc: 'Track price trends, set alerts, and find savings of up to 300%.',
+                    title: t('dash.cardIntelTitle'),
+                    desc: t('dash.cardIntelDesc'),
                   },
                   {
                     icon: '💊',
-                    title: 'Prescription Optimizer',
-                    desc: 'Optimize sourcing across pharmacies for entire prescriptions.',
+                    title: t('dash.cardOptTitle'),
+                    desc: t('dash.cardOptDesc'),
                   },
                 ].map((card) => (
                   <div
-                    key={card.title}
+                    key={card.icon}
                     className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors"
                   >
                     <div className="text-2xl mb-3">{card.icon}</div>
@@ -566,12 +570,13 @@ export default function DashboardHome() {
                 {currentQuery && (
                   <div className="flex items-center gap-3">
                     <h3 className="text-xs font-mono text-t2">
-                      Scanning: <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
+                      {t('dash.scanning')}{' '}
+                      <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
                     </h3>
                     {isSearching && (
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
-                        <span className="text-[10px] text-t3 font-mono">Agents active</span>
+                        <span className="text-[10px] text-t3 font-mono">{t('dash.agentsActive')}</span>
                       </div>
                     )}
                   </div>
@@ -613,7 +618,7 @@ export default function DashboardHome() {
                 )}
                 {scanSummary?.price_fluctuations && scanSummary.price_fluctuations.length > 0 && (
                   <div className="rounded-lg border border-border bg-card/40 px-4 py-3">
-                    <p className="text-xs font-mono text-t2 mb-2">Price vs last scan (product + chain)</p>
+                    <p className="text-xs font-mono text-t2 mb-2">{t('dash.fluctuationTitle')}</p>
                     <ul className="text-xs text-t3 space-y-1.5 list-disc list-inside">
                       {scanSummary.price_fluctuations.map((line: string, i: number) => (
                         <li key={i}>{line}</li>
@@ -623,9 +628,9 @@ export default function DashboardHome() {
                 )}
                 {(insightLoading || insight || insightError) && (
                   <div className="rounded-lg border border-cyan/30 bg-deep px-4 py-3">
-                    <p className="text-xs font-mono text-cyan mb-2">Personalized note</p>
+                    <p className="text-xs font-mono text-cyan mb-2">{t('dash.insightTitle')}</p>
                     {insightLoading && (
-                      <p className="text-xs text-t3 animate-pulse">Generating from your scan and memory…</p>
+                      <p className="text-xs text-t3 animate-pulse">{t('dash.insightLoading')}</p>
                     )}
                     {!insightLoading && insight && (
                       <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{insight}</p>
@@ -637,7 +642,7 @@ export default function DashboardHome() {
                 )}
                 {scanSummary?.variants && scanSummary.variants.length > 0 && (
                   <div className="bg-deep border border-cyan/20 rounded-lg p-3">
-                    <p className="text-[10px] font-mono text-cyan mb-2">Generic alternatives detected:</p>
+                    <p className="text-[10px] font-mono text-cyan mb-2">{t('dash.variantsTitle')}</p>
                     <div className="flex gap-2 flex-wrap">
                       {scanSummary.variants.map((v) => (
                         <button
@@ -646,7 +651,7 @@ export default function DashboardHome() {
                           disabled={isSearching}
                           className="px-2.5 py-1 text-[10px] bg-card text-cyan border border-cyan/30 rounded hover:bg-cyan/10 transition-colors disabled:opacity-50"
                         >
-                          Scan &ldquo;{v}&rdquo;
+                          {t('dash.scanDrug', { name: v })}
                         </button>
                       ))}
                     </div>
@@ -669,16 +674,16 @@ export default function DashboardHome() {
             {scanSummary && (trendLoading || trendData.length > 0) && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <p className="text-xs font-mono text-t2">7-day price trajectory (stored scans)</p>
+                  <p className="text-xs font-mono text-t2">{t('dash.trendsTitle')}</p>
                   <Link
                     href={`/trends?q=${encodeURIComponent(scanSummary.query)}`}
                     className="text-xs text-cyan hover:underline font-mono"
                   >
-                    Open full trends
+                    {t('dash.trendsOpen')}
                   </Link>
                 </div>
                 {trendLoading && (
-                  <p className="text-xs text-t3 animate-pulse font-mono">Loading history…</p>
+                  <p className="text-xs text-t3 animate-pulse font-mono">{t('dash.trendsLoading')}</p>
                 )}
                 {!trendLoading && trendData.length > 0 && <PricingChart data={trendData} />}
               </div>
@@ -688,13 +693,15 @@ export default function DashboardHome() {
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 bg-cyan rounded-sm" />
                 <span className="text-t2 font-mono">
-                  AWP <span className="text-t3">ATOVASTATIN CALCIUM</span>
+                  {t('dash.chartAwp')}{' '}
+                  <span className="text-t3">{t('dash.chartAwpDrug')}</span>
                 </span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2 h-2 bg-white/20 rounded-sm" />
                 <span className="text-t2 font-mono">
-                  WAC <span className="text-t3">METFORMIN</span>
+                  {t('dash.chartWac')}{' '}
+                  <span className="text-t3">{t('dash.chartWacDrug')}</span>
                 </span>
               </div>
             </div>
@@ -751,22 +758,24 @@ export default function DashboardHome() {
             <div className="bg-abyss">
               <div className="flex items-center gap-4 mb-3">
                 <h3 className="text-[11px] font-bold text-t1 uppercase tracking-[0.15em]">
-                  Pricing Abyss Index
+                  {t('dash.pricingIndex')}
                 </h3>
                 <div className="flex items-center gap-2 text-[9px] text-t3 font-mono">
-                  <span>Real-time Feed</span>
+                  <span>{t('dash.realtimeFeed')}</span>
                   <span className="text-t3">•</span>
-                  <span>Tinyfish Intelligence</span>
+                  <span>{t('dash.tinyfishIntel')}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-0 border-b border-border/60 pb-2 mb-0">
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Drug Name / NDC</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">AWP ($)</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">WAC ($)</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">24H</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Trend</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Status</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">
+                  {t('dash.tableDrugNdc')}
+                </span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableAwp')}</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableWac')}</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.table24h')}</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableTrend')}</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableStatus')}</span>
               </div>
 
               {MOCK_TABLE_DATA.map((row, i) => (
@@ -816,27 +825,26 @@ export default function DashboardHome() {
                   {row.agentStatus && (
                     <div className="flex items-center gap-4 pb-2.5 pl-1">
                       <span className="text-[8px] text-t3 font-mono uppercase tracking-wider">
-                        Distributed Agent Network
+                        {t('dash.distributedNet')}
                       </span>
                       <span className="text-[8px] text-t3 font-mono">
-                        Heartbeat: <span className="text-success">{row.agentStatus}</span>
+                        {t('dash.heartbeat')}{' '}
+                        <span className="text-success">{row.agentStatus}</span>
                       </span>
                       <span className="text-[8px] text-t3 font-mono">
-                        Latency: <span className="text-t2">{row.latency}</span>
+                        {t('dash.latency')}{' '}
+                        <span className="text-t2">{row.latency}</span>
                       </span>
                       <span className="text-[8px] text-t3 font-mono">
-                        Processing Node: <span className="text-t2">{row.node}</span>
+                        {t('dash.node')}{' '}
+                        <span className="text-t2">{row.node}</span>
                       </span>
                     </div>
                   )}
 
                   {row.status === 'monitor' && (
                     <div className="pb-2.5 pl-1">
-                      <span className="text-[8px] text-t3 font-mono">
-                        Price trajectories are currently calculated using{' '}
-                        <span className="text-t2">14.2M</span> data points across{' '}
-                        <span className="text-t2">42</span> wholesale hubs.
-                      </span>
+                      <span className="text-[8px] text-t3 font-mono">{t('dash.hubsCopy')}</span>
                     </div>
                   )}
                 </div>
@@ -845,11 +853,13 @@ export default function DashboardHome() {
 
             <div className="flex items-center justify-between pt-3 border-t border-border/30">
               <div className="flex gap-5 text-[9px] text-t3 font-mono">
-                <span className="hover:text-t2 cursor-pointer transition-colors">Privacy Protocol</span>
-                <span className="hover:text-t2 cursor-pointer transition-colors">Abyssal Methodology</span>
-                <span className="hover:text-t2 cursor-pointer transition-colors">Source Oracle</span>
+                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.privacy')}</span>
+                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.methodology')}</span>
+                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.oracle')}</span>
               </div>
-              <span className="text-[9px] text-t3 font-mono">System Synchronized: {syncTime} UTC</span>
+              <span className="text-[9px] text-t3 font-mono">
+                {t('footer.sync')} {syncTime} UTC
+              </span>
             </div>
           </div>
         </div>

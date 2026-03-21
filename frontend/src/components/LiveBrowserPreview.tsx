@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useLocale } from '@/components/LocaleProvider';
 
 interface LiveBrowserPreviewProps {
   streamingUrls: Record<string, string>;
@@ -17,6 +18,7 @@ const PHARMACY_NAME_MAP: Record<string, string> = {
 };
 
 export default function LiveBrowserPreview({ streamingUrls, pharmacyNames, isSearching }: LiveBrowserPreviewProps) {
+  const { t } = useLocale();
   const [expanded, setExpanded] = useState(false);
   const entries = Object.entries(streamingUrls);
 
@@ -31,10 +33,10 @@ export default function LiveBrowserPreview({ streamingUrls, pharmacyNames, isSea
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
           <span className="text-[10px] font-mono text-cyan uppercase tracking-wider">
-            Live Browser Preview
+            {t('livePreview.title')}
           </span>
           <span className="text-[10px] font-mono text-t3">
-            ({entries.length} agent{entries.length !== 1 ? 's' : ''})
+            ({t('livePreview.agents', { count: entries.length })})
           </span>
         </div>
         <svg
