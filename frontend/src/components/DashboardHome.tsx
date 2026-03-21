@@ -23,6 +23,10 @@ import AgentActivityFeed from '@/components/AgentActivityFeed';
 import LiveMetricsBar from '@/components/LiveMetricsBar';
 import DemoAlertTrigger from '@/components/DemoAlertTrigger';
 import LiveBrowserPreview from '@/components/LiveBrowserPreview';
+import AgentCascade from '@/components/AgentCascade';
+import ModelRouterPanel from '@/components/ModelRouterPanel';
+import CeilingPanel from '@/components/CeilingPanel';
+import type { ModelStep } from '@/components/ModelRouterPanel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -149,6 +153,12 @@ export default function DashboardHome() {
   const [syncTime, setSyncTime] = useState('');
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
+  const [modelSteps, setModelSteps] = useState<ModelStep[]>([
+    { step: 'normalize', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'search', model: 'TinyFish Agent', provider: 'TinyFish', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'discovery', model: 'Neural Search', provider: 'Exa', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'ocr', model: 'gpt-4o', provider: 'OpenAI', latency_ms: null, status: 'pending', count: 0 },
+  ]);
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
@@ -272,6 +282,7 @@ export default function DashboardHome() {
     setCurrentQuery(query);
     setAgentEvents([]);
     setStreamingUrls({});
+    setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
     eventIdRef.current = 0;
     addAgentEvent('spawn', 'Orchestrator', `Deploying agents for "${query}"`);
 
@@ -324,7 +335,13 @@ export default function DashboardHome() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.type === 'agent_spawn') {
+            if (event.type === 'model_used') {
+              setModelSteps(prev => prev.map(s =>
+                s.step === event.step
+                  ? { ...s, model: event.model || s.model, provider: event.provider || s.provider, latency_ms: event.latency_ms, status: 'done', count: s.count + 1 }
+                  : s
+              ));
+            } else if (event.type === 'agent_spawn') {
               addAgentEvent(
                 'spawn',
                 event.name || 'Agent',
@@ -567,8 +584,17 @@ export default function DashboardHome() {
                   savingsVnd={scanSummary?.potential_savings ?? null}
                   isActive={isSearching}
                 />
+                <AgentCascade
+                  tier0Active={false}
+                  tier1Active={isSearching ? 5 - pharmaciesComplete : 0}
+                  tier1Complete={pharmaciesComplete}
+                  tier1Total={5}
+                  tier2Variants={scanSummary?.variants?.length ?? 0}
+                  visible={isSearching || hasResults}
+                />
                 <PharmacyCards results={results} />
                 <AgentActivityFeed events={agentEvents} isActive={isSearching} />
+                <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
                 {scanSummary && (
                   <SavingsBanner
                     bestPrice={scanSummary.best_price}
@@ -619,6 +645,7 @@ export default function DashboardHome() {
                     </div>
                   </div>
                 )}
+                <CeilingPanel compliance={(scanSummary as any)?.compliance ?? null} query={currentQuery} />
                 <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
                 <DemoAlertTrigger
                   drugName={currentQuery || 'Metformin 500mg'}
