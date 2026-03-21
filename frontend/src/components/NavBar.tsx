@@ -4,25 +4,26 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const links = [
-  { href: '/', label: 'Search' },
+  { href: '/', label: 'Dashboard' },
   { href: '/trends', label: 'Trends' },
-  { href: '/optimize', label: 'Optimizer' },
   { href: '/alerts', label: 'Alerts' },
+  { href: '/optimize', label: 'Optimize' },
+  { href: '/architecture', label: 'How It Works' },
 ];
 
 export default function NavBar() {
   const pathname = usePathname();
 
   return (
-    <header className="bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+    <header className="bg-abyss border-b border-border sticky top-0 z-50">
+      <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-gradient-to-br from-blue-600 to-green-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-base">M</span>
+          <div className="w-9 h-9 bg-cyan rounded-lg flex items-center justify-center">
+            <span className="text-abyss font-bold text-base">M</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">MediScrape</h1>
-            <p className="text-[10px] text-gray-500 leading-tight">Pharmaceutical Price Intelligence</p>
+            <h1 className="text-sm font-bold text-t1 leading-tight">MediScrape</h1>
+            <p className="text-[10px] text-t3 leading-tight">Pharmaceutical Price Intelligence</p>
           </div>
         </Link>
         <nav className="flex gap-1">
@@ -32,14 +33,17 @@ export default function NavBar() {
               href={link.href}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 pathname === link.href
-                  ? 'bg-blue-100 text-blue-700'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'text-cyan bg-cyan/10'
+                  : 'text-t2 hover:text-t1 hover:bg-white/5'
               }`}
             >
               {link.label}
             </Link>
           ))}
         </nav>
+        <button className="text-xs text-t3 border border-border rounded px-2 py-1 hover:text-t1 hover:border-cyan/30 transition-colors">
+          VN / EN
+        </button>
       </div>
     </header>
   );

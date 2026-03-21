@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
+import AbyssFooter from "@/components/AbyssFooter";
 
 export const metadata: Metadata = {
-  title: "MediScrape - Pharmaceutical Price Intelligence",
-  description: "AI-powered drug price comparison across Vietnamese pharmacy chains",
+  title: "MediScrape — The Abyss",
+  description: "AI-powered pharmaceutical price intelligence across Vietnamese pharmacy chains",
 };
 
 export default function RootLayout({
@@ -14,9 +15,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
+      <body className="antialiased bg-abyss text-t1 min-h-screen flex flex-col">
         <NavBar />
-        {children}
+        <main className="flex-1">{children}</main>
+        <AbyssFooter />
       </body>
     </html>
   );
