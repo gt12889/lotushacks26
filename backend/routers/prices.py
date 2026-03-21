@@ -66,3 +66,28 @@ async def get_trends(
         return {"query": drug_query, "days": days, "data": [dict(r) for r in rows]}
     finally:
         await db.close()
+
+
+@router.get("/sparklines/{drug_query}")
+async def get_sparklines(drug_query: str, days: int = Query(7, ge=1, le=90)):
+    """Return per-source price history for sparkline rendering."""
+    db = await get_db()
+    try:
+        rows = await db.execute_fetchall(
+            """SELECT p.source_id, s.name as source_name, p.price, p.observed_at
+               FROM prices p
+               JOIN sources s ON p.source_id = s.id
+               WHERE p.drug_query = ?
+               AND p.observed_at >= datetime('now', ?)
+               ORDER BY p.source_id, p.observed_at""",
+            (drug_query, f'-{days} days'),
+        )
+        sparklines: dict = {}
+        for row in rows:
+            sid = row[0]
+            if sid not in sparklines:
+                sparklines[sid] = {"source_name": row[1], "points": []}
+            sparklines[sid]["points"].append({"price": row[2], "time": row[3]})
+        return {"drug_query": drug_query, "sparklines": sparklines}
+    finally:
+        await db.close()

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import StatusPill from './StatusPill';
 import SponsorBadge from './SponsorBadge';
+import SparklineChart from './SparklineChart';
 
 interface PharmacyResult {
   source_id: string;
@@ -17,6 +18,7 @@ interface PharmacyResult {
 
 interface PharmacyCardsProps {
   results: Record<string, PharmacyResult>;
+  sparklines?: Record<string, { source_name: string; points: { price: number; time: string }[] }>;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -37,7 +39,7 @@ const PHARMACY_INITIALS: Record<string, string> = {
 
 const BRIGHTDATA_PHARMACIES = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
-export default function PharmacyCards({ results }: PharmacyCardsProps) {
+export default function PharmacyCards({ results, sparklines }: PharmacyCardsProps) {
   const pharmacies = ['long_chau', 'pharmacity', 'an_khang', 'than_thien', 'medicare'];
   const [glowing, setGlowing] = useState<Record<string, boolean>>({});
   const prevResults = useRef<Record<string, boolean>>({});
@@ -102,6 +104,9 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
                 )}
                 {result.response_time_ms && (
                   <div className="text-[10px] text-t3 font-mono">{(result.response_time_ms / 1000).toFixed(1)}s latency</div>
+                )}
+                {sparklines?.[id]?.points && sparklines[id].points.length >= 2 && (
+                  <SparklineChart data={sparklines[id].points} color={color} />
                 )}
               </>
             )}

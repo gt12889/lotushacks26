@@ -155,6 +155,7 @@ export default function DashboardHome() {
   const [insightError, setInsightError] = useState<string | null>(null);
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
+  const [sparklineData, setSparklineData] = useState<Record<string, { source_name: string; points: { price: number; time: string }[] }>>({});
   const [syncTime, setSyncTime] = useState('');
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
@@ -275,6 +276,20 @@ export default function DashboardHome() {
       cancelled = true;
     };
   }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results]);
+
+  useEffect(() => {
+    if (!scanSummary?.query) return;
+    const q = scanSummary.query;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/sparklines/${encodeURIComponent(q)}?days=7`);
+        const json = await res.json();
+        if (json.sparklines) setSparklineData(json.sparklines);
+      } catch (e) {
+        console.warn('Sparkline fetch failed:', e);
+      }
+    })();
+  }, [scanSummary?.query]);
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
@@ -606,7 +621,7 @@ export default function DashboardHome() {
                   tier2Variants={scanSummary?.variants?.length ?? 0}
                   visible={isSearching || hasResults}
                 />
-                <PharmacyCards results={results} />
+                <PharmacyCards results={results} sparklines={sparklineData} />
                 <AgentActivityFeed events={agentEvents} isActive={isSearching} />
                 <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
                 {scanSummary && (
