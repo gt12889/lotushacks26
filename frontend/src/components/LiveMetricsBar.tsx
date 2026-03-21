@@ -1,6 +1,7 @@
 'use client';
 
 import { useLocale } from '@/components/LocaleProvider';
+import { Counter } from '@/components/ui/counter';
 
 interface LiveMetricsBarProps {
   agentsSpawned: number;
@@ -45,12 +46,11 @@ export default function LiveMetricsBar({
         <span className="text-[9px] uppercase tracking-wider text-t3">
           Agents Deployed
         </span>
-        <span
+        <Counter
+          value={agentsSpawned}
           className="text-lg font-bold text-cyan"
           style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          {agentsSpawned}
-        </span>
+        />
       </div>
 
       {/* Pharmacies Scanned */}
@@ -62,7 +62,7 @@ export default function LiveMetricsBar({
           className={`text-lg font-bold ${pharmaciesDone ? 'text-success' : 'text-warn'}`}
           style={{ fontVariantNumeric: 'tabular-nums' }}
         >
-          {pharmaciesComplete}/{pharmaciesTotal}
+          <Counter value={pharmaciesComplete} />/{pharmaciesTotal}
         </span>
       </div>
 
@@ -71,12 +71,11 @@ export default function LiveMetricsBar({
         <span className="text-[9px] uppercase tracking-wider text-t3">
           {t('metrics.productsFound')}
         </span>
-        <span
+        <Counter
+          value={productsFound}
           className="text-lg font-bold text-t1"
           style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          {productsFound}
-        </span>
+        />
       </div>
 
       {/* Savings Detected */}
@@ -84,12 +83,21 @@ export default function LiveMetricsBar({
         <span className="text-[9px] uppercase tracking-wider text-t3">
           {t('metrics.savingsDetected')}
         </span>
-        <span
-          className="text-lg font-bold text-warn"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          {savingsVnd !== null ? formatVnd(savingsVnd) : '—'}
-        </span>
+        {savingsVnd !== null ? (
+          <Counter
+            value={savingsVnd}
+            formatter={formatVnd}
+            className="text-lg font-bold text-warn"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          />
+        ) : (
+          <span
+            className="text-lg font-bold text-warn"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            —
+          </span>
+        )}
       </div>
     </div>
   );
