@@ -172,7 +172,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 10,
-      "passes": false,
+      "passes": true,
       "notes": "PharmacyCards is 127 lines. GlareHover adds polish without changing functionality."
     },
     {

@@ -15,6 +15,7 @@
 - 21st.dev registry may return 500 errors — implement ReactBits components manually when needed
 - Custom Counter component at ui/counter.tsx provides animated number transitions (easeOutExpo, requestAnimationFrame)
 - Custom AnimatedList component at ui/animated-list.tsx wraps keyed children with CSS slide-in animation (plays once per mount)
+- Custom GlareHover component at ui/glare-hover.tsx adds mouse-tracking radial gradient glare effect on hover
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -139,5 +140,20 @@
   - blur CSS filter on canvas creates smooth aurora effect — 80-100px blur works well for organic look
   - Gradient overlay on top of animated background is essential for text readability
   - video-bg-container and video-bg-overlay CSS classes in globals.css are now unused — US-014 cleanup should audit
+---
+
+## 2026-03-21 - US-010
+- Created custom GlareHover component in src/components/ui/glare-hover.tsx
+- GlareHover tracks mouse position and renders a radial gradient glare effect that follows the cursor
+- Wrapped each pharmacy card in PharmacyCards.tsx with GlareHover, using pharmacy-specific colors for the glare
+- Existing glow animation on result arrival preserved (boxShadow pulse still works alongside GlareHover)
+- Card content, responsive grid layout (2-5 columns), and all functionality unchanged
+- Files changed: ui/glare-hover.tsx (new), PharmacyCards.tsx
+- **Learnings for future iterations:**
+  - GlareHover uses radial-gradient positioned at mouse coordinates for the glare effect — simple CSS, no canvas needed
+  - overflow-hidden on the container is essential to clip the glare gradient at card edges
+  - borderRadius='inherit' or explicit value needed so glare overlay matches card corners
+  - GlareHover wraps the card div — key prop moves to GlareHover since it's now the outermost element in the map
+  - Using pharmacy-specific color with low alpha (e.g. `${color}25`) for glare creates a themed hover effect per card
 ---
 
