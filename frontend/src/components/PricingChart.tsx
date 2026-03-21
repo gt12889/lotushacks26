@@ -49,7 +49,7 @@ export default function PricingChart({ data }: PricingChartProps) {
             contentStyle={{ backgroundColor: '#010E24', border: '1px solid rgba(0,219,231,0.2)', borderRadius: 8, fontSize: 12 }}
             labelStyle={{ color: '#D6E3FF' }}
             itemStyle={{ color: '#94A3B8' }}
-            formatter={(value: number) => [`${value.toLocaleString()} VND`]}
+            formatter={(value) => [`${Number(value).toLocaleString()} VND`]}
           />
           <Legend
             formatter={(value) => <span style={{ color: '#94A3B8', fontSize: 11 }}>{sourceNames[value] || value}</span>}
