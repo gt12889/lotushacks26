@@ -78,7 +78,9 @@ async def remember_search_session(
     *,
     best_price: int | None,
     best_source: str | None,
+    best_source_id: str | None = None,
     potential_savings: int | None,
+    fluctuation_lines: list[str] | None = None,
 ) -> None:
     if not is_enabled() or not user_tag:
         return
@@ -87,10 +89,26 @@ async def remember_search_session(
         parts.append(f"best price {best_price:,} VND at {best_source}")
     if potential_savings:
         parts.append(f"potential savings up to {potential_savings:,} VND vs highest listing")
+    if fluctuation_lines:
+        parts.append(
+            "Per-chain price vs last scan (product + location): "
+            + " ".join(fluctuation_lines[:8])
+        )
     content = ". ".join(parts) + "."
 
+    meta: dict[str, str] = {
+        "kind": "mediscrape_scan",
+        "drug_query": (drug_query or "")[:500],
+        "best_source": (best_source or "")[:200],
+        "best_source_id": (best_source_id or "")[:80],
+    }
+    if best_price is not None:
+        meta["best_price_vnd"] = str(best_price)
+    if potential_savings:
+        meta["potential_savings_vnd"] = str(potential_savings)
+
     def _run() -> None:
-        get_supermemory().add(content=content, container_tags=[user_tag])
+        get_supermemory().add(content=content, container_tags=[user_tag], metadata=meta)
 
     try:
         await asyncio.to_thread(_run)

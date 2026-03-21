@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
@@ -28,9 +28,12 @@ interface Summary {
   potential_savings: number | null;
   total_results: number;
   variants?: string[];
+  price_fluctuations?: string[];
 }
 
 const MEMORY_USER_KEY = 'mediscrapeMemoryUser';
+/** Supermemory indexes asynchronously; first recall may be empty; we retry once after this delay. */
+const MEMORY_RECALL_RETRY_MS = 7000;
 
 function ensureMemoryUserId(): string {
   let id = localStorage.getItem(MEMORY_USER_KEY);
@@ -47,40 +50,72 @@ export default function Home() {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [currentQuery, setCurrentQuery] = useState('');
   const [memoryHints, setMemoryHints] = useState<string[]>([]);
+  const [memoryEmptyHint, setMemoryEmptyHint] = useState(false);
+  const [insight, setInsight] = useState('');
+  const [insightLoading, setInsightLoading] = useState(false);
+  const [insightError, setInsightError] = useState<string | null>(null);
+  const latestQueryRef = useRef('');
 
-  const fetchMemoryHints = useCallback(async (q: string, userId: string) => {
-    if (!q.trim()) {
-      setMemoryHints([]);
-      return;
-    }
-    try {
-      const r = await fetch(
-        `${API_URL}/api/memory/recall?q=${encodeURIComponent(q.trim())}&user=${encodeURIComponent(userId)}`
-      );
-      if (!r.ok) {
-        setMemoryHints([]);
-        return;
+  /** Hybrid memory search can lag behind writes; callers may retry once. */
+  const fetchMemoryRecall = useCallback(
+    async (q: string, userId: string): Promise<{ enabled: boolean; snippets: string[] }> => {
+      if (!q.trim()) {
+        return { enabled: false, snippets: [] };
       }
-      const data = await r.json();
-      if (data.enabled && Array.isArray(data.snippets) && data.snippets.length > 0) {
-        setMemoryHints(data.snippets);
-      } else {
-        setMemoryHints([]);
+      try {
+        const r = await fetch(
+          `${API_URL}/api/memory/recall?q=${encodeURIComponent(q.trim())}&user=${encodeURIComponent(userId)}`
+        );
+        if (!r.ok) {
+          return { enabled: false, snippets: [] };
+        }
+        const data = await r.json();
+        const enabled = Boolean(data.enabled);
+        const snippets = Array.isArray(data.snippets) ? data.snippets : [];
+        return { enabled, snippets };
+      } catch {
+        return { enabled: false, snippets: [] };
       }
-    } catch {
-      setMemoryHints([]);
-    }
-  }, []);
+    },
+    []
+  );
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
     setResults({});
     setSummary(null);
+    setInsight('');
+    setInsightError(null);
+    setInsightLoading(false);
     setCurrentQuery(query);
 
     try {
       const memoryUserId = ensureMemoryUserId();
-      await fetchMemoryHints(query, memoryUserId);
+      latestQueryRef.current = query;
+      setMemoryEmptyHint(false);
+
+      const recall = await fetchMemoryRecall(query, memoryUserId);
+      if (recall.enabled && recall.snippets.length > 0) {
+        setMemoryHints(recall.snippets);
+      } else {
+        setMemoryHints([]);
+        setMemoryEmptyHint(recall.enabled && recall.snippets.length === 0);
+        if (recall.enabled && recall.snippets.length === 0) {
+          const qSnap = query;
+          const uid = memoryUserId;
+          window.setTimeout(() => {
+            if (latestQueryRef.current !== qSnap) return;
+            void (async () => {
+              const again = await fetchMemoryRecall(qSnap, uid);
+              if (latestQueryRef.current !== qSnap) return;
+              if (again.snippets.length > 0) {
+                setMemoryHints(again.snippets);
+                setMemoryEmptyHint(false);
+              }
+            })();
+          }, MEMORY_RECALL_RETRY_MS);
+        }
+      }
 
       const memQ = `&memory_user=${encodeURIComponent(memoryUserId)}`;
       const response = await fetch(
@@ -95,6 +130,7 @@ export default function Home() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let lastSummary: Summary | null = null;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -112,12 +148,52 @@ export default function Home() {
             const event = JSON.parse(dataMatch[1]);
             if (event.task === 'summary') {
               setSummary(event);
+              lastSummary = event as Summary;
             } else if (event.source_id) {
               setResults(prev => ({ ...prev, [event.source_id]: event }));
             }
           } catch (parseErr) {
             console.warn('Parse error:', parseErr);
           }
+        }
+      }
+
+      if (lastSummary) {
+        setInsightLoading(true);
+        try {
+          const ir = await fetch(`${API_URL}/api/insights`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              user: memoryUserId,
+              drug_query: lastSummary.query,
+              current_scan: {
+                best_price: lastSummary.best_price,
+                best_source: lastSummary.best_source,
+                price_range: lastSummary.price_range,
+                potential_savings: lastSummary.potential_savings,
+                total_results: lastSummary.total_results,
+                variants: lastSummary.variants ?? [],
+                price_fluctuations: lastSummary.price_fluctuations ?? [],
+              },
+            }),
+          });
+          const data = await ir.json();
+          if (data.enabled && typeof data.insight === 'string' && data.insight.trim()) {
+            setInsight(data.insight.trim());
+            setInsightError(null);
+          } else if (!data.enabled) {
+            setInsight('');
+            setInsightError(null);
+          } else {
+            setInsight('');
+            setInsightError(data.error || 'No personalized note returned.');
+          }
+        } catch {
+          setInsight('');
+          setInsightError('Could not load personalized note.');
+        } finally {
+          setInsightLoading(false);
         }
       }
     } catch (error) {
@@ -177,6 +253,12 @@ export default function Home() {
           </div>
         )}
 
+        {memoryEmptyHint && memoryHints.length === 0 && (
+          <p className="text-xs text-t3 font-mono">
+            Supermemory is on — past searches for similar drugs may appear after indexing (a few seconds).
+          </p>
+        )}
+
         <SearchBar onSearch={handleSearch} isSearching={isSearching} />
 
         {(hasResults || isSearching) && (
@@ -205,6 +287,32 @@ export default function Home() {
                 potentialSavings={summary.potential_savings}
                 totalResults={summary.total_results}
               />
+            )}
+
+            {summary?.price_fluctuations && summary.price_fluctuations.length > 0 && (
+              <div className="rounded-lg border border-border bg-card/40 px-4 py-3">
+                <p className="text-xs font-mono text-t2 mb-2">Price vs last scan (product + chain)</p>
+                <ul className="text-xs text-t3 space-y-1.5 list-disc list-inside">
+                  {summary.price_fluctuations.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(insightLoading || insight || insightError) && (
+              <div className="rounded-lg border border-cyan/30 bg-deep px-4 py-3">
+                <p className="text-xs font-mono text-cyan mb-2">Personalized note</p>
+                {insightLoading && (
+                  <p className="text-xs text-t3 animate-pulse">Generating from your scan and memory…</p>
+                )}
+                {!insightLoading && insight && (
+                  <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{insight}</p>
+                )}
+                {!insightLoading && insightError && (
+                  <p className="text-xs text-t3">{insightError}</p>
+                )}
+              </div>
             )}
 
             {summary?.variants && summary.variants.length > 0 && (

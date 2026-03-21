@@ -11,6 +11,15 @@ from routers.monitor import router as monitor_router
 from routers.optimize import router as optimize_router
 from routers.ocr import router as ocr_router
 from routers.memory import router as memory_router
+from routers.insights import router as insights_router
+from services import supermemory_mem
+
+
+def _cors_origin_list() -> list[str]:
+    raw = (settings.cors_origins or "").strip()
+    if not raw:
+        return ["http://localhost:3000"]
+    return [o.strip() for o in raw.split(",") if o.strip()]
 
 
 @asynccontextmanager
@@ -38,6 +47,7 @@ app.include_router(monitor_router)
 app.include_router(optimize_router)
 app.include_router(ocr_router)
 app.include_router(memory_router)
+app.include_router(insights_router)
 
 
 @app.get("/health")

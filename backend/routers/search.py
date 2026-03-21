@@ -8,6 +8,7 @@ from models.schemas import PharmacySearchResult, SearchResponse
 from services.tinyfish import search_single_pharmacy, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
 from services import supermemory_mem
+from services.price_fluctuation import fluctuation_lines_for_scan, get_prices_id_cutoff_before_scan
 from config import settings
 from database import get_db
 
@@ -16,10 +17,9 @@ router = APIRouter(prefix="/api")
 
 
 def _log_supermemory_remember_done(task: asyncio.Task) -> None:
-    try:
-        exc = task.exception()
-    except asyncio.CancelledError:
+    if task.cancelled():
         return
+    exc = task.exception()
     if exc is not None:
         logger.error("Supermemory remember_search_session failed", exc_info=exc)
 
@@ -92,10 +92,12 @@ async def search_drugs(
         best_price = min(all_prices) if all_prices else None
         worst_price = max(all_prices) if all_prices else None
         best_source = None
+        best_source_id = None
         if best_price:
             for r in results.values():
                 if any(p.price == best_price for p in r.products):
                     best_source = r.source_name
+                    best_source_id = r.source_id
                     break
 
         # Collect all products for variant discovery
@@ -106,6 +108,10 @@ async def search_drugs(
 
         all_variants = await discover_variants_with_exa(query, all_products, settings.exa_api_key)
 
+        price_fluctuations = await fluctuation_lines_for_scan(
+            query, results, prior_price_id_cutoff, max_lines=8
+        )
+
         summary = {
             "task": "summary",
             "query": query,
@@ -115,6 +121,7 @@ async def search_drugs(
             "potential_savings": worst_price - best_price if best_price and worst_price else 0,
             "total_results": sum(r.result_count for r in results.values()),
             "variants": all_variants,
+            "price_fluctuations": price_fluctuations,
         }
 
         mem_tag = supermemory_mem.normalize_user_tag(memory_user) if memory_user else None
@@ -125,7 +132,9 @@ async def search_drugs(
                     query,
                     best_price=best_price,
                     best_source=best_source,
+                    best_source_id=best_source_id,
                     potential_savings=summary["potential_savings"] or None,
+                    fluctuation_lines=price_fluctuations or None,
                 )
             )
             _mem_task.add_done_callback(_log_supermemory_remember_done)

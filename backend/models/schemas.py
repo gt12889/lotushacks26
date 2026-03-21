@@ -1,5 +1,5 @@
 """Pydantic models for MediScrape API"""
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class PharmacySource(BaseModel):
@@ -93,3 +93,26 @@ class OptimizeResponse(BaseModel):
 class MemoryRecallResponse(BaseModel):
     enabled: bool
     snippets: list[str]
+
+
+class CurrentScanSnapshot(BaseModel):
+    best_price: Optional[int] = None
+    best_source: Optional[str] = None
+    price_range: Optional[str] = None
+    potential_savings: Optional[int] = None
+    total_results: Optional[int] = None
+    variants: list[str] = Field(default_factory=list)
+    price_fluctuations: list[str] = Field(default_factory=list)
+
+
+class InsightsRequest(BaseModel):
+    user: str = Field(..., min_length=1)
+    drug_query: str = Field(..., min_length=1)
+    current_scan: CurrentScanSnapshot
+
+
+class InsightsResponse(BaseModel):
+    enabled: bool
+    insight: str
+    memory_snippets_used: int = 0
+    error: Optional[str] = None
