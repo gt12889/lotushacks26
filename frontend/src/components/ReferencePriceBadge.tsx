@@ -1,5 +1,6 @@
 'use client';
 
+import { Badge } from '@/components/ui/badge';
 import SponsorBadge from './SponsorBadge';
 
 interface ReferencePriceBadgeProps {
@@ -21,7 +22,10 @@ export default function ReferencePriceBadge({ whoRef, currentPrice }: ReferenceP
   const ratio = refVND ? (currentPrice / refVND).toFixed(1) : null;
 
   return (
-    <div className="inline-flex items-center gap-1.5 px-2 py-1 bg-purple-500/10 border border-purple-500/20 rounded text-[10px] font-mono">
+    <Badge
+      variant="outline"
+      className="h-auto inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-purple-500/10 border-purple-500/20 text-[10px] font-mono"
+    >
       <span className="text-purple-400">WHO</span>
       {refVND ? (
         <span className="text-t2">
@@ -32,6 +36,6 @@ export default function ReferencePriceBadge({ whoRef, currentPrice }: ReferenceP
         <span className="text-t3 truncate max-w-[150px]">{whoRef.price_snippet.slice(0, 60)}</span>
       )}
       <SponsorBadge sponsors={['Exa']} />
-    </div>
+    </Badge>
   );
 }
