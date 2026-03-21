@@ -127,3 +127,17 @@
   - 21st.dev registry continues to be unreliable (500 errors) — always be prepared to implement manually
 ---
 
+## 2026-03-21 - US-009
+- Created custom Aurora component in src/components/ui/aurora.tsx (21st.dev registry returned 500)
+- Aurora uses canvas with radial gradients, animated ellipses in cyan/teal colors matching abyss theme
+- Replaced video background (video element + video-bg-container/overlay) with Aurora component
+- Added gradient overlay on top of Aurora for text readability (from-abyss/60 via-transparent to-deep/95)
+- Removed grainy noise SVG overlay and static radial gradient (Aurora provides organic movement instead)
+- Files changed: ui/aurora.tsx (new), page.tsx
+- **Learnings for future iterations:**
+  - Canvas-based backgrounds need resize handlers and cleanup (cancelAnimationFrame + removeEventListener)
+  - blur CSS filter on canvas creates smooth aurora effect — 80-100px blur works well for organic look
+  - Gradient overlay on top of animated background is essential for text readability
+  - video-bg-container and video-bg-overlay CSS classes in globals.css are now unused — US-014 cleanup should audit
+---
+

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
 import { Counter } from '@/components/ui/counter';
+import { Aurora } from '@/components/ui/aurora';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -19,16 +20,14 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero Section */}
       <section className="relative pt-12 md:pt-16 pb-20 overflow-hidden">
-        {/* Video Background */}
-        <div className="video-bg-container">
-          <video autoPlay muted loop playsInline>
-            <source src="/ocean-bg.mp4" type="video/mp4" />
-          </video>
-          <div className="video-bg-overlay" />
-        </div>
-        {/* Background Grid/Effect */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,219,231,0.08)_0%,transparent_70%)]" />
+        {/* Aurora Background */}
+        <Aurora
+          colors={['#00DBE7', '#0E7490', '#2DD4BF', '#0D4F6B', '#064E6E']}
+          speed={0.8}
+          opacity={0.35}
+          blur={100}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-abyss/60 via-transparent to-deep/95 pointer-events-none" />
         
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan/30 bg-cyan/5 text-[10px] font-mono text-cyan mb-8 uppercase tracking-widest animate-pulse">

@@ -155,7 +155,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 9,
-      "passes": false,
+      "passes": true,
       "notes": "Choose a background that fits the deep-sea/abyss theme. Aurora with cyan/teal tones or Particles with bioluminescent colors would work well. Hyperspeed might be too aggressive."
     },
     {
