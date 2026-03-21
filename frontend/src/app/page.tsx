@@ -1,8 +1,9 @@
 ﻿'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { Counter } from '@/components/ui/counter';
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -112,21 +113,7 @@ export default function LandingPage() {
       </section>
 
       {/* Stats/Social Proof */}
-      <section id="intelligence" className="py-24 border-y border-border/20">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-center">
-          {[
-            { label: t('landing.statLatency'), val: '< 30s' },
-            { label: t('landing.statData'), val: '14.2M+' },
-            { label: t('landing.statAccuracy'), val: '99.9%' },
-            { label: t('landing.statCoverage'), val: 'Top 5' },
-          ].map((s, i) => (
-            <div key={i}>
-              <div className="text-4xl font-black text-cyan mb-2">{s.val}</div>
-              <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <StatsSection t={t} />
 
       {/* Infrastructure Visualization */}
       <section className="py-24 border-t border-border/20 bg-abyss">
@@ -225,5 +212,54 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+function StatsSection({ t }: { t: (key: string) => string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const stats = [
+    { label: t('landing.statLatency'), prefix: '< ', value: 30, suffix: 's' },
+    { label: t('landing.statData'), value: 14.2, suffix: 'M+', formatter: (v: number) => v.toFixed(1) },
+    { label: t('landing.statAccuracy'), value: 99.9, suffix: '%', formatter: (v: number) => v.toFixed(1) },
+    { label: t('landing.statCoverage'), prefix: 'Top ', value: 5, suffix: '' },
+  ];
+
+  return (
+    <section id="intelligence" className="py-24 border-y border-border/20">
+      <div ref={ref} className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-center">
+        {stats.map((s, i) => (
+          <div key={i}>
+            <div className="text-4xl font-black text-cyan mb-2" style={{ fontVariantNumeric: 'tabular-nums' }}>
+              {s.prefix}
+              {visible ? (
+                <Counter value={s.value} duration={1500} formatter={s.formatter} />
+              ) : (
+                '0'
+              )}
+              {s.suffix}
+            </div>
+            <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
