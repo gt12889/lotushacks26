@@ -17,12 +17,12 @@ export default function AbyssFooter() {
   }, []);
 
   return (
-    <footer className="border-t border-border bg-deep px-6 py-3">
-      <div className="max-w-[1400px] mx-auto flex items-center justify-between text-[10px] text-t3 font-mono">
+    <footer className="border-t border-white/5 bg-deep px-6 py-3">
+      <div className="max-w-[1400px] mx-auto flex items-center justify-between text-xs text-t3 font-mono">
         <div className="flex gap-6">
-          <span className="hover:text-t2 cursor-pointer">{t('footer.privacy')}</span>
-          <span className="hover:text-t2 cursor-pointer">{t('footer.methodology')}</span>
-          <span className="hover:text-t2 cursor-pointer">{t('footer.oracle')}</span>
+          <span className="hover:text-t2 cursor-pointer transition-colors duration-200">{t('footer.privacy')}</span>
+          <span className="hover:text-t2 cursor-pointer transition-colors duration-200">{t('footer.methodology')}</span>
+          <span className="hover:text-t2 cursor-pointer transition-colors duration-200">{t('footer.oracle')}</span>
         </div>
         <span>
           {t('footer.sync')} {time}

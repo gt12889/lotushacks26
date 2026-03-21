@@ -355,7 +355,7 @@ MIN_PRICE_VND = 1_000
 MAX_PRICE_VND = 50_000_000
 
 
-async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, timeout: float = 15.0) -> PharmacySearchResult:
+async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, timeout: float = 15.0, streaming_url_callback=None) -> PharmacySearchResult:
     """Timeout-isolated wrapper with retry logic around search_single_pharmacy."""
     config = PHARMACY_CONFIGS.get(source_id)
     name = config["name"] if config else "Unknown"
@@ -366,7 +366,7 @@ async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, 
         start_time = time.time()
         try:
             result = await asyncio.wait_for(
-                search_single_pharmacy(source_id, query, api_key),
+                search_single_pharmacy(source_id, query, api_key, streaming_url_callback=streaming_url_callback),
                 timeout=effective_timeout,
             )
             if result.status == "success":
@@ -399,7 +399,7 @@ async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, 
 
 
 async def search_single_pharmacy(
-    source_id: str, query: str, api_key: str
+    source_id: str, query: str, api_key: str, streaming_url_callback=None
 ) -> PharmacySearchResult:
     """Search a single pharmacy using TinyFish agent."""
     config = PHARMACY_CONFIGS.get(source_id)
@@ -486,6 +486,8 @@ async def search_single_pharmacy(
                         elif event_type == "STREAMING_URL":
                             streaming_url = event.get("streaming_url")
                             logger.info(f"TinyFish streaming URL for {source_id}: {streaming_url}")
+                            if streaming_url and streaming_url_callback:
+                                streaming_url_callback(source_id, streaming_url)
                         elif event_type == "PROGRESS":
                             logger.debug(f"TinyFish progress [{source_id}]: {event.get('purpose', '')}")
                         elif event_type == "HEARTBEAT":

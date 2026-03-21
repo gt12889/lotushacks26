@@ -8,7 +8,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'nav.alerts': 'Alerts',
     'nav.optimize': 'Optimize',
     'nav.howItWorks': 'How It Works',
-    'nav.tagline': 'Pharmaceutical Price Intelligence',
+    'nav.tagline': 'Real-time pharmacy price intelligence · Vietnam',
 
     'search.placeholder': 'Scan molecular signals...',
     'search.scanning': 'Scanning...',
@@ -23,45 +23,71 @@ export const messages: Record<Locale, Record<string, string>> = {
     'footer.sync': 'System Synchronized:',
 
     'landing.status': 'System Status: Operational in Vietnam',
-    'landing.heroLine1': 'SURFACE THE',
-    'landing.heroLine2': 'PRICING ABYSS.',
-    'landing.heroSub':
-      "The first parallel AI agent network for pharmaceutical price intelligence. Automating the hunt for transparency in Vietnam's opaque medical markets.",
-    'landing.enterDashboard': 'Enter Dashboard',
-    'landing.viewMethodology': 'View Methodology',
+    'landing.heroLine1': 'QUERY EVERY PHARMACY',
+    'landing.heroLine2': 'IN REAL TIME.',
+    'landing.heroSub': '',
+    'landing.enterDashboard': 'Open live dashboard',
+    'landing.viewMethodology': 'How it works',
     'landing.termInfo': 'Spawning 5 parallel agents via TinyFish infrastructure...',
     'landing.termAgent1': 'Successfully bypassed Long Chau anti-bot...',
     'landing.termAgent2': 'Scraped Pharmacity: 12 variants found...',
     'landing.termResult': 'Spread detected: 14,200đ — 58,000đ',
     'landing.termAlert': 'Megladon signal: 300% potential arbitrage found.',
-    'landing.feat1Title': 'Parallel Agent Network',
+    'landing.feat1Title': 'TinyFish · Parallel web agents',
     'landing.feat1Desc':
-      'TinyFish-powered agents simulate real human behavior to navigate complex pharmacy interfaces simultaneously.',
-    'landing.feat2Title': 'Deep Market Oracle',
+      'Five stealth-profile agents scan Tier‑1 chains simultaneously—SSE streaming, live browser preview URLs, and /run-batch for full prescriptions. Built for the Enterprise track demo path.',
+    'landing.feat2Title': 'Exa · Intelligence on every search',
     'landing.feat2Desc':
-      'Real-time pricing data from Long Chau, Pharmacity, and An Khang surfaces hidden market trajectories.',
-    'landing.feat3Title': 'Enterprise Monitoring',
+      'Variant discovery, WHO reference pricing with ×N benchmarks, drug summaries, and counterfeit-risk research—five integrated use cases layered on top of pharmacy results.',
+    'landing.feat3Title': 'Voice, LLM routing & compliance',
     'landing.feat3Desc':
-      'Automatic tracking of 500+ essential drug SKUs with high-fidelity alerting for price spikes and drops.',
-    'landing.statLatency': 'Scan Latency',
-    'landing.statData': 'Data Points',
-    'landing.statAccuracy': 'Accuracy',
-    'landing.statCoverage': 'Pharmacy Coverage',
-    'landing.infraBadge': 'Protocol Architecture',
-    'landing.infraTitle1': 'DISTRIBUTED',
-    'landing.infraTitle2': 'ORCHESTRATION.',
+      'ElevenLabs Vietnamese voice summaries on the dashboard; OpenRouter runs Qwen 2.5 72B normalization plus GPT‑4o OCR paths; Discord monitors, DAV ceiling checks, and savings math for buyers.',
+    'landing.statLatency': 'Typical full scan',
+    'landing.statChains': 'Tier‑1 chains live',
+    'landing.statPharmacies': 'Pharmacies nationwide',
+    'landing.statMarket': 'VN pharma market (est.)',
+    'landing.statLatencyValuePrefix': '< ',
+    'landing.statLatencyValueSuffix': 's',
+    'landing.statPharmaciesValue': '57K+',
+    'landing.statMarketValue': '$7–10B+',
+    'landing.infraBadge': 'Product architecture (PRD)',
+    'landing.infraTitle1': 'FROM WEB UI',
+    'landing.infraTitle2': 'TO PROCUREMENT SIGNALS.',
     'landing.infraBody':
-      "Megladon MD doesn't just scrape. It deploys a fleet of headless browsers orchestrated by our proprietary agent-routing logic. Each agent is tasked with a specific pharmacy domain, bypassing sophisticated anti-bot systems to retrieve the most accurate, real-time data.",
-    'landing.infraBullet1': 'Biometric human-simulation engines',
-    'landing.infraBullet2': 'Dynamic proxy rotation for zero-fail scraping',
-    'landing.infraBullet3': 'Real-time molecular data normalization',
-    'landing.infraBullet4': 'Encrypted telemetry for research privacy',
-    'landing.clusterHealth': 'Cluster Health',
-    'landing.clusterActive': 'Active',
-    'landing.ctaTitle': 'READY TO DEPLOY?',
+      'React dashboard (search, grids, trends, agent feed) talks to a FastAPI backend over REST and SSE. Five TinyFish runs execute in parallel per query; SQLite stores history; APScheduler drives recurring monitors; Discord and ElevenLabs cover alerts and voice.',
+    'landing.infraBullet1':
+      'Hospital procurement, clinic chains, and formulary analysts need prices that change daily—without APIs from Long Chau, Pharmacity, or An Khang.',
+    'landing.infraBullet2':
+      'Each agent uses production goal prompts, CAPTCHA detection, JSON validation, and Bright Data proxies on the heaviest retail sites.',
+    'landing.infraBullet3':
+      'Exa expands the graph with generics; OpenRouter routes Qwen + GPT‑4o; Supermemory recalls past context for repeat buyers.',
+    'landing.infraBullet4':
+      'Optimizer uses TinyFish /run-batch for atomic multi-drug × multi-pharmacy runs—one plan, total savings vs single-source shopping.',
+    'landing.sponsorsTitle': 'LotusHacks · Sponsor integrations',
+    'landing.sponsorsIntro':
+      'Highlighted partners below map to active challenge submissions (see docs/SPONSORS.md).',
+    'landing.sponsor.tinyfish':
+      'Primary: five parallel stealth agents, streaming URLs, /run-batch optimizer, result validation—Enterprise track.',
+    'landing.sponsor.brightdata':
+      'Residential proxy on Long Chau, Pharmacity, and An Khang with health checks and masked credentials in logs.',
+    'landing.sponsor.openrouter':
+      'Routes Qwen 2.5 72B for Vietnamese normalization, GPT‑4o-class models for OCR, Claude fallback, plus NL multi-drug procurement synthesis.',
+    'landing.sponsor.exa':
+      'Semantic variant discovery, WHO reference badges, drug info cards, counterfeit-risk research—cached with graceful degradation.',
+    'landing.sponsor.elevenlabs':
+      'Vietnamese TTS for post-search summaries and Discord alert attachments—multilingual model with tuned stability.',
+    'landing.sponsor.openai':
+      'Direct GPT‑4o vision + function calling for prescription OCR (`extract_prescription_drugs`) feeding the optimizer.',
+    'landing.sponsor.supermemory':
+      'Cross-session recall of related searches and snippets surfaced beside new queries.',
+    'landing.clusterHealth': 'Stack status',
+    'landing.clusterActive': 'Integrated',
+    'landing.ctaTitle': 'Give procurement live pharmacy truth',
     'landing.ctaSub':
-      'Join the elite healthcare researchers using Megladon MD to navigate the pricing abyss.',
-    'landing.ctaButton': 'Launch Terminal Now',
+      'Built for hospital buyers, chain operators, and analysts who cannot rely on static spreadsheets when 57,000+ outlets price independently.',
+    'landing.ctaButton': 'Launch MegalodonMD',
+    'landing.lampLine1': 'Build procurement',
+    'landing.lampLine2': 'the right way',
     'landing.copy': 'Megladon MD © 2026',
     'landing.footerArch': 'Architecture',
     'landing.footerPrivacy': 'Privacy',
@@ -161,7 +187,7 @@ export const messages: Record<Locale, Record<string, string>> = {
     'nav.alerts': 'Cảnh báo',
     'nav.optimize': 'Tối ưu đơn',
     'nav.howItWorks': 'Cách hoạt động',
-    'nav.tagline': 'Thông tin giá dược phẩm',
+    'nav.tagline': 'Thông tin giá nhà thuốc thời gian thực · Việt Nam',
 
     'search.placeholder': 'Nhập tên thuốc để quét...',
     'search.scanning': 'Đang quét...',
@@ -176,45 +202,71 @@ export const messages: Record<Locale, Record<string, string>> = {
     'footer.sync': 'Hệ thống đồng bộ:',
 
     'landing.status': 'Trạng thái: Đang vận hành tại Việt Nam',
-    'landing.heroLine1': 'KHƠI DẬY',
-    'landing.heroLine2': 'VỰC THẨM GIÁ.',
-    'landing.heroSub':
-      'Mạng tác tử AI song song đầu tiên cho thông tin giá thuốc. Tự động tìm minh bạch trong thị trường y tế còn kín tiếng của Việt Nam.',
-    'landing.enterDashboard': 'Vào bảng điều khiển',
-    'landing.viewMethodology': 'Xem phương pháp',
+    'landing.heroLine1': 'TRUY VẤN MỌI NHÀ THUỐC',
+    'landing.heroLine2': 'THỜI GIAN THỰC.',
+    'landing.heroSub': '',
+    'landing.enterDashboard': 'Mở bảng điều khiển trực tiếp',
+    'landing.viewMethodology': 'Cách hoạt động',
     'landing.termInfo': 'Đang khởi chạy 5 tác tử song song qua hạ tầng TinyFish...',
     'landing.termAgent1': 'Đã vượt chống bot Long Chau...',
     'landing.termAgent2': 'Đã quét Pharmacity: 12 biến thể...',
     'landing.termResult': 'Chênh lệch: 14.200đ — 58.000đ',
     'landing.termAlert': 'Tín hiệu Megladon: chênh lệch tiềm năng ~300%.',
-    'landing.feat1Title': 'Mạng tác tử song song',
+    'landing.feat1Title': 'TinyFish · Tác tử web song song',
     'landing.feat1Desc':
-      'Tác tử TinyFish mô phỏng hành vi người dùng để đồng thời điều hướng giao diện nhà thuốc phức tạp.',
-    'landing.feat2Title': 'Oracle thị trường sâu',
+      'Năm tác tử stealth quét đồng thời các chuỗi Tier‑1—SSE, URL xem trình duyệt trực tiếp, và /run-batch cho cả đơn nhiều thuốc. Tối ưu cho demo Enterprise track.',
+    'landing.feat2Title': 'Exa · Tầng thông minh mỗi lần quét',
     'landing.feat2Desc':
-      'Dữ liệu giá thời gian thực từ Long Chau, Pharmacity, An Khang làm lộ quỹ đạo thị trường ẩn.',
-    'landing.feat3Title': 'Giám sát doanh nghiệp',
+      'Phát hiện biến thể generic, giá tham chiếu WHO với hệ số ×N, tóm tắt thuốc, nghiên cứu rủi ro hàng giả—năm tích hợp chồng lên kết quả nhà thuốc.',
+    'landing.feat3Title': 'Giọng nói, LLM & tuân thủ',
     'landing.feat3Desc':
-      'Theo dõi 500+ SKU thuốc thiết yếu với cảnh báo chính xác khi giá biến động.',
-    'landing.statLatency': 'Độ trễ quét',
-    'landing.statData': 'Điểm dữ liệu',
-    'landing.statAccuracy': 'Độ chính xác',
-    'landing.statCoverage': 'Phạm vi nhà thuốc',
-    'landing.infraBadge': 'Kiến trúc giao thức',
-    'landing.infraTitle1': 'ĐIỀU PHỐI',
-    'landing.infraTitle2': 'PHÂN TÁN.',
+      'ElevenLabs TTS tiếng Việt trên dashboard; OpenRouter chạy Qwen 2.5 72B chuẩn hóa truy vấn và nhánh GPT‑4o OCR; Discord theo dõi, so trần DAV và tính tiết kiệm cho người mua.',
+    'landing.statLatency': 'Quét đủ nguồn (điển hình)',
+    'landing.statChains': 'Chuỗi Tier‑1 trực tiếp',
+    'landing.statPharmacies': 'Nhà thuốc trên cả nước',
+    'landing.statMarket': 'Thị trường dược VN (ước tính)',
+    'landing.statLatencyValuePrefix': '< ',
+    'landing.statLatencyValueSuffix': 's',
+    'landing.statPharmaciesValue': '57K+',
+    'landing.statMarketValue': '7–10 tỷ USD+',
+    'landing.infraBadge': 'Kiến trúc sản phẩm (PRD)',
+    'landing.infraTitle1': 'TỪ GIAO DIỆN WEB',
+    'landing.infraTitle2': 'ĐẾN TÍN HIỆU MUA SẮM.',
     'landing.infraBody':
-      'Megladon MD không chỉ thu thập. Hệ thống triển khai hàng loạt trình duyệt headless với logic định tuyến tác tử riêng. Mỗi tác tử phụ trách một miền nhà thuốc, vượt chống bot để lấy dữ liệu thời gian thực chính xác nhất.',
-    'landing.infraBullet1': 'Mô phỏng hành vi người như sinh trắc',
-    'landing.infraBullet2': 'Xoay proxy động để quét ổn định',
-    'landing.infraBullet3': 'Chuẩn hóa dữ liệu phân tử thời gian thực',
-    'landing.infraBullet4': 'Telemetry mã hóa bảo vệ nghiên cứu',
-    'landing.clusterHealth': 'Sức khỏe cụm',
-    'landing.clusterActive': 'Hoạt động',
-    'landing.ctaTitle': 'SẴN SÀNG TRIỂN KHAI?',
+      'Dashboard React (tìm kiếm, lưới giá, xu hướng, feed tác tử) kết nối FastAPI qua REST và SSE. Mỗi truy vấn chạy năm phiên TinyFish song song; SQLite lưu lịch sử; APScheduler chạy giám sát định kỳ; Discord và ElevenLabs lo cảnh báo và giọng đọc.',
+    'landing.infraBullet1':
+      'Bộ phận mua bệnh viện, chuỗi phòng khám và chuyên viên cần giá thay đổi hằng ngày—trong khi Long Chau, Pharmacity, An Khang không công khai API.',
+    'landing.infraBullet2':
+      'Mỗi tác tử dùng goal prompt production, phát hiện CAPTCHA, kiểm tra JSON và proxy Bright Data trên các site bán lẻ nặng nhất.',
+    'landing.infraBullet3':
+      'Exa mở rộng đồ thị generic; OpenRouter định tuyến Qwen + GPT‑4o; Supermemory gợi nhớ ngữ cảnh các lần quét trước.',
+    'landing.infraBullet4':
+      'Trình tối ưu dùng TinyFish /run-batch cho nhiều thuốc × nhiều nhà thuốc trong một lần—một kế hoạch và tổng tiết kiệm so với mua một nguồn.',
+    'landing.sponsorsTitle': 'LotusHacks · Tích hợp nhà tài trợ',
+    'landing.sponsorsIntro':
+      'Các đối tác được đánh dấu bên dưới khớp hồ sơ challenge đang nộp (xem docs/SPONSORS.md).',
+    'landing.sponsor.tinyfish':
+      'Chính: năm tác tử stealth song song, URL streaming, tối ưu /run-batch, kiểm tra kết quả—Enterprise track.',
+    'landing.sponsor.brightdata':
+      'Proxy residential cho Long Chau, Pharmacity, An Khang; health check và che thông tin đăng nhập trong log.',
+    'landing.sponsor.openrouter':
+      'Định tuyến Qwen 2.5 72B chuẩn hóa tiếng Việt, mô hình kiểu GPT‑4o cho OCR, fallback Claude, cùng tổng hợp mua sắm NL nhiều thuốc.',
+    'landing.sponsor.exa':
+      'Tìm biến thể ngữ nghĩa, badge giá WHO, thẻ thông tin thuốc, nghiên cứu rủi ro hàng giả—có cache và suy giảm nhẹ khi lỗi.',
+    'landing.sponsor.elevenlabs':
+      'TTS tiếng Việt cho tóm tắt sau quét và file đính kèm cảnh báo Discord—mô hình đa ngữ với tham số ổn định.',
+    'landing.sponsor.openai':
+      'GPT‑4o vision trực tiếp + function calling cho OCR đơn thuốc (`extract_prescription_drugs`) nối vào tối ưu hóa.',
+    'landing.sponsor.supermemory':
+      'Gợi nhớ phiên liên quan và đoạn trích hiển thị cạnh truy vấn mới.',
+    'landing.clusterHealth': 'Trạng thái tích hợp',
+    'landing.clusterActive': 'Đã gắn',
+    'landing.ctaTitle': 'Tra cứu giá nhà thuốc thực cho mua sắm',
     'landing.ctaSub':
-      'Cùng các nhà nghiên cứu y tế dùng Megladon MD để đi qua vực thẳm giá thuốc.',
-    'landing.ctaButton': 'Khởi chạy ngay',
+      'Dành cho người mua bệnh viện, vận hành chuỗi và phân tích—khi 57.000+ điểm bán tự định giá, bảng tĩnh không đủ.',
+    'landing.ctaButton': 'Khởi chạy MegalodonMD',
+    'landing.lampLine1': 'Xây dựng mua sắm',
+    'landing.lampLine2': 'đúng cách',
     'landing.copy': 'Megladon MD © 2026',
     'landing.footerArch': 'Kiến trúc',
     'landing.footerPrivacy': 'Riêng tư',

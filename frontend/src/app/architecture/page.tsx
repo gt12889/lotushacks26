@@ -1,3 +1,5 @@
+'use client';
+
 import {
   User,
   Monitor,
@@ -10,6 +12,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
 function ArchNode({ Icon, name, desc, badge, color }: {
   Icon: LucideIcon;
@@ -20,17 +23,17 @@ function ArchNode({ Icon, name, desc, badge, color }: {
 }) {
   const c = color || '#00DBE7';
   return (
-    <div className="bioluminescent-card p-4 text-center w-full">
+    <div className="bioluminescent-card interactive-lift p-4 text-center w-full transition-shadow">
       <div className="flex justify-center mb-1.5">
         <Icon size={24} color={c} strokeWidth={1.5} />
       </div>
       <h3
         className="font-bold text-sm font-mono"
-        style={{ color: c, textShadow: `0 0 8px ${c}40` }}
+        style={{ color: c, textShadow: `0 0 8px ${c}20` }}
       >
         {name}
       </h3>
-      <p className="text-[10px] text-t2 mt-0.5">{desc}</p>
+      <p className="text-xs text-t2 mt-0.5">{desc}</p>
       {badge && (
         <p className="text-[8px] text-t3/60 font-mono mt-1 tracking-wide">{badge}</p>
       )}
@@ -53,14 +56,13 @@ export default function ArchitecturePage() {
   return (
     <div className="min-h-screen">
       <div className="max-w-6xl mx-auto px-6 py-6 space-y-8">
-        {/* Title */}
-        <div className="text-center">
+        <ScrollReveal direction="scale" className="text-center">
           <h2 className="text-xl font-bold text-t1">System Architecture</h2>
           <p className="text-xs text-t3 mt-1">End-to-end data flow of the Megladon MD intelligence platform</p>
-        </div>
+        </ScrollReveal>
 
-        {/* 3-Column Architecture Flow */}
-        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-0">
+        <ScrollReveal direction="up" delay={40}>
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-0">
           {/* Column 1: Input */}
           <div className="flex flex-col items-center gap-0">
             <ArchNode Icon={User} name="User" desc="Drug search query" color="#D6E3FF" />
@@ -107,24 +109,26 @@ export default function ArchitecturePage() {
             <ArchNode Icon={MessageCircle} name="Discord" desc="Webhook notifications" badge="discord.com" color="#3B82F6" />
           </div>
         </div>
+        </ScrollReveal>
 
-        {/* Stats Row */}
+        <ScrollReveal direction="up" delay={80}>
         <div className="grid grid-cols-3 gap-4">
           {[
             { value: '5', label: 'Parallel Agents', desc: 'Simultaneous pharmacy searches' },
             { value: '<30s', label: 'Average Response', desc: 'Full results from all sources' },
             { value: '5', label: 'Pharmacy Chains', desc: '3,700+ stores covered' },
           ].map((m) => (
-            <div key={m.label} className="bioluminescent-card p-6 text-center">
+            <div key={m.label} className="bioluminescent-card interactive-lift p-6 text-center transition-shadow">
               <div className="text-3xl font-bold font-mono text-cyan">{m.value}</div>
               <div className="text-xs font-bold text-t1 mt-2">{m.label}</div>
-              <div className="text-[10px] text-t3 mt-1">{m.desc}</div>
+              <div className="text-xs text-t3 mt-1">{m.desc}</div>
             </div>
           ))}
         </div>
+        </ScrollReveal>
 
-        {/* Technology Stack */}
-        <div className="bioluminescent-card p-6">
+        <ScrollReveal direction="left" delay={60}>
+        <div className="bioluminescent-card p-6 interactive-lift">
           <h3 className="text-xs font-bold text-cyan uppercase tracking-wider mb-4">Technology Stack</h3>
           <div className="grid grid-cols-2 gap-4 text-xs">
             <div>
@@ -145,6 +149,7 @@ export default function ArchitecturePage() {
             </div>
           </div>
         </div>
+        </ScrollReveal>
       </div>
     </div>
   );

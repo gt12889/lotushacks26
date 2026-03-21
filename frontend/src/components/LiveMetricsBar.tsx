@@ -31,15 +31,10 @@ export default function LiveMetricsBar({
     <div
       className={`
         flex items-center justify-between
-        bioluminescent-card px-6 py-3
+        panel px-6 py-3
         font-mono
-        ${isActive ? 'animate-pulse-left-border' : ''}
+        ${isActive ? 'border-l-2 border-cyan' : ''}
       `}
-      style={
-        isActive
-          ? { borderLeftWidth: 2, borderLeftColor: '#00DBE7' }
-          : undefined
-      }
     >
       {/* Agents Deployed */}
       <div className="flex flex-col items-center gap-0.5">

@@ -14,7 +14,7 @@
 | 2 | **ElevenLabs (Voice AI)** | **8/10** | Auto-playing Vietnamese voice summary is a wow moment judges remember. Two integration points (search summary + Discord alerts). Differentiator most teams won't have. |
 | 3 | **Qwen (Vietnamese NLP)** | **8/10** | Qwen 2.5 72B normalizes Vietnamese drug names with diacritics/typos in the live search pipeline. Perfect domain fit. Demo the "thuoc ha duong huyet" → "Metformin" transformation. |
 | 4 | **BrightData (Data Collection)** | **7/10** | Proxy on 3/5 chains, health check, credential masking. Solid but thin — no advanced BrightData features (SERP API, unlocker, dataset marketplace). |
-| 5 | **Exa (AI Search)** | **8/10** | 5 distinct use cases: variant discovery, WHO pricing badges with multiplier comparison, drug info, counterfeit risk. Caching, graceful degradation. |
+| 5 | **Exa (AI Search)** | **8/10** | 5 distinct use cases: variant discovery, WHO pricing badges with ×N multiplier, drug info, counterfeit risk, scout-spawn triggers. Caching, graceful degradation. More use cases than any other team. |
 | 6 | **OpenAI Codex (Best Use)** | **7/10** | GPT-4o vision + function calling for prescription OCR. Structured tool schema works. Not exceptional vs teams with full agentic tool_calls chaining. |
 | 7 | **OpenRouter (LLM Routing)** | **8/10** | NL multi-drug search parsing, AI procurement recommendation, 2-model pipeline (Qwen + GPT-4o), configurable env vars, fallback chain. Demonstrates AI orchestration on top of AI agents. |
 | 8 | **HRG: IndieHacker** | **6/10** | $7-10B market, 57K pharmacies, 100-300% variance — business case writes itself. Needs dedicated pitch prep (business model canvas, revenue projections) to score higher. |
@@ -232,11 +232,32 @@
 
 All sponsor challenges are now PRODUCTION-READY. Focus for demo day:
 
-1. **TinyFish (9/10)** — Rehearse live search demo. Have cached fallback data if pharmacy sites block. Show live browser preview iframes.
-2. **ElevenLabs (8/10)** — Test API credit balance. Ensure voice summary auto-plays smoothly. Have speaker volume ready.
-3. **Qwen (8/10)** — Prepare a Vietnamese typo example ("thuoc ha duong huyet" → "Metformin") to demo normalization live.
-4. **Exa (8/10)** — Show variant discovery + WHO reference pricing badges with ×N multiplier comparison.
-5. **OpenRouter (8/10)** — Demo NL multi-drug search and AI procurement recommendation on Trends page.
-6. **OpenAI Codex (7/10)** — Have a prescription image ready for OCR demo on `/optimize`.
-7. **BrightData (7/10)** — Mention proxy integration during TinyFish demo (natural synergy).
-8. **IndieHacker (6/10)** — Prepare 1-page business pitch: $7-10B market, SaaS pricing, hospital procurement customers.
+1. **TinyFish (9/10)** — Rehearse live search demo. Have cached fallback data if pharmacy sites block. Show live browser preview iframes. Emphasize Tier 3 scout-spawn (dynamic agent spawning from runtime discoveries).
+2. **ElevenLabs (8/10)** — Test API credit balance before demo. Ensure voice summary auto-plays smoothly. Have speaker volume ready. This is the "wow moment" judges remember.
+3. **Qwen (8/10)** — Prepare a Vietnamese typo example ("thuoc ha duong huyet" → "Metformin") to demo normalization live. Runs in critical path of every search.
+4. **Exa (8/10)** — Show variant discovery + WHO reference pricing badges with ×N multiplier. Mention 5 distinct use cases (more than any team).
+5. **OpenRouter (8/10)** — Demo NL multi-drug search: "I need diabetes and blood pressure meds." Show AI procurement recommendation. Emphasize AI orchestration on top of AI agents.
+6. **OpenAI Codex (7/10)** — Have a prescription image ready for OCR demo on `/optimize`. Show function calling with `extract_prescription_drugs` tool schema.
+7. **BrightData (7/10)** — Mention proxy integration naturally during TinyFish demo. Vietnam geo-targeting `-country-vn`.
+8. **IndieHacker (6/10)** — Close with business pitch: $7-10B market, 1,192 hospitals, SaaS per-query pricing, SE Asia expansion.
+
+## Demo Drug Strategy
+
+| Mode | Recommended Drug | Why |
+|------|-----------------|-----|
+| **Mock mode** | Metformin 500mg | Shows compliance violations + anomaly detection + full savings |
+| **Live TinyFish** | Paracetamol or Vitamin C | OTC drugs — prices visible (Rx drugs show "Liên hệ" / contact for price) |
+| **NL Search** | "diabetes and blood pressure meds" | Parses to 3 drugs, demos multi-agent orchestration |
+| **OCR** | Pre-captured prescription image | Have 2-3 ready as backups |
+
+## Sponsor Prize Value Estimates
+
+| Challenge | Prize | Notes |
+|-----------|-------|-------|
+| TinyFish Enterprise Track | Main track prize | Primary target |
+| ElevenLabs Voice AI | 6 months Scale tier per team member ($330/mo each) | High ROI for 45 min of work |
+| Exa AI Search | $500 API credits | 5 distinct use cases |
+| OpenRouter LLM | TBD | NL search + AI orchestration |
+| OpenAI Codex | TBD | Function calling + Vision |
+| BrightData Data Collection | TBD | Proxy on 3 chains |
+| HRG IndieHacker | TBD | Business pitch required |

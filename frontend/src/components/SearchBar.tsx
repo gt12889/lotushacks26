@@ -74,7 +74,7 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={isListening ? t('search.listening') : t('search.placeholder')}
-            className={`w-full px-5 py-3.5 text-base bg-deep border rounded-lg focus:ring-1 focus:ring-cyan focus:border-cyan text-t1 placeholder-t3 font-mono outline-none transition-colors ${
+            className={`w-full px-5 py-2.5 text-base bg-deep border rounded-lg focus:ring-1 focus:ring-cyan focus:border-cyan text-t1 placeholder-t3 font-mono outline-none transition-colors ${
               isListening ? 'border-warn animate-pulse' : 'border-border'
             }`}
             disabled={isSearching}
@@ -87,7 +87,7 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
             type="button"
             onClick={toggleVoice}
             disabled={isSearching}
-            className={`px-4 py-3.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`btn-press px-4 py-2.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               isListening
                 ? 'bg-warn/20 border border-warn text-warn'
                 : 'bg-card border border-border text-t2 hover:border-cyan/30 hover:text-cyan'
@@ -101,7 +101,7 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
         <button
           type="submit"
           disabled={isSearching || !query.trim()}
-          className="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          className="btn-press inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-cyan text-abyss font-bold rounded-lg hover:bg-cyan/80 disabled:bg-t3/30 disabled:text-t3 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
         >
           {isSearching ? (
             <>
@@ -113,20 +113,22 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
           )}
         </button>
       </form>
-      <div className="flex gap-2 flex-wrap">
-        <span className="text-xs text-t3">{t('search.quickScan')}</span>
-        {quickSearches.map((drug) => (
-          <button
-            key={drug}
-            onClick={() => {
-              setQuery(drug);
-              onSearch(drug);
-            }}
-            disabled={isSearching}
-            className="px-3 py-1 text-xs bg-card text-t2 rounded border border-border hover:border-cyan/30 hover:text-cyan transition-colors disabled:opacity-50"
-          >
-            {drug}
-          </button>
+      <div className="flex items-center gap-0 flex-wrap">
+        <span className="text-xs text-t3 mr-2">{t('search.quickScan')}</span>
+        {quickSearches.map((drug, i) => (
+          <span key={drug} className="inline-flex items-center">
+            {i > 0 && <span className="text-t3 mx-1">&middot;</span>}
+            <button
+              onClick={() => {
+                setQuery(drug);
+                onSearch(drug);
+              }}
+              disabled={isSearching}
+              className="text-xs text-t3 hover:text-cyan cursor-pointer transition-colors disabled:opacity-50"
+            >
+              {drug}
+            </button>
+          </span>
         ))}
       </div>
     </div>

@@ -237,6 +237,7 @@ The search system uses a 4-tier agent cascade, visualized in real-time via the *
 | Database | SQLite (WAL mode) | — |
 | Scheduler | APScheduler | — |
 | Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts | — |
+| UI Components | shadcn/ui (Badge, Alert, Collapsible, Accordion) + custom animated components | — |
 | Icons | Lucide React | — |
 | Drug Intelligence | Exa API (variants, WHO pricing, drug info) | Exa |
 | LLM Routing | OpenRouter (Qwen 2.5 72B, GPT-4o) | OpenRouter |
@@ -349,11 +350,17 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips |
 | `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
 | `AbyssFooter` | Live UTC sync clock, protocol links |
+| `Counter` | Animated number counting with easeOutExpo easing (used in LiveMetricsBar, landing stats) |
+| `AnimatedList` | Slide-in entry animation for list items (used in AgentActivityFeed) |
+| `GlareHover` | Mouse-tracking radial gradient glare effect (used on PharmacyCards) |
+| `Dock` | macOS-style magnification navigation with cosine proximity scaling (used in NavBar) |
+| `ScrollReveal` | IntersectionObserver-based fade+slide animation for landing page sections |
+| `Aurora` | Canvas-based animated background with cyan/teal gradients (landing page hero) |
 | `VoiceSummary` | ElevenLabs Vietnamese TTS auto-play after search completes, with play/stop/retry states |
 | `CounterfeitRiskPanel` | Price anomaly detection display with Exa-researched counterfeit risk reports |
 | `LocaleProvider` | i18n context provider with VN/EN locale toggle and `useLocale()` hook |
 | `NavBar` | Top navigation bar with route links and locale toggle |
-| `StatusPill` | Reusable status badge (best/critical/monitor) with color coding |
+| `MegalodonBadge` | Status badge system (best/critical/monitor/active/searching/error/out-of-stock) built on shadcn Badge |
 | `SupermemoryStatusBadge` | Supermemory connection status indicator |
 | `ActionLabel` | Tier 4 analyst verdict banner with Vietnamese action directive, confidence score badge, expandable reasoning |
 | `ComparisonBanner` | Cross-pharmacy comparison summary |
@@ -367,30 +374,72 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 - Touch target minimum 16px on interactive dots (within 44px+ containers)
 - High contrast text (WCAG AA compliant dark mode)
 
+### UI Component Library
+
+Built on **shadcn/ui** (v4, base-nova preset) with custom animated components:
+
+| Category | Components | Source |
+|----------|-----------|--------|
+| **Badges & Status** | Badge, MegalodonBadge, SponsorBadge, ReferencePriceBadge | shadcn Badge + custom wrappers |
+| **Alerts** | Alert (AlertTitle, AlertDescription) | shadcn Alert |
+| **Expand/Collapse** | Collapsible (ModelRouterPanel, LiveBrowserPreview), Accordion (ActionLabel) | shadcn Collapsible + Accordion |
+| **Animations** | Counter (animated counting), AnimatedList (slide-in entries), GlareHover (mouse-tracking glare), ScrollReveal (scroll-triggered fade+slide), Aurora (canvas background) | Custom components |
+| **Navigation** | Dock (macOS magnification nav) | Custom component |
+
 ### Design Decisions Log
 
 1. **Dark-only** — no light mode toggle. The Abyss aesthetic is the product identity.
 2. **Bioluminescent UI** — animated glow cards, sonar pulses, terminal feed, gradient bars for maximum demo impact.
-3. **Supermemory integration** — search context recall hints shown above search bar when available.
-4. **Recharts over hand-rolled SVG** — cleaner code, proper tooltips, responsive containers.
-5. **VN/EN toggle** — fully implemented via `LocaleProvider` context with `useLocale()` hook across all components.
-6. **Lucide React icons** — consistent SVG icon family, no emoji as structural icons.
-7. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
-8. **Architecture page** — 3-column node-connector diagram explaining full data flow with all sponsor credits.
-9. **Voice input** — Web Speech API for Vietnamese drug name input, accessibility differentiator.
-10. **Zalo share** — Deep link to share results via Vietnam's dominant messaging app.
+3. **shadcn/ui foundation** — Badge, Alert, Collapsible, Accordion from shadcn for consistency; custom animated components (Counter, AnimatedList, GlareHover, Dock, ScrollReveal, Aurora) for visual polish.
+4. **Supermemory integration** — search context recall hints shown above search bar when available.
+5. **Recharts over hand-rolled SVG** — cleaner code, proper tooltips, responsive containers.
+6. **VN/EN toggle** — fully implemented via `LocaleProvider` context with `useLocale()` hook across all components.
+7. **Lucide React icons** — consistent SVG icon family, no emoji as structural icons.
+8. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
+9. **Architecture page** — 3-column node-connector diagram explaining full data flow with all sponsor credits.
+10. **Voice input** — Web Speech API for Vietnamese drug name input, accessibility differentiator.
+11. **Zalo share** — Deep link to share results via Vietnam's dominant messaging app.
+12. **Ocean video + Aurora layered background** — landing page hero with ocean footage underneath canvas-based aurora for bioluminescent shimmer.
 
 ---
 
 ## 10. Demo Script (5 Minutes)
 
-1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
-2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Use voice input or type "Metformin 500mg". Watch Agent Activity Feed log 47 agent events. 5 pharmacy cards light up with bioluminescent glow. Live Metrics Bar ticks up. Agent Cascade shows Tier 1 → Tier 2 → Tier 3 progression. Model Router shows Qwen → TinyFish → Exa pipeline with latency. SavingsBanner shows "Save ₫340,000 (47%)". Government Ceiling Panel flags violations. **Vietnamese voice summary auto-plays** via ElevenLabs: "Metformin 500mg, giá rẻ nhất tại Long Châu, 45.000 đồng..."
-3. **2:00-2:30 | Prescription OCR**: Upload photo on Optimize page. Watch 50+ agents spawn for multi-drug search.
-4. **2:30-3:00 | Discord Alert**: Fire demo alert — play Vietnamese voice note from phone speaker.
-5. **3:00-3:30 | Architecture**: Navigate to System Architecture page — 3-column flow showing all sponsors.
-6. **3:30-4:00 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies. Share results via Zalo.
-7. **4:00-4:30 | Sponsors & Future**: TinyFish + BrightData + Exa + OpenRouter + ElevenLabs + Discord. Expand to 50+ sources, hospital ERP integration, regional expansion.
+### 0:00-0:30 | The Problem
+"Same Metformin costs 45,000 VND here, 135,000 VND there. Vietnam has 57,000 pharmacies and zero unified pricing. Hospital procurement teams are flying blind in a $7 billion market."
+
+### 0:30-2:00 | Live Search Demo (The Wow Moment)
+Open dashboard. Type "Metformin 500mg" (or use Vietnamese voice input for extra impact).
+
+**Watch in real time:**
+- **Agent Activity Feed**: Terminal logs 25+ agent events with animated slide-in entries
+- **Live Browser Preview**: iframe shows TinyFish clicking through Long Chau's website
+- **5 Pharmacy Cards**: glow with bioluminescent effect + glare-on-hover as results stream in
+- **Metrics Bar**: animated counters tick up (agents deployed, pharmacies scanned, products found)
+- **Agent Cascade**: Tier 1 → Tier 2 → Tier 3 progression with sonar status dots
+- **Model Router**: shows Qwen → TinyFish → Exa pipeline with animated latency bars
+- **Savings Banner**: "Save ₫340,000 (47%)"
+- **Anomaly Badges**: red "suspiciously low" (potential counterfeit), green "best value"
+- **WHO Reference Badge**: "3.7× international benchmark"
+- **Government Ceiling Panel**: flags DAV compliance violations
+- **Analyst Verdict**: Vietnamese action directive with 0-100 confidence score
+- **Vietnamese Voice Summary auto-plays**: "Metformin 500mg, giá rẻ nhất tại Long Châu, 45.000 đồng..."
+
+### 2:00-2:30 | NL Multi-Drug Search
+Type: "I need diabetes and blood pressure medications for a clinic." OpenRouter parses into Metformin + Amlodipine + Losartan. Parallel agents dispatch for all drugs. Comparison matrix shows optimal sourcing route with AI recommendation.
+
+### 2:30-3:00 | Prescription OCR
+Upload prescription photo on Optimize page. GPT-4o Vision extracts drugs via function calling. Watch 50+ agents spawn. Optimized sourcing matrix with total savings.
+
+### 3:00-3:30 | Discord Alert + Architecture
+Fire demo alert button — Discord webhook + Vietnamese voice note plays from phone. Navigate to Architecture page — 3-column flow crediting all 9 sponsor integrations.
+
+### 3:30-5:00 | Enterprise Impact + Q&A
+- $7-10B+ pharmaceutical market, growing 15%+ annually
+- 1,192 public hospitals, 24,000+ FDI companies as target customers
+- SaaS model: per-query pricing for procurement departments
+- Regional expansion: Thailand, Philippines, Indonesia
+- **"We built the Bloomberg Terminal for pharmaceutical procurement in Southeast Asia."**
 
 ---
 

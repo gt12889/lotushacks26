@@ -71,7 +71,7 @@ export default function SavingsBanner({ bestPrice, bestSource, priceRange, poten
         {bestSource && query && (
           <button
             onClick={() => shareViaZalo(query, bestPrice, bestSource, potentialSavings ?? null)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0068FF]/10 border border-[#0068FF]/30 text-[#0068FF] hover:bg-[#0068FF]/20 transition-colors text-xs font-mono"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan/10 border border-cyan/30 text-cyan hover:bg-cyan/20 transition-colors text-xs font-mono"
             title="Share via Zalo"
           >
             <Share2 size={14} strokeWidth={1.5} />

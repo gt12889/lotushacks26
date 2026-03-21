@@ -1,9 +1,11 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { motion, useReducedMotion } from 'framer-motion';
 import { useLocale } from '@/components/LocaleProvider';
-import { Dock, DockItem } from '@/components/ui/dock';
+import { cn } from '@/lib/utils';
 
 const linkKeys = [
   { href: '/dashboard', key: 'nav.dashboard' as const },
@@ -16,63 +18,83 @@ const linkKeys = [
 export default function NavBar() {
   const pathname = usePathname();
   const { locale, setLocale, t } = useLocale();
+  const isLanding = pathname === '/';
+  const reduceMotion = useReducedMotion();
+
+  const languageToggle = (
+    <span className="flex items-center gap-1 text-xs shrink-0 font-mono">
+      <button
+        type="button"
+        onClick={() => setLocale('vi')}
+        className={locale === 'vi' ? 'text-cyan font-medium' : 'text-t3 hover:text-t1'}
+      >
+        VN
+      </button>
+      <span className="text-t3">/</span>
+      <button
+        type="button"
+        onClick={() => setLocale('en')}
+        className={locale === 'en' ? 'text-cyan font-medium' : 'text-t3 hover:text-t1'}
+      >
+        EN
+      </button>
+    </span>
+  );
+
+  if (isLanding) {
+    return (
+      <motion.div
+        className="fixed top-0 right-0 z-50 p-4 md:p-6"
+        initial={reduceMotion ? false : { opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26, delay: 0.12 }}
+      >
+        <motion.div
+          whileHover={reduceMotion ? undefined : { scale: 1.03 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.97 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+          className="rounded-lg border border-border/50 bg-abyss/70 backdrop-blur-md px-3 py-2 shadow-sm"
+        >
+          {languageToggle}
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
-    <header className="bg-abyss border-b border-border sticky top-0 z-50">
+    <header className="bg-abyss border-b border-border sticky top-0 z-50 backdrop-blur-md nav-header-enter">
       <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-3 shrink-0">
-          <div className="w-9 h-9 bg-cyan rounded-lg flex items-center justify-center">
-            <span className="text-abyss font-bold text-base">M</span>
-          </div>
+        <Link href="/" className="flex items-center gap-3 shrink-0 transition-opacity hover:opacity-90">
+          <Image
+            src="/icon.svg"
+            alt="Megalodon MD"
+            width={32}
+            height={32}
+            unoptimized
+            className="w-8 h-8 object-contain"
+          />
           <div>
             <h1 className="text-sm font-bold text-t1 leading-tight">Megladon MD</h1>
             <p className="text-[10px] text-t3 leading-tight">{t('nav.tagline')}</p>
           </div>
         </Link>
-        <nav className="flex flex-wrap justify-center">
-          <Dock magnification={1.15} distance={2}>
-            {linkKeys.map((link) => (
-              <DockItem key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors block ${
-                    pathname === link.href
-                      ? 'text-cyan bg-cyan/10'
-                      : 'text-t2 hover:text-t1 hover:bg-white/5'
-                  }`}
-                >
-                  {t(link.key)}
-                </Link>
-              </DockItem>
-            ))}
-          </Dock>
+        <nav className="flex items-center gap-1">
+          {linkKeys.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={cn(
+                'nav-link-animated px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200',
+                pathname === link.href
+                  ? 'bg-cyan/10 text-cyan'
+                  : 'text-t3 hover:text-t1'
+              )}
+            >
+              {t(link.key)}
+            </Link>
+          ))}
         </nav>
-        <div
-          className="flex rounded border border-border overflow-hidden text-xs font-mono shrink-0"
-          role="group"
-          aria-label="Language"
-        >
-          <button
-            type="button"
-            onClick={() => setLocale('vi')}
-            className={`px-2.5 py-1 transition-colors ${
-              locale === 'vi'
-                ? 'bg-cyan/20 text-cyan border-r border-border'
-                : 'text-t3 hover:text-t1 bg-transparent border-r border-border'
-            }`}
-          >
-            VN
-          </button>
-          <button
-            type="button"
-            onClick={() => setLocale('en')}
-            className={`px-2.5 py-1 transition-colors ${
-              locale === 'en' ? 'bg-cyan/20 text-cyan' : 'text-t3 hover:text-t1 bg-transparent'
-            }`}
-          >
-            EN
-          </button>
-        </div>
+        {languageToggle}
       </div>
     </header>
   );

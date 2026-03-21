@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import MegalodonBadge from './ui/megalodon-badge';
 import SponsorBadge from './SponsorBadge';
 import SparklineChart from './SparklineChart';
-import GlareHover from './ui/glare-hover';
 
 interface PharmacyResult {
   source_id: string;
@@ -77,20 +76,13 @@ export default function PharmacyCards({ results, sparklines }: PharmacyCardsProp
         const sponsors = BRIGHTDATA_PHARMACIES.has(id) ? ['TinyFish', 'BrightData'] : ['TinyFish'];
 
         return (
-          <GlareHover
-            key={id}
-            glareColor={`${color}25`}
-            glareSize={180}
-            borderRadius="0.5rem"
-          >
             <div
-              className={`bioluminescent-card p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
+              key={id}
+              className={`panel p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''} ${isGlowing ? 'border-l-2' : ''}`}
               style={{
-                '--bio-color': `${color}15`,
-                borderLeftColor: hasResult ? color : undefined,
-                borderLeftWidth: hasResult ? 3 : 1,
-                boxShadow: isGlowing ? `0 0 20px ${color}40, 0 0 40px ${color}20` : 'none',
-              } as React.CSSProperties}
+                borderLeftColor: isGlowing || hasResult ? color : undefined,
+                borderLeftWidth: isGlowing ? 2 : hasResult ? 1 : undefined,
+              }}
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
@@ -125,7 +117,6 @@ export default function PharmacyCards({ results, sparklines }: PharmacyCardsProp
                 </div>
               )}
             </div>
-          </GlareHover>
         );
       })}
     </div>

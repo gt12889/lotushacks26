@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
+import { Camera } from 'lucide-react';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
 import LiveMetricsBar from '@/components/LiveMetricsBar';
 import AgentCascade from '@/components/AgentCascade';
@@ -266,22 +267,22 @@ export default function OptimizePage() {
 
         <div className="bg-deep border border-border rounded-lg p-6 space-y-4">
           <div className="border-b border-border pb-6">
-            <h4 className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-3">Upload Prescription Photo</h4>
+            <h4 className="text-xs uppercase tracking-wider text-t3 font-mono mb-3">Upload Prescription Photo</h4>
             <label className="block cursor-pointer">
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-cyan/30 transition-colors">
                 {imagePreview ? (
                   <img src={imagePreview} alt="Prescription" className="max-h-32 mx-auto rounded mb-2" />
                 ) : (
                   <div className="text-t3">
-                    <div className="text-3xl mb-2">📷</div>
+                    <Camera size={28} className="text-t3 mx-auto mb-2" />
                     <p className="text-xs">Click to upload prescription photo</p>
-                    <p className="text-[10px] text-t3 mt-1">AI will extract drug names automatically</p>
+                    <p className="text-xs text-t3 mt-1">AI will extract drug names automatically</p>
                   </div>
                 )}
                 {ocrLoading && (
                   <div className="flex items-center justify-center gap-2 mt-3 text-xs text-cyan font-mono">
                     <LoadingSpinner size="sm" />
-                    <span>Extracting molecules from image...</span>
+                    <span>Reading prescription…</span>
                   </div>
                 )}
               </div>
@@ -289,7 +290,7 @@ export default function OptimizePage() {
             </label>
           </div>
 
-          <h4 className="text-[10px] uppercase tracking-wider text-t3 font-mono">Prescription Manifest</h4>
+          <h4 className="text-xs uppercase tracking-wider text-t3 font-mono">Prescription Manifest</h4>
           {drugs.map((drug, i) => (
             <div key={i} className="flex gap-3 items-center">
               <span className="text-xs font-mono text-t3 w-6">{i + 1}.</span>
@@ -352,11 +353,11 @@ export default function OptimizePage() {
             {result.savings && result.savings > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-deep border border-success/30 rounded-lg p-6 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Optimized Total</p>
+                  <p className="text-xs uppercase tracking-wider text-t3 font-mono mb-1">Optimized Total</p>
                   <p className="text-3xl font-bold font-mono text-success">{result.total_optimized.toLocaleString()} ₫</p>
                 </div>
                 <div className="bg-deep border border-alert-red/30 rounded-lg p-6 text-center">
-                  <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Savings vs {result.best_single_source}</p>
+                  <p className="text-xs uppercase tracking-wider text-t3 font-mono mb-1">Savings vs {result.best_single_source}</p>
                   <p className="text-3xl font-bold font-mono text-alert-red">-{result.savings.toLocaleString()} ₫</p>
                   <p className="text-xs text-t3 font-mono line-through">{result.total_single_source?.toLocaleString()} ₫</p>
                 </div>
@@ -370,10 +371,10 @@ export default function OptimizePage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border">
-                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Drug</th>
-                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Best Source</th>
-                    <th className="text-left py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Product</th>
-                    <th className="text-right py-2.5 px-6 text-[10px] uppercase tracking-wider text-t3 font-mono">Price (VND)</th>
+                    <th className="text-left py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Drug</th>
+                    <th className="text-left py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Best Source</th>
+                    <th className="text-left py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Product</th>
+                    <th className="text-right py-2.5 px-6 text-xs uppercase tracking-wider text-t3 font-mono">Price (VND)</th>
                   </tr>
                 </thead>
                 <tbody>
