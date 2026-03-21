@@ -1,0 +1,40 @@
+{
+  "project": "MegalodonMD",
+  "branchName": "ralph/hackathon-gaps",
+  "description": "Fix remaining hackathon feature gaps: SSE streaming URL emission and video landing page option",
+  "userStories": [
+    {
+      "id": "US-001",
+      "title": "Emit streaming_url in SSE events for Live Browser Preview",
+      "description": "As a user, I want to see the TinyFish agent navigating pharmacy websites in real-time via an iframe on the dashboard.",
+      "acceptanceCriteria": [
+        "Backend search SSE stream emits streaming_url field when TinyFish returns a streaming URL for a pharmacy",
+        "The streaming_url is included in the same SSE event as the pharmacy result OR as a separate event type",
+        "DashboardHome.tsx already listens for event.streaming_url (lines ~404-408) — verify this path works end-to-end",
+        "LiveBrowserPreview.tsx receives and renders the streaming URLs as iframes",
+        "If no streaming URLs are available (e.g. TinyFish not returning them), the LiveBrowserPreview section is hidden gracefully",
+        "Typecheck passes"
+      ],
+      "priority": 1,
+      "passes": true,
+      "notes": "Backend: check /backend/services/tinyfish.py lines 467-505 where streaming URLs are extracted. The issue is these URLs are not yielded in the SSE event generator in /backend/routers/search.py. Frontend is already wired up — DashboardHome.tsx listens for streaming_url and LiveBrowserPreview.tsx renders iframes. This is purely a backend plumbing fix."
+    },
+    {
+      "id": "US-002",
+      "title": "Add ocean video as optional landing page background behind Aurora",
+      "description": "As a user, I want the landing page hero to optionally show an ocean video background for maximum visual impact at the hackathon demo.",
+      "acceptanceCriteria": [
+        "The video file at /frontend/src/Drone_Ocean_Footage_Generation.mp4 is used as a background video in the hero section",
+        "Video plays behind the Aurora canvas effect as a layered background (video underneath, Aurora on top with reduced opacity)",
+        "Video is muted, autoplay, loop, playsInline",
+        "If video fails to load, Aurora canvas still works as fallback",
+        "Hero text and CTA buttons remain readable over the combined background",
+        "No layout shift or flash of unstyled content on page load",
+        "Typecheck passes"
+      ],
+      "priority": 2,
+      "passes": true,
+      "notes": "Fixed: video file was in src/ but referenced as /ocean-bg.mp4 (public/). Copied to public/ocean-bg.mp4. Video element + CSS already existed in page.tsx. Aurora canvas component is at src/components/ui/aurora.tsx. Landing page is at src/app/page.tsx. Layer the video underneath the Aurora with the Aurora having some transparency so both are visible — the Aurora adds the bioluminescent shimmer on top of the ocean footage."
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+# Ralph Progress Log
+Started: Sat Mar 21 16:15:07 CDT 2026
+---
+
+## Codebase Patterns
+- SSE events in search.py use `yield f"data: {json.dumps(...)}\n\n"` format
+- TinyFish SSE events have types: STARTED, STREAMING_URL, PROGRESS, HEARTBEAT, COMPLETE
+- `search_single_pharmacy_safe` wraps `search_single_pharmacy` with timeout and retry logic
+- `PharmacySearchResult.model_dump()` is used for serializing pharmacy results to SSE
+- Frontend DashboardHome.tsx parses SSE events by checking `event.type` first, then falls back to `event.source_id` for pharmacy results
+- `streaming_url_callback` pattern: pass a sync callback to async search functions for early event emission via asyncio.Queue
+
+## 2026-03-21 - US-001
+- Implemented early emission of streaming_url in SSE events for Live Browser Preview
+- Added `streaming_url_callback` parameter to `search_single_pharmacy` and `search_single_pharmacy_safe` in tinyfish.py
+- In search.py, created asyncio.Queue + callback to emit `streaming_url` events as soon as TinyFish returns them (before search completes)
+- Added frontend handler for the new `streaming_url` event type in DashboardHome.tsx
+- The streaming_url is also still included in the pharmacy result event via model_dump() for backward compat
+- Files changed: backend/services/tinyfish.py, backend/routers/search.py, frontend/src/components/DashboardHome.tsx
+- **Learnings for future iterations:**
+  - The streaming_url was already in PharmacySearchResult schema and model_dump() — the real issue was timing (emitting it early)
+  - asyncio.Queue is the right pattern for emitting intermediate events from async tasks back to an SSE generator
+  - Pre-existing ESLint `no-explicit-any` errors in DashboardHome.tsx — don't touch them unless asked
+---
