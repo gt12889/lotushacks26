@@ -508,21 +508,16 @@ export default function DashboardHome() {
         />
       )}
 
-      <div className="border-b border-border">
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
-          <div className="flex items-start justify-between">
-            <Link href="/" className="group flex items-center gap-2">
-              <div className="w-8 h-8 bg-cyan rounded flex items-center justify-center font-bold text-deep group-hover:scale-110 transition-transform">M</div>
-              <div>
-                <h2 className="text-lg font-bold text-t1 tracking-tight">
-                  {t('dash.title')} <span className="text-cyan">{t('dash.abyss')}</span>
-                </h2>
-                <p className="text-[11px] text-t3 mt-0.5 italic">
-                  {t('dash.subtitle')}
-                </p>
-              </div>
-            </Link>
-            <div className="flex gap-2 mt-1">
+      <div className="border-b border-border bg-deep/50 backdrop-blur-sm sticky top-[61px] z-40">
+        <div className="max-w-[1400px] mx-auto px-6 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
+              <h2 className="text-xs font-mono text-cyan uppercase tracking-widest">
+                {t('dash.abyss')} {t('dash.terminalActive')}
+              </h2>
+            </div>
+            <div className="flex gap-2">
               <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
                 {t('dash.exportIntel')}
               </button>
