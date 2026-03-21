@@ -1,236 +1,651 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import SearchBar from '@/components/SearchBar';
+import PharmacyCards from '@/components/PharmacyCards';
+import PriceGrid from '@/components/PriceGrid';
+import SavingsBanner from '@/components/SavingsBanner';
+import MegalodonAlert from '@/components/MegalodonAlert';
+import StatusPill from '@/components/StatusPill';
+import SonarFilters from '@/components/SonarFilters';
+import AgentActivityFeed from '@/components/AgentActivityFeed';
+import LiveMetricsBar from '@/components/LiveMetricsBar';
+import DemoAlertTrigger from '@/components/DemoAlertTrigger';
+import LiveBrowserPreview from '@/components/LiveBrowserPreview';
+import AgentCascade from '@/components/AgentCascade';
+import ModelRouterPanel from '@/components/ModelRouterPanel';
+import CeilingPanel from '@/components/CeilingPanel';
+import ComparisonBanner from '@/components/ComparisonBanner';
+import type { ModelStep } from '@/components/ModelRouterPanel';
 
-export default function LandingPage() {
-  const [mounted, setMounted] = useState(false);
+interface AgentEvent {
+  id: string;
+  timestamp: number;
+  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  agent: string;
+  message: string;
+  source_id?: string;
+}
 
-  useEffect(() => {
-    setMounted(true);
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+interface PharmacyResult {
+  source_id: string;
+  source_name: string;
+  status: string;
+  products: any[];
+  lowest_price: number | null;
+  result_count: number;
+  response_time_ms: number | null;
+  error: string | null;
+}
+
+interface Summary {
+  query: string;
+  best_price: number | null;
+  best_source: string | null;
+  price_range: string | null;
+  potential_savings: number | null;
+  total_results: number;
+  variants?: string[];
+}
+
+// Memory feature from remote
+const MEMORY_USER_KEY = 'mediscrapeMemoryUser';
+
+function ensureMemoryUserId(): string {
+  let id = localStorage.getItem(MEMORY_USER_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(MEMORY_USER_KEY, id);
+  }
+  return id;
+}
+
+// Mock data matching the SVG design
+const MOCK_CHART_DATA = [
+  { date: 'OCT 12', awp: 513.6, wac: 520.26 },
+  { date: 'OCT 13', awp: 500.28, wac: 516.93 },
+  { date: 'OCT 14', awp: 506.94, wac: 518.93 },
+  { date: 'OCT 15', awp: 466.98, wac: 513.6 },
+  { date: 'OCT 16', awp: 480.3, wac: 510.27 },
+  { date: 'OCT 17', awp: 427.02, wac: 512.27 },
+  { date: 'OCT 18', awp: 440.34, wac: 506.94 },
+  { date: 'OCT 19', awp: 400.38, wac: 503.61 },
+  { date: 'OCT 20', awp: 407.04, wac: 505.61 },
+  { date: 'OCT 21', awp: 360.42, wac: 500.28 },
+  { date: 'OCT 22', awp: 373.74, wac: 496.95 },
+];
+
+const MOCK_TABLE_DATA = [
+  {
+    name: 'Atorvastatin Calcium',
+    ndc: '00093-3147-01',
+    awp: 432.12,
+    wac: 388.90,
+    change: '+1.2%',
+    changeDir: 'up' as const,
+    status: 'best',
+    statusLabel: 'TINYFISH',
+    agentStatus: 'Active',
+    latency: '12ms',
+    node: '0x44B1...FA12',
+  },
+  {
+    name: 'Lisinopril 20mg',
+    ndc: '00406-0512-01',
+    awp: 1245.00,
+    wac: 920.40,
+    change: '+420%',
+    changeDir: 'up-critical' as const,
+    status: 'critical',
+    statusLabel: 'CRITICAL',
+    agentStatus: null,
+    latency: null,
+    node: null,
+  },
+  {
+    name: 'Rosuvastatin 10mg',
+    ndc: '00378-0112-05',
+    awp: 118.50,
+    wac: 105.20,
+    change: '0.0%',
+    changeDir: 'flat' as const,
+    status: 'monitor',
+    statusLabel: 'MONITOR',
+    agentStatus: null,
+    latency: null,
+    node: null,
+  },
+];
+
+interface VariantProduct {
+  product_name: string;
+  price: number;
+  original_price: number | null;
+  manufacturer: string | null;
+  dosage_form: string | null;
+  pack_size: number;
+  unit_price: number | null;
+  in_stock: boolean;
+  product_url: string | null;
+  source_id: string;
+  source_name: string;
+  variant_of: string;
+}
+
+export default function Home() {
+  const [isSearching, setIsSearching] = useState(false);
+  const [results, setResults] = useState<Record<string, PharmacyResult>>({});
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [currentQuery, setCurrentQuery] = useState('');
+  const [memoryHints, setMemoryHints] = useState<string[]>([]);
+  const [syncTime, setSyncTime] = useState('');
+  const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
+  const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
+  const [variantProducts, setVariantProducts] = useState<VariantProduct[]>([]);
+  const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
+  const searchStartRef = useRef<number>(0);
+  const [modelSteps, setModelSteps] = useState<ModelStep[]>([
+    { step: 'normalize', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'search', model: 'TinyFish Agent', provider: 'TinyFish', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'discovery', model: 'Neural Search', provider: 'Exa', latency_ms: null, status: 'pending', count: 0 },
+    { step: 'ocr', model: 'gpt-4o', provider: 'OpenAI', latency_ms: null, status: 'pending', count: 0 },
+  ]);
+  const eventBufferRef = useRef<Array<{type: string, data: any}>>([]);
+  const flushTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const eventIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Computed metrics from results
+  const pharmaciesComplete = Object.values(results).filter(r => r.status === 'success' || r.status === 'error').length;
+  const productsFound = Object.values(results).reduce((sum, r) => sum + (r.status === 'success' ? r.result_count : 0), 0) + variantProducts.length;
+
+  const addAgentEvent = useCallback((type: AgentEvent['type'], agent: string, message: string, source_id?: string) => {
+    const evt: AgentEvent = {
+      id: String(++eventIdRef.current),
+      timestamp: Date.now(),
+      type,
+      agent,
+      message,
+      source_id,
+    };
+    setAgentEvents(prev => [...prev, evt]);
   }, []);
 
-  if (!mounted) return null;
+  const flushEvents = useCallback(() => {
+    const buffer = eventBufferRef.current;
+    if (buffer.length === 0) return;
+
+    // Batch all state updates
+    const newResults: Record<string, any> = {};
+    let newSummary: Summary | null = null;
+
+    for (const evt of buffer) {
+      if (evt.type === 'pharmacy') {
+        newResults[evt.data.source_id] = evt.data;
+      } else if (evt.type === 'summary') {
+        newSummary = evt.data;
+      }
+    }
+
+    if (Object.keys(newResults).length > 0) {
+      setResults(prev => ({ ...prev, ...newResults }));
+    }
+    if (newSummary) {
+      setSummary(newSummary);
+    }
+
+    eventBufferRef.current = [];
+  }, []);
+
+  const fetchMemoryHints = useCallback(async (q: string, userId: string) => {
+    if (!q.trim()) { setMemoryHints([]); return; }
+    try {
+      const r = await fetch(`${API_URL}/api/memory/recall?q=${encodeURIComponent(q.trim())}&user=${encodeURIComponent(userId)}`);
+      if (!r.ok) { setMemoryHints([]); return; }
+      const data = await r.json();
+      if (data.enabled && Array.isArray(data.snippets) && data.snippets.length > 0) {
+        setMemoryHints(data.snippets);
+      } else {
+        setMemoryHints([]);
+      }
+    } catch {
+      setMemoryHints([]);
+    }
+  }, []);
+
+  useEffect(() => {
+    const update = () => setSyncTime(
+      new Date().toLocaleTimeString('en-US', { hour12: false, timeZone: 'UTC' })
+    );
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const handleSearch = async (query: string) => {
+    // Abort any previous in-flight search
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    setIsSearching(true);
+    setResults({});
+    setSummary(null);
+    setCurrentQuery(query);
+    setSearchTimeMs(null);
+    searchStartRef.current = Date.now();
+    setAgentEvents([]);
+    setStreamingUrls({});
+    setVariantProducts([]);
+    setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
+    eventIdRef.current = 0;
+    addAgentEvent('spawn', 'Orchestrator', `Deploying 5 pharmacy agents for "${query}"`);
+    try {
+      const memoryUserId = ensureMemoryUserId();
+      await fetchMemoryHints(query, memoryUserId);
+
+      const memQ = `&memory_user=${encodeURIComponent(memoryUserId)}`;
+      const response = await fetch(
+        `${API_URL}/api/search?query=${encodeURIComponent(query)}${memQ}`,
+        { method: 'POST', signal: controller.signal }
+      );
+      if (!response.ok || !response.body) throw new Error('Search failed');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const dataMatch = line.match(/^data: (.+)$/m);
+          if (!dataMatch) continue;
+          try {
+            const event = JSON.parse(dataMatch[1]);
+            if (event.type === 'model_used') {
+              setModelSteps(prev => prev.map(s =>
+                s.step === event.step
+                  ? { ...s, model: event.model || s.model, provider: event.provider || s.provider, latency_ms: event.latency_ms, status: 'done', count: s.count + 1 }
+                  : s
+              ));
+            } else if (event.task === 'summary' || event.type === 'search_complete') {
+              eventBufferRef.current.push({ type: 'summary', data: event });
+              addAgentEvent('success', 'Orchestrator', `Search complete — ${event.total_results} products found`);
+            } else if (event.type === 'agent_event') {
+              const evtType = event.event === 'spawned' ? 'spawn' : event.event === 'completed' ? 'success' : 'error';
+              addAgentEvent(evtType as AgentEvent['type'], event.name || 'Agent', event.description || event.error || `${event.event} (${event.result_count || 0})`, event.context);
+            } else if (event.type === 'pharmacy_status' && event.status === 'searching') {
+              addAgentEvent('searching', `${event.source_name} Agent`, 'Scanning pharmacy...', event.source_id);
+            } else if (event.is_variant_result && event.source_id && event.status === 'success') {
+              // Tier 3: variant search results
+              const variantOf = event.variant_of as string;
+              const newVariantProducts: VariantProduct[] = (event.products || []).map((p: any) => ({
+                ...p,
+                source_id: event.source_id,
+                source_name: event.source_name,
+                variant_of: variantOf,
+              }));
+              setVariantProducts(prev => [...prev, ...newVariantProducts]);
+              addAgentEvent('variant', `${event.source_name} Agent`, `Variant "${variantOf}": ${event.result_count} products found`, event.source_id);
+            } else if (event.source_id && event.status) {
+              eventBufferRef.current.push({ type: 'pharmacy', data: event });
+              if (event.streaming_url) setStreamingUrls(prev => ({ ...prev, [event.source_id]: event.streaming_url }));
+              if (event.status === 'success') addAgentEvent('success', `${event.source_name} Agent`, `Found ${event.result_count} products (${((event.response_time_ms || 0) / 1000).toFixed(1)}s)`, event.source_id);
+              else if (event.status === 'error') addAgentEvent('error', `${event.source_name} Agent`, event.error || 'Signal lost', event.source_id);
+            }
+
+            // Debounce: flush every 200ms
+            if (!flushTimerRef.current) {
+              flushTimerRef.current = setTimeout(() => {
+                flushEvents();
+                flushTimerRef.current = null;
+              }, 200);
+            }
+          } catch {}
+        }
+      }
+      // Final flush
+      if (flushTimerRef.current) {
+        clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = null;
+      }
+      flushEvents();
+    } catch (error: any) {
+      if (error?.name !== 'AbortError') {
+        console.error('Search error:', error);
+      }
+    } finally {
+      setSearchTimeMs(Date.now() - searchStartRef.current);
+      setIsSearching(false);
+    }
+  };
+
+  const hasResults = Object.keys(results).length > 0;
+  const hasMegalodon = summary && summary.potential_savings && summary.best_price && summary.potential_savings > summary.best_price;
 
   return (
-    <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
-      {/* Navigation */}
-      <nav className="border-b border-border/40 backdrop-blur-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-cyan rounded flex items-center justify-center font-bold text-deep">M</div>
-            <span className="font-bold text-lg tracking-tight">Megladon MD</span>
-          </div>
-          <div className="hidden md:flex items-center gap-8 text-sm font-mono text-t3">
-            <a href="#features" className="hover:text-cyan transition-colors">Infrastructure</a>
-            <a href="#intelligence" className="hover:text-cyan transition-colors">Intelligence</a>
-            <a href="#abyss" className="hover:text-cyan transition-colors">The Abyss</a>
-          </div>
-          <Link 
-            href="/dashboard"
-            className="px-4 py-2 bg-cyan text-deep text-xs font-bold font-mono rounded hover:bg-cyan/90 transition-all shadow-[0_0_15px_rgba(0,219,231,0.3)]"
-          >
-            LAUNCH TERMINAL
-          </Link>
-        </div>
-      </nav>
+    <div className="min-h-screen flex flex-col">
+      {/* Megalodon Alert Bar */}
+      <MegalodonAlert
+        drugName="Lisinopril 20mg (NDC: 00406-0512-01)"
+        message="spiked by 420% in 24h. Manual review recommended."
+      />
 
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-20 overflow-hidden">
-        {/* Background Grid/Effect */}
-        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,219,231,0.08)_0%,transparent_70%)]" />
-        
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan/30 bg-cyan/5 text-[10px] font-mono text-cyan mb-8 uppercase tracking-widest animate-pulse">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan" />
-            System Status: Operational in Vietnam
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tighter bg-clip-text text-transparent bg-gradient-to-b from-t1 to-t1/40">
-            SURFACE THE <br />
-            <span className="text-cyan">PRICING ABYSS.</span>
-          </h1>
-          
-          <p className="max-w-2xl mx-auto text-lg md:text-xl text-t3 mb-12 font-light leading-relaxed">
-            The first parallel AI agent network for pharmaceutical price intelligence. 
-            Automating the hunt for transparency in Vietnam&apos;s opaque medical markets.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link 
-              href="/dashboard"
-              className="w-full sm:w-auto px-8 py-4 bg-cyan text-deep font-bold rounded-lg text-lg hover:scale-105 transition-transform shadow-[0_0_30px_rgba(0,219,231,0.2)]"
-            >
-              Enter Dashboard
-            </Link>
-            <a 
-              href="#features"
-              className="w-full sm:w-auto px-8 py-4 bg-deep border border-border text-t2 font-bold rounded-lg text-lg hover:bg-card transition-colors"
-            >
-              View Methodology
-            </a>
-          </div>
-
-          {/* Floating Terminal Snippet */}
-          <div className="mt-20 max-w-4xl mx-auto bg-black/40 border border-border/60 rounded-xl overflow-hidden backdrop-blur-xl shadow-2xl">
-            <div className="flex items-center gap-1.5 px-4 py-3 bg-card/40 border-b border-border/40">
-              <div className="w-2.5 h-2.5 rounded-full bg-alert-red/40" />
-              <div className="w-2.5 h-2.5 rounded-full bg-warn/40" />
-              <div className="w-2.5 h-2.5 rounded-full bg-success/40" />
-              <div className="ml-2 text-[10px] font-mono text-t3">megladon-agent-v2.5 — bash</div>
-            </div>
-            <div className="p-6 text-left font-mono text-xs md:text-sm space-y-2">
-              <div className="text-success">$ megladon scan --query &quot;Atorvastatin 20mg&quot; --market &quot;VN&quot;</div>
-              <div className="text-t3">[INFO] Spawning 5 parallel agents via TinyFish infrastructure...</div>
-              <div className="text-cyan">[AGENT-01] Successfully bypassed Long Chau anti-bot...</div>
-              <div className="text-cyan">[AGENT-02] Scraped Pharmacity: 12 variants found...</div>
-              <div className="text-t2">[RESULT] Spread detected: 14,200đ — 58,000đ</div>
-              <div className="text-warn">[ALERT] Megladon signal: 300% potential arbitrage found.</div>
-              <div className="animate-pulse text-t1 mt-4">_</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Grid */}
-      <section id="features" className="py-24 bg-deep">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Parallel Agent Network",
-                desc: "TinyFish-powered agents simulate real human behavior to navigate complex pharmacy interfaces simultaneously.",
-                icon: "⚡"
-              },
-              {
-                title: "Deep Market Oracle",
-                desc: "Real-time pricing data from Long Chau, Pharmacity, and An Khang surfaces hidden market trajectories.",
-                icon: "🔮"
-              },
-              {
-                title: "Enterprise Monitoring",
-                desc: "Automatic tracking of 500+ essential drug SKUs with high-fidelity alerting for price spikes and drops.",
-                icon: "📊"
-              }
-            ].map((f, i) => (
-              <div key={i} className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">
-                <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all">{f.icon}</div>
-                <h3 className="text-xl font-bold mb-4 text-t1">{f.title}</h3>
-                <p className="text-t3 leading-relaxed text-sm">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Stats/Social Proof */}
-      <section id="intelligence" className="py-24 border-y border-border/20">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12 text-center">
-          {[
-            { label: "Scan Latency", val: "< 30s" },
-            { label: "Data Points", val: "14.2M+" },
-            { label: "Accuracy", val: "99.9%" },
-            { label: "Pharmacy Coverage", val: "Top 5" }
-          ].map((s, i) => (
-            <div key={i}>
-              <div className="text-4xl font-black text-cyan mb-2">{s.val}</div>
-              <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Infrastructure Visualization */}
-      <section className="py-24 border-t border-border/20 bg-abyss">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center gap-16">
-            <div className="flex-1">
-              <div className="inline-block px-3 py-1 rounded-full border border-cyan/30 bg-cyan/5 text-[10px] font-mono text-cyan mb-4 uppercase tracking-widest">
-                Protocol Architecture
-              </div>
-              <h2 className="text-3xl md:text-5xl font-black mb-6">
-                DISTRIBUTED <br />
-                <span className="text-cyan">ORCHESTRATION.</span>
+      {/* Header */}
+      <div className="border-b border-border">
+        <div className="max-w-[1400px] mx-auto px-6 py-4">
+          <div className="flex items-start justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-t1 tracking-tight">
+                Price Tracker: <span className="text-cyan">The Abyss</span>
               </h2>
-              <p className="text-t3 mb-8 leading-relaxed">
-                Megladon MD doesn&apos;t just scrape. It deploys a fleet of headless browsers orchestrated by our proprietary agent-routing logic. Each agent is tasked with a specific pharmacy domain, bypassing sophisticated anti-bot systems to retrieve the most accurate, real-time data.
+              <p className="text-[11px] text-t3 mt-0.5 italic">
+                Surfacing deep market trajectories and molecular cost-signals.
               </p>
+            </div>
+            <div className="flex gap-2 mt-1">
+              <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
+                Export Intel
+              </button>
+              <button
+                onClick={() => currentQuery ? handleSearch(currentQuery) : null}
+                className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider"
+              >
+                Deploy New Probe
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Layout: Content + Sidebar */}
+      <div className="flex flex-1 max-w-[1400px] mx-auto w-full">
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="p-6 space-y-5">
+
+            {/* Supermemory hints */}
+            {memoryHints.length > 0 && (
+              <div className="rounded-lg border border-cyan/25 bg-cyan/5 px-4 py-3">
+                <p className="text-xs font-mono text-cyan mb-2">Supermemory — related context</p>
+                <ul className="text-xs text-t2 space-y-1 list-disc list-inside">
+                  {memoryHints.slice(0, 5).map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Search */}
+            <SearchBar onSearch={handleSearch} isSearching={isSearching} />
+
+            {/* Live results when searching */}
+            {(hasResults || isSearching) && (
               <div className="space-y-4">
-                {[
-                  "Biometric human-simulation engines",
-                  "Dynamic proxy rotation for zero-fail scraping",
-                  "Real-time molecular data normalization",
-                  "Encrypted telemetry for research privacy"
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-cyan rounded-full" />
-                    <span className="text-sm text-t2 font-mono">{item}</span>
+                {currentQuery && (
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-xs font-mono text-t2">
+                      Scanning: <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
+                    </h3>
+                    {isSearching && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
+                        <span className="text-[10px] text-t3 font-mono">Agents active</span>
+                      </div>
+                    )}
                   </div>
-                ))}
+                )}
+                <LiveBrowserPreview
+                  streamingUrls={streamingUrls}
+                  pharmacyNames={Object.fromEntries(
+                    Object.values(results).map(r => [r.source_id, r.source_name])
+                  )}
+                  isSearching={isSearching}
+                />
+                {/* Live Metrics Bar */}
+                <LiveMetricsBar
+                  agentsSpawned={agentEvents.filter(e => e.type === 'spawn').length}
+                  pharmaciesComplete={pharmaciesComplete}
+                  pharmaciesTotal={5}
+                  productsFound={productsFound}
+                  savingsVnd={summary?.potential_savings ?? null}
+                  isActive={isSearching}
+                />
+
+                {/* Agent Cascade Pipeline */}
+                <AgentCascade
+                  tier0Active={false}
+                  tier1Active={isSearching ? 5 - pharmaciesComplete : 0}
+                  tier1Complete={pharmaciesComplete}
+                  tier1Total={5}
+                  tier2Variants={summary?.variants?.length ?? 0}
+                  visible={isSearching || hasResults}
+                />
+
+                <PharmacyCards results={results} />
+
+                {/* Agent Activity Feed */}
+                <AgentActivityFeed events={agentEvents} isActive={isSearching} />
+
+                {/* Model Router Panel */}
+                <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
+
+                {summary && (
+                  <SavingsBanner
+                    bestPrice={summary.best_price}
+                    bestSource={summary.best_source}
+                    priceRange={summary.price_range}
+                    potentialSavings={summary.potential_savings}
+                    totalResults={summary.total_results}
+                    query={currentQuery}
+                  />
+                )}
+                {summary && searchTimeMs && (
+                  <ComparisonBanner
+                    searchTimeMs={searchTimeMs}
+                    pharmacyCount={Object.keys(results).length}
+                    productCount={summary.total_results}
+                  />
+                )}
+                {summary?.variants && summary.variants.length > 0 && (
+                  <div className="bg-deep border border-cyan/20 rounded-lg p-3">
+                    <p className="text-[10px] font-mono text-cyan mb-2">Generic alternatives detected:</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {summary.variants.map((v) => (
+                        <button key={v} onClick={() => handleSearch(v)} disabled={isSearching}
+                          className="px-2.5 py-1 text-[10px] bg-card text-cyan border border-cyan/30 rounded hover:bg-cyan/10 transition-colors disabled:opacity-50">
+                          Scan &ldquo;{v}&rdquo;
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Government Ceiling Analysis */}
+                <CeilingPanel compliance={(summary as any)?.compliance ?? null} query={currentQuery} />
+
+                <PriceGrid results={results} bestPrice={summary?.best_price ?? null} variantProducts={variantProducts} />
+
+                {/* Demo Alert Trigger */}
+                <DemoAlertTrigger
+                  drugName={currentQuery || 'Metformin 500mg'}
+                  bestPrice={summary?.best_price ?? undefined}
+                  bestSource={summary?.best_source ?? undefined}
+                />
+              </div>
+            )}
+
+            {/* Chart Legend */}
+            <div className="flex items-center gap-6 text-[10px]">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-cyan rounded-sm" />
+                <span className="text-t2 font-mono">
+                  AWP <span className="text-t3">ATOVASTATIN CALCIUM</span>
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-white/20 rounded-sm" />
+                <span className="text-t2 font-mono">
+                  WAC <span className="text-t3">METFORMIN</span>
+                </span>
               </div>
             </div>
-            <div className="flex-1 w-full aspect-square bg-deep border border-border/60 rounded-3xl relative overflow-hidden group">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,219,231,0.1),transparent)] group-hover:scale-150 transition-transform duration-1000" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                {/* Mock Diagram */}
-                <div className="relative w-64 h-64">
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border border-cyan rounded-full animate-[spin_10s_linear_infinite]" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 border border-cyan/30 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-cyan/20 blur-xl rounded-full" />
-                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-cyan rounded-full shadow-[0_0_15px_rgba(0,219,231,0.8)]" />
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-4 bg-cyan/40 rounded-full" />
-                  <div className="absolute top-1/2 left-0 -translate-y-1/2 w-4 h-4 bg-cyan/40 rounded-full" />
-                  <div className="absolute top-1/2 right-0 -translate-y-1/2 w-4 h-4 bg-cyan/40 rounded-full" />
-                </div>
-              </div>
-              <div className="absolute bottom-6 left-6 right-6 p-4 bg-black/60 backdrop-blur-md rounded-xl border border-border/40">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-mono text-cyan">Cluster Health</span>
-                  <span className="text-[10px] font-mono text-success">Active</span>
-                </div>
-                <div className="h-1 bg-border/40 rounded-full overflow-hidden">
-                  <div className="h-full bg-cyan w-3/4 animate-[shimmer_2s_infinite]" />
-                </div>
-              </div>
+
+            {/* Price Chart */}
+            <div className="bg-abyss rounded-lg overflow-hidden" style={{ height: 220 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={MOCK_CHART_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="awpGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#00DBE7" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#041329" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fill: '#64748B', fontSize: 9, fontFamily: 'monospace' }}
+                    axisLine={{ stroke: 'rgba(0,219,231,0.1)' }}
+                    tickLine={false}
+                    interval={1}
+                  />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#010E24',
+                      border: '1px solid rgba(0,219,231,0.2)',
+                      borderRadius: 4,
+                      fontSize: 10,
+                      fontFamily: 'monospace',
+                    }}
+                    labelStyle={{ color: '#D6E3FF', fontSize: 10 }}
+                    itemStyle={{ color: '#94A3B8', fontSize: 10 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="awp"
+                    stroke="#00DBE7"
+                    strokeWidth={1.5}
+                    fill="url(#awpGradient)"
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#00DBE7', stroke: '#041329', strokeWidth: 2 }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="wac"
+                    stroke="rgba(255,255,255,0.2)"
+                    strokeWidth={1}
+                    strokeDasharray="3 2"
+                    dot={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        </div>
-      </section>
 
-      {/* CTA Section */}
-      <section id="abyss" className="py-32 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-cyan/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <h2 className="text-4xl md:text-6xl font-black mb-8">READY TO DEPLOY?</h2>
-          <p className="text-xl text-t3 mb-12">
-            Join the elite healthcare researchers using Megladon MD to navigate the pricing abyss.
-          </p>
-          <Link 
-            href="/dashboard"
-            className="inline-block px-12 py-5 bg-t1 text-deep font-black rounded-full text-xl hover:bg-cyan hover:text-deep transition-all shadow-2xl"
-          >
-            Launch Terminal Now
-          </Link>
-        </div>
-      </section>
+            {/* Pricing Abyss Index Table */}
+            <div className="bg-abyss">
+              <div className="flex items-center gap-4 mb-3">
+                <h3 className="text-[11px] font-bold text-t1 uppercase tracking-[0.15em]">
+                  Pricing Abyss Index
+                </h3>
+                <div className="flex items-center gap-2 text-[9px] text-t3 font-mono">
+                  <span>Real-time Feed</span>
+                  <span className="text-t3">•</span>
+                  <span>Tinyfish Intelligence</span>
+                </div>
+              </div>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-border/20">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:row items-center justify-between gap-8">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-border rounded flex items-center justify-center font-bold text-[10px] text-t3">M</div>
-            <span className="text-sm font-bold text-t3">Megladon MD © 2026</span>
-          </div>
-          <div className="flex gap-8 text-[10px] font-mono text-t3 uppercase tracking-wider">
-            <a href="#" className="hover:text-cyan transition-colors">Architecture</a>
-            <a href="#" className="hover:text-cyan transition-colors">Privacy</a>
-            <a href="#" className="hover:text-cyan transition-colors">Legal</a>
-            <span className="text-border">|</span>
-            <span className="text-success">System: Synchronized</span>
+              <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-0 border-b border-border/60 pb-2 mb-0">
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Drug Name / NDC</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">AWP ($)</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">WAC ($)</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">24H</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Trend</span>
+                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">Status</span>
+              </div>
+
+              {MOCK_TABLE_DATA.map((row, i) => (
+                <div key={i} className="border-b border-border/30 hover:bg-card/30 transition-colors">
+                  <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-0 items-center py-3">
+                    <div>
+                      <div className="text-[12px] text-t1 font-medium leading-tight">{row.name}</div>
+                      <div className="text-[9px] text-t3 font-mono mt-0.5">{row.ndc}</div>
+                    </div>
+                    <div className="text-[12px] text-t2 font-mono">{row.awp.toFixed(2)}</div>
+                    <div className="text-[12px] text-t2 font-mono">{row.wac.toFixed(2)}</div>
+                    <div className={`text-[12px] font-mono font-bold ${
+                      row.changeDir === 'up-critical' ? 'text-alert-red' :
+                      row.changeDir === 'up' ? 'text-success' : 'text-t3'
+                    }`}>
+                      {row.change}
+                    </div>
+                    <div>
+                      {row.changeDir === 'up-critical' ? (
+                        <svg className="w-4 h-4 text-alert-red" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" />
+                        </svg>
+                      ) : row.changeDir === 'up' ? (
+                        <svg className="w-4 h-4 text-success" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" />
+                        </svg>
+                      ) : (
+                        <span className="text-[10px] text-t3 font-mono">—</span>
+                      )}
+                    </div>
+                    <div>
+                      <StatusPill status={row.status} label={row.statusLabel} />
+                    </div>
+                  </div>
+
+                  {row.agentStatus && (
+                    <div className="flex items-center gap-4 pb-2.5 pl-1">
+                      <span className="text-[8px] text-t3 font-mono uppercase tracking-wider">Distributed Agent Network</span>
+                      <span className="text-[8px] text-t3 font-mono">
+                        Heartbeat: <span className="text-success">{row.agentStatus}</span>
+                      </span>
+                      <span className="text-[8px] text-t3 font-mono">
+                        Latency: <span className="text-t2">{row.latency}</span>
+                      </span>
+                      <span className="text-[8px] text-t3 font-mono">
+                        Processing Node: <span className="text-t2">{row.node}</span>
+                      </span>
+                    </div>
+                  )}
+
+                  {row.status === 'monitor' && (
+                    <div className="pb-2.5 pl-1">
+                      <span className="text-[8px] text-t3 font-mono">
+                        Price trajectories are currently calculated using <span className="text-t2">14.2M</span> data points across <span className="text-t2">42</span> wholesale hubs.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Footer info bar */}
+            <div className="flex items-center justify-between pt-3 border-t border-border/30">
+              <div className="flex gap-5 text-[9px] text-t3 font-mono">
+                <span className="hover:text-t2 cursor-pointer transition-colors">Privacy Protocol</span>
+                <span className="hover:text-t2 cursor-pointer transition-colors">Abyssal Methodology</span>
+                <span className="hover:text-t2 cursor-pointer transition-colors">Source Oracle</span>
+              </div>
+              <span className="text-[9px] text-t3 font-mono">
+                System Synchronized: {syncTime} UTC
+              </span>
+            </div>
+
           </div>
         </div>
-      </footer>
+
+        {/* Sonar Filters Sidebar */}
+        <SonarFilters />
+      </div>
     </div>
   );
 }

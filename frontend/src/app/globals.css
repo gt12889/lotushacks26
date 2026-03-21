@@ -168,3 +168,44 @@ body {
   background-color: #0D1C32;
   color: #D6E3FF;
 }
+
+/* ───────── Accessibility: Reduced Motion ───────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .bioluminescent-card {
+    animation: none;
+  }
+
+  .sonar-dot::before,
+  .sonar-dot::after {
+    animation: none;
+    display: none;
+  }
+
+  .animate-pulse-left-border {
+    animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ───────── Touch targets & Cursor ───────── */
+
+button,
+[role="button"],
+a,
+summary {
+  cursor: pointer;
+}
+
+/* Ensure small interactive dots have adequate hit area */
+.sonar-dot {
+  min-width: 16px;
+  min-height: 16px;
+}

@@ -73,3 +73,52 @@
 - Summary includes: 8 products, 7 deduplicated, ₫38,000 best price, ₫97,000 savings
 - Frontend dev server (`:3001`) and backend (`:8000`) both return HTTP 200
 - **Remaining gap**: Frontend components untested in actual browser — need visual confirmation of animations, activity feed scrolling, metrics ticking
+
+## 2026-03-21 — Live TinyFish + BrightData Proxy Testing
+
+### Lesson 16: Vietnamese pharmacies hide prescription drug prices
+- Metformin, amoxicillin → ALL pharmacies return "Liên hệ" (contact for price) instead of showing VND prices. This is Vietnamese regulation for prescription drugs.
+- Paracetamol (OTC) → prices visible and extracted correctly (₫500/unit from Long Chau).
+- **Rule**: Demo must use OTC drugs (paracetamol, vitamin C, vitamin E) for live TinyFish searches. Use mock mode for prescription drugs.
+
+### Lesson 17: TinyFish returns dict-wrapped arrays, not plain arrays
+- Goal prompt says "return a JSON array" but TinyFish returns `{"metformin_products": [...]}` or `{"products": [...]}` or `{"result": [...]}`.
+- Original `_extract_json_array` only handled `list` and `str` inputs — dict went to `str` path and failed.
+- **Fix**: Added dict unwrapping — scan values for the first list. Also handles parsed JSON dicts.
+- **Rule**: Never trust an LLM to follow output format exactly. Always handle wrapper objects.
+
+### Lesson 18: BrightData proxy works but needs Vietnam country targeting
+- Proxy URL format: `http://brd-customer-{ID}-zone-{ZONE}-country-vn:{PASS}@brd.superproxy.io:33335`
+- The `-country-vn` suffix is critical — without it, requests route through non-Vietnam IPs and some pharmacy sites may geo-block.
+- Confirmed: `geo.brdtest.com` returns `Country: VN` with the targeting flag.
+- Health check shows "unreachable" due to SSL cert issue (self-signed) — cosmetic, doesn't affect TinyFish which handles SSL internally.
+
+### Lesson 19: TinyFish credits ran out on old key, new key works
+- Old key `sk-tinyfish-1J2G54...` returned 403 with `"Insufficient credits. You have 0 credits remaining."`
+- New key `sk-tinyfish-HC4tSE0...` works — agents connect, navigate sites, extract data.
+- Health check returns "connected" for both valid and zero-credit keys (it checks reachability, not quota).
+- **Rule**: Health check should distinguish "reachable but no credits" from "reachable and functional."
+
+### Lesson 20: TinyFish agent latency is 30-180s per pharmacy
+- Long Chau: 136s to navigate, search, and extract (even with 0 results due to Rx pricing).
+- Than Thien: 34s to determine site unreachable.
+- Full 5-pharmacy search with 3 retries = potentially 9+ minutes if all timeout.
+- **Rule**: For demo, search 1-2 pharmacies live (`sources=long_chau,pharmacity`), not all 5. Or use mock mode for instant results.
+
+### Lesson 21: Exa Research API is async and takes 1-3 minutes
+- `exa.research.create()` returns immediately with a `research_id`.
+- `poll_until_finished()` blocks — 60s timeout was insufficient, 120s still may not complete.
+- SDK uses `research_id` (not `id`) and `timeout_ms` (not `timeout`).
+- **Fix**: Moved counterfeit risk research to post-summary SSE event so it doesn't block the main search stream.
+- **Rule**: Async APIs need fire-and-forget patterns. Stream results as late events, don't block the main flow.
+
+### Lesson 22: Demo drug selection strategy
+| Drug | Type | Live TinyFish | Mock Mode | Ceiling Data | Anomaly Detection |
+|------|------|:------------:|:---------:|:------------:|:-----------------:|
+| paracetamol | OTC | Prices visible | Yes | Yes (₫500/unit) | No |
+| vitamin C | OTC | Likely works | No mock data | No | No |
+| metformin | Rx | "Liên hệ" only | Yes (9 products) | Yes (₫1,500/unit) | Yes (fake cheap product) |
+| omeprazole | Rx | "Liên hệ" only | Yes (7 products) | Yes (₫2,500/unit) | Yes (fake cheap product) |
+| losartan | Rx | "Liên hệ" only | Yes (6 products) | Yes (₫3,000/unit) | No |
+
+**Demo script**: Start with mock mode metformin (shows all features: 25 agents, compliance violations, anomaly detection). Then do a live paracetamol search to show real TinyFish browser agents + BrightData proxy in action.
