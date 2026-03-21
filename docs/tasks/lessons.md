@@ -1,4 +1,4 @@
-# Lessons Learned — LotusHacks 2026 (MediScrape)
+# Lessons Learned — LotusHacks 2026 (Megladon MD)
 
 ## 2026-03-21 — Sponsor Challenge Audit & Demo Feature Build
 

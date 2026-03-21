@@ -1,0 +1,14 @@
+# Railway: Root Directory = `frontend`.
+# Set NEXT_PUBLIC_API_URL (Railway Variables) so the Docker build receives it as a build arg.
+# Redeploy after changing it.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+# Uses CMD from Dockerfile (next start + PORT)
+healthcheckPath = "/"
+healthcheckTimeout = 60
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5

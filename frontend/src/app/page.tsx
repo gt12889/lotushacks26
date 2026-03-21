@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { Counter } from '@/components/ui/counter';
 import { Aurora } from '@/components/ui/aurora';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';

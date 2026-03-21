@@ -52,10 +52,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Megladon MD API", version="0.1.0", lifespan=lifespan)
 
+# Flexible CORS: If CORS_ORIGINS is "*" or not set, allow all but disable credentials
+# (Browsers disallow "*" + allow_credentials=True)
+origins = _cors_origin_list()
+allow_all = "*" in origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_cors_origin_list(),
-    allow_credentials=True,
+    allow_origins=origins,
+    allow_credentials=not allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )

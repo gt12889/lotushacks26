@@ -1,8 +1,8 @@
-# MediScrape "The Abyss" Retheme — Implementation Plan
+# Megladon MD "The Abyss" Retheme — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Retheme the entire MediScrape frontend from light-mode gray/white to the dark "Abyss" cyberpunk-pharmaceutical design, and add a new `/architecture` page.
+**Goal:** Retheme the entire Megladon MD frontend from light-mode gray/white to the dark "Abyss" cyberpunk-pharmaceutical design, and add a new `/architecture` page.
 
 **Architecture:** Replace all 5 existing components and restyle all 4 existing pages in-place. Add Recharts for the trends chart. Add one new static page. All API integrations preserved unchanged. No backend modifications.
 

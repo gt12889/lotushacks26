@@ -8,7 +8,7 @@
 
 ## Overview
 
-New dashboard page for MediScrape providing competitive pharmaceutical pricing intelligence at a glance. Matches the Figma "Abyss" dark-theme design with cyan (#00DAF3), green (#48DDBC), and slate gray accents on a #0F172A background.
+New dashboard page for Megladon MD providing competitive pharmaceutical pricing intelligence at a glance. Matches the Figma "Abyss" dark-theme design with cyan (#00DAF3), green (#48DDBC), and slate gray accents on a #0F172A background.
 
 ## Page Sections
 

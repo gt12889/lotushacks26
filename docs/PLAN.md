@@ -97,7 +97,7 @@ Pivoting from GhostDriver to Megladon MD for LotusHacks 2026. Pharmaceutical pri
 ## Phase 7: Sponsor Challenge Fixes (Post-Audit)
 
 **Goal**: Fix all sponsor integrations identified as broken/non-functional in audit.
-**Reference**: See `SPONSORS.md` for full audit details.
+**Reference**: See [SPONSORS.md](./SPONSORS.md) for full audit details.
 
 ### P0 — Security (Do First) ✅
 

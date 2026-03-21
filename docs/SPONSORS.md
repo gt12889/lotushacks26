@@ -1,6 +1,6 @@
 # Sponsor Challenge Audit
 
-**Project**: MegalodonMD — Vietnamese Pharmaceutical Price Intelligence
+**Project**: Megladon MD — Vietnamese Pharmaceutical Price Intelligence
 **Event**: LotusHacks 2026
 **Audit Date**: 2026-03-21
 

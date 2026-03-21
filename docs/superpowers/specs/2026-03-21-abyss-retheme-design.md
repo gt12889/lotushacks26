@@ -1,10 +1,10 @@
-# MediScrape "The Abyss" — Full Retheme Design Spec
+# Megladon MD "The Abyss" — Full Retheme Design Spec
 
 > **IMPLEMENTATION NOTE:** The Abyss retheme was applied by restyling existing components in place rather than creating the renamed components listed below (e.g., `AbyssNavBar` was not created — `NavBar` was restyled directly). Color token names also differ from this spec: code uses `cyan` (not `accent-cyan`), `t1`/`t2`/`t3` (not `text-primary`/`text-secondary`/`text-muted`). See `frontend/src/app/globals.css` for actual tokens.
 
 ## Context
 
-MediScrape is a pharmaceutical price intelligence platform for LotusHack 2026. The current frontend is a light-mode gray/white prototype with standard blue accents. The entire UI needs to be rebuilt with a deep-ocean "Abyss" dark theme — a data-dense, cyberpunk-pharmaceutical aesthetic with navy backgrounds, cyan accents, and dramatic red alerts.
+Megladon MD is a pharmaceutical price intelligence platform for LotusHack 2026. The current frontend is a light-mode gray/white prototype with standard blue accents. The entire UI needs to be rebuilt with a deep-ocean "Abyss" dark theme — a data-dense, cyberpunk-pharmaceutical aesthetic with navy backgrounds, cyan accents, and dramatic red alerts.
 
 **Important**: This retheme applies the Abyss visual treatment to existing functionality. Where the design references data fields that don't exist in the current backend (AWP/WAC, NDC, sparklines), these are rendered with the existing data mapped to the new labels, or shown as mock/placeholder data for demo purposes. This is a hackathon — presentation matters more than perfect data purity.
 
@@ -21,7 +21,7 @@ MediScrape is a pharmaceutical price intelligence platform for LotusHack 2026. T
 ## NavBar
 
 ```
-[MediScrape logo]  Dashboard | Trends | Alerts | Optimize | How It Works    [VN/EN]
+[Megladon MD logo]  Dashboard | Trends | Alerts | Optimize | How It Works    [VN/EN]
 ```
 
 **Changes from current NavBar** (which has: Search | Trends | Optimizer | Alerts):
@@ -33,7 +33,7 @@ MediScrape is a pharmaceutical price intelligence platform for LotusHack 2026. T
 
 **Styling**:
 - Dark navy background `#0D1C32`, bottom border `rgba(0,219,231,0.1)`
-- MediScrape logo: styled icon + text, cyan accent
+- Megladon MD logo: styled icon + text, cyan accent
 - Active link: cyan text `#00DBE7` with subtle underline or bg highlight
 - Inactive links: `#94A3B8`, hover → `#D6E3FF`
 - Fixed at top
