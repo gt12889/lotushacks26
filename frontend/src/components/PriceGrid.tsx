@@ -83,6 +83,27 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [] }: 
     }
   });
 
+  // Price anomaly detection: compute mean & standard deviation
+  const validPrices = allProducts.map(p => p.price).filter(p => p > 0);
+  const mean = validPrices.length > 0 ? validPrices.reduce((a, b) => a + b, 0) / validPrices.length : 0;
+  const stdDev = validPrices.length > 1
+    ? Math.sqrt(validPrices.reduce((sum, p) => sum + (p - mean) ** 2, 0) / validPrices.length)
+    : 0;
+
+  function getAnomalyBadge(price: number) {
+    if (stdDev === 0 || validPrices.length < 3) return null;
+    if (price < mean - 2 * stdDev) {
+      return { label: 'Suspiciously Low', color: 'bg-red-500/15 text-red-400 border-red-500/30' };
+    }
+    if (price > mean + 2 * stdDev) {
+      return { label: 'Overpriced', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+    }
+    if (price === bestPrice) {
+      return { label: 'Best Value', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
+    }
+    return null;
+  }
+
   if (allProducts.length === 0) return null;
 
   return (
@@ -128,7 +149,17 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [] }: 
                 style={p.variant_of ? { animation: 'fadeSlideIn 0.3s ease-out' } : undefined}
               >
                 <td className="py-2.5 px-4">
-                  {p.price === bestPrice && <StatusPill status="best" label="BEST" />}
+                  <div className="flex flex-col gap-1">
+                    {p.price === bestPrice && <StatusPill status="best" label="BEST" />}
+                    {(() => {
+                      const badge = getAnomalyBadge(p.price);
+                      return badge ? (
+                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border whitespace-nowrap ${badge.color}`}>
+                          {badge.label}
+                        </span>
+                      ) : null;
+                    })()}
+                  </div>
                 </td>
                 <td className="py-2.5 px-4">
                   <div className="text-t1 font-medium">

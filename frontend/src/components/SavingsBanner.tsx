@@ -50,6 +50,23 @@ export default function SavingsBanner({ bestPrice, bestSource, priceRange, poten
           <p className="text-xl font-bold font-mono text-t1">{totalResults}</p>
         </div>
 
+        {/* Procurement savings calculator */}
+        {potentialSavings && potentialSavings > 0 && bestSource && (
+          <div className="bg-deep border border-success/20 rounded-lg px-4 py-3 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Procurement Projection</p>
+            <p className="text-xs text-t2 leading-relaxed">
+              Sourcing from <span className="text-cyan font-medium">{bestSource}</span> saves{' '}
+              <span className="text-success font-bold">{potentialSavings.toLocaleString()} VND</span>/unit.
+            </p>
+            <p className="text-xs text-t2 mt-1">
+              At 500 units/month → annual savings:{' '}
+              <span className="text-warn font-bold text-base">
+                {(potentialSavings * 500 * 12).toLocaleString()} VND
+              </span>
+            </p>
+          </div>
+        )}
+
         {/* Zalo share */}
         {bestSource && query && (
           <button
