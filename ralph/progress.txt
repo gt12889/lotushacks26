@@ -16,6 +16,7 @@
 - Custom Counter component at ui/counter.tsx provides animated number transitions (easeOutExpo, requestAnimationFrame)
 - Custom AnimatedList component at ui/animated-list.tsx wraps keyed children with CSS slide-in animation (plays once per mount)
 - Custom GlareHover component at ui/glare-hover.tsx adds mouse-tracking radial gradient glare effect on hover
+- Custom Dock component at ui/dock.tsx provides macOS-style magnification on hover via React context + cosine interpolation
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -155,5 +156,18 @@
   - borderRadius='inherit' or explicit value needed so glare overlay matches card corners
   - GlareHover wraps the card div — key prop moves to GlareHover since it's now the outermost element in the map
   - Using pharmacy-specific color with low alpha (e.g. `${color}25`) for glare creates a themed hover effect per card
+---
+
+## 2026-03-21 - US-011
+- Created custom Dock component in src/components/ui/dock.tsx with macOS-style magnification effect
+- Dock uses React context to share mouse position; DockItem calculates proximity-based scale with cosine interpolation
+- Refactored NavBar.tsx: nav links wrapped in Dock/DockItem components for magnification on hover
+- Logo, language toggle, active link highlighting, and sticky positioning all preserved
+- Files changed: ui/dock.tsx (new), NavBar.tsx
+- **Learnings for future iterations:**
+  - Dock magnification uses cosine curve for natural falloff — smoother than linear interpolation
+  - DockItem needs parentElement.getBoundingClientRect() to calculate relative position within the Dock
+  - magnification=1.15 is subtle enough for nav links (1.2+ works better for icon docks)
+  - origin-bottom on transform keeps items anchored to the navbar bottom edge during scale
 ---
 

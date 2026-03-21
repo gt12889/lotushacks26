@@ -191,7 +191,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 11,
-      "passes": false,
+      "passes": true,
       "notes": "NavBar is 76 lines. Dock gives a macOS-style magnification effect on hover. PillNav is a more subtle animated pill indicator. Choose whichever fits the dark abyss theme better."
     },
     {
