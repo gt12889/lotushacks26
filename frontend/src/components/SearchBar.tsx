@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
+import { Mic, MicOff, Search } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 
 interface SearchBarProps {
@@ -11,11 +12,55 @@ interface SearchBarProps {
 export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
   const { t } = useLocale();
   const [query, setQuery] = useState('');
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (query.trim()) onSearch(query.trim());
   };
+
+  const supportsVoice = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+
+  const toggleVoice = useCallback(() => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript);
+      if (event.results[0].isFinal) {
+        setIsListening(false);
+        if (transcript.trim()) {
+          onSearch(transcript.trim());
+        }
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }, [isListening, onSearch]);
 
   const quickSearches = ['Metformin 500mg', 'Amoxicillin 500mg', 'Paracetamol 500mg', 'Losartan 50mg', 'Omeprazole 20mg'];
 
@@ -27,14 +72,31 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={t('search.placeholder')}
-            className="w-full px-5 py-3.5 text-base bg-deep border border-border rounded-lg focus:ring-1 focus:ring-cyan focus:border-cyan text-t1 placeholder-t3 font-mono outline-none transition-colors"
+            placeholder={isListening ? t('search.listening') : t('search.placeholder')}
+            className={`w-full px-5 py-3.5 text-base bg-deep border rounded-lg focus:ring-1 focus:ring-cyan focus:border-cyan text-t1 placeholder-t3 font-mono outline-none transition-colors ${
+              isListening ? 'border-warn animate-pulse' : 'border-border'
+            }`}
             disabled={isSearching}
           />
-          <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-t3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-t3" strokeWidth={1.5} />
         </div>
+
+        {supportsVoice && (
+          <button
+            type="button"
+            onClick={toggleVoice}
+            disabled={isSearching}
+            className={`px-4 py-3.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+              isListening
+                ? 'bg-warn/20 border border-warn text-warn'
+                : 'bg-card border border-border text-t2 hover:border-cyan/30 hover:text-cyan'
+            }`}
+            title={t('search.voiceTitle')}
+          >
+            {isListening ? <MicOff size={20} strokeWidth={1.5} /> : <Mic size={20} strokeWidth={1.5} />}
+          </button>
+        )}
+
         <button
           type="submit"
           disabled={isSearching || !query.trim()}
@@ -48,7 +110,10 @@ export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
         {quickSearches.map((drug) => (
           <button
             key={drug}
-            onClick={() => { setQuery(drug); onSearch(drug); }}
+            onClick={() => {
+              setQuery(drug);
+              onSearch(drug);
+            }}
             disabled={isSearching}
             className="px-3 py-1 text-xs bg-card text-t2 rounded border border-border hover:border-cyan/30 hover:text-cyan transition-colors disabled:opacity-50"
           >

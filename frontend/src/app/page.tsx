@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -58,7 +58,7 @@ export default function LandingPage() {
               <div className="w-2.5 h-2.5 rounded-full bg-alert-red/40" />
               <div className="w-2.5 h-2.5 rounded-full bg-warn/40" />
               <div className="w-2.5 h-2.5 rounded-full bg-success/40" />
-              <div className="ml-2 text-[10px] font-mono text-t3">megladon-agent-v2.5 — bash</div>
+              <div className="ml-2 text-[10px] font-mono text-t3">megladon-agent-v2.5 ΓÇö bash</div>
             </div>
             <div className="p-6 text-left font-mono text-xs md:text-sm space-y-2">
               <div className="text-success">$ megladon scan --query &quot;Atorvastatin 20mg&quot; --market &quot;VN&quot;</div>
@@ -81,17 +81,17 @@ export default function LandingPage() {
               {
                 title: t('landing.feat1Title'),
                 desc: t('landing.feat1Desc'),
-                icon: '⚡',
+                icon: 'ΓÜí',
               },
               {
                 title: t('landing.feat2Title'),
                 desc: t('landing.feat2Desc'),
-                icon: '🔮',
+                icon: '≡ƒö«',
               },
               {
                 title: t('landing.feat3Title'),
                 desc: t('landing.feat3Desc'),
-                icon: '📊',
+                icon: '≡ƒôè',
               },
             ].map((f, i) => (
               <div key={i} className="p-8 rounded-2xl bg-card/20 border border-border/40 hover:border-cyan/40 transition-all group">

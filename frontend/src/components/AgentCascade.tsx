@@ -1,5 +1,8 @@
 'use client';
 
+import { Camera, Search, Dna } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
 interface AgentCascadeProps {
   tier0Active: boolean;  // OCR running
   tier1Active: number;   // number of pharmacy agents active
@@ -12,13 +15,13 @@ interface AgentCascadeProps {
 export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, tier1Total, tier2Variants, visible }: AgentCascadeProps) {
   if (!visible) return null;
 
-  const tiers = [
+  const tiers: { label: string; name: string; status: string; detail: string; Icon: LucideIcon }[] = [
     {
       label: 'Tier 0',
       name: 'OCR Extract',
       status: tier0Active ? 'active' : (tier1Total > 0 ? 'done' : 'idle'),
       detail: tier0Active ? 'Extracting drugs...' : 'Prescription parsed',
-      icon: '📷',
+      Icon: Camera,
     },
     {
       label: 'Tier 1',
@@ -27,7 +30,7 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
       detail: tier1Active > 0
         ? `${tier1Active} agent${tier1Active !== 1 ? 's' : ''} searching...`
         : `${tier1Complete}/${tier1Total} complete`,
-      icon: '🔍',
+      Icon: Search,
     },
     {
       label: 'Tier 2',
@@ -36,7 +39,7 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
       detail: tier2Variants > 0
         ? `${tier2Variants} alternative${tier2Variants !== 1 ? 's' : ''} found`
         : 'Scanning generics...',
-      icon: '🧬',
+      Icon: Dna,
     },
   ];
 
@@ -64,6 +67,12 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
     done: '#2DD4BF',
   };
 
+  const iconColor: Record<string, string> = {
+    idle: '#64748B',
+    active: '#F97316',
+    done: '#2DD4BF',
+  };
+
   const textColor: Record<string, string> = {
     idle: 'text-t3',
     active: 'text-warn',
@@ -85,7 +94,7 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
                 <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${textColor[tier.status]}`}>{tier.label}</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-base">{tier.icon}</span>
+                <tier.Icon size={16} color={iconColor[tier.status]} strokeWidth={1.5} />
                 <div>
                   <p className="text-xs font-mono font-semibold text-t1 leading-tight">{tier.name}</p>
                   <p className={`text-[10px] font-mono ${textColor[tier.status]}`}>{tier.detail}</p>

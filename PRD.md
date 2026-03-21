@@ -1,4 +1,4 @@
-# Megladon MD PRD
+# MegalodonMD PRD
 
 ## Pharmaceutical Price Intelligence Platform
 
@@ -30,7 +30,7 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 
 ## 2. Product Vision
 
-**Megladon MD** is an AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites simultaneously, returning unified, structured drug pricing data in real time.
+**MegalodonMD** is an AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites simultaneously, returning unified, structured drug pricing data in real time.
 
 **One-liner:** "We turn every pharmacy website in Vietnam into a queryable, real-time pricing API using parallel AI web agents."
 
@@ -64,7 +64,8 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 ┌─────────────────────────────────────────────────────────┐
 │                    REACT DASHBOARD                       │
 │  Drug search → Price comparison grid → Trend charts     │
-│  Live browser preview (iframe) → Procurement alerts     │
+│  Agent activity feed → Live metrics → Agent cascade     │
+│  Voice input → Prescription OCR → Zalo share            │
 └───────────────────────┬─────────────────────────────────┘
                         │ REST API + SSE
 ┌───────────────────────┴─────────────────────────────────┐
@@ -76,6 +77,9 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 │  GET  /api/trends      - historical price data          │
 │  POST /api/alerts      - price alerts                   │
 │  POST /api/monitor     - recurring monitor              │
+│  POST /api/demo-alert  - Discord + ElevenLabs demo      │
+│  POST /api/ocr         - prescription image extraction  │
+│  GET  /api/memory/recall - Supermemory context recall    │
 └──┬──────────┬──────────┬──────────┬─────────────────────┘
    │          │          │          │
    ▼          ▼          ▼          ▼
@@ -87,12 +91,21 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 │stlth │ │stlth │ │stlth │ │              │
 └──┬───┘ └──┬───┘ └──┬───┘ └──────┬───────┘
    │        │        │             │
-   │  /run-batch for multi-drug   │
-   │  (up to 100 runs atomic)     │
+   │  Tier 2: Exa variant discovery│
+   │  Tier 3: Scout-spawn re-search│
    ▼        ▼        ▼             ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   SQLite DATABASE                        │
 │  drugs | prices | sources | alerts | monitor_jobs       │
+│  gov_prices (DAV ceiling data)                          │
+└─────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────┐
+│              INTELLIGENCE LAYER                          │
+│  Exa API        →  drug variants, WHO pricing, info     │
+│  OpenRouter     →  Qwen normalization, GPT-4o OCR       │
+│  Supermemory    →  search context recall                │
 └─────────────────────────────────────────────────────────┘
          │
          ▼
@@ -108,11 +121,19 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 ## 5. Core User Flows
 
 ### Flow 1: On-Demand Price Search (Primary Demo)
-1. Procurement manager types drug name (e.g., "Metformin 500mg")
-2. Backend dispatches 5+ TinyFish agents simultaneously
-3. Results stream back via SSE. Pharmacy cards light up as each responds.
-4. Dashboard displays unified comparison grid
-5. System highlights cheapest option and calculates savings
+1. Procurement manager types drug name (e.g., "Metformin 500mg") or uses **voice input** (Web Speech API)
+2. **Qwen 2.5 72B normalizes** the query (handles typos, Vietnamese diacritics)
+3. Backend dispatches 5 TinyFish agents simultaneously (Tier 1)
+4. Results stream back via SSE. **Pharmacy cards light up** as each responds.
+5. **Agent Activity Feed** shows real-time log of all agent events (spawn, searching, complete, error)
+6. **Live Metrics Bar** ticks up: agents deployed, pharmacies scanned, products found, savings
+7. **Tier 2: Exa variant discovery** finds generic alternatives (e.g., Metformin → Glucophage, Metformin Stada)
+8. **Tier 3: Scout-spawn** dispatches new TinyFish agents for each discovered variant
+9. Dashboard displays unified **PriceGrid** with sorting, source colors, variant badges
+10. **SavingsBanner** shows concrete savings: "Save ₫340,000 (47%)"
+11. **Government Ceiling Panel** checks results against DAV declared prices, flags violations
+12. **WHO reference pricing** and **drug info cards** enrich results via Exa
+13. Results shareable via **Zalo deep link**
 
 ### Flow 2: Persistent Price Monitoring
 1. Set up monitor: "Track Metformin 500mg every 15 minutes"
@@ -156,50 +177,98 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 
 ---
 
-## 6. Tech Stack
+## 6. Multi-Tier Agent Pipeline
 
-| Layer | Technology |
-|-------|-----------|
-| Web Agent | TinyFish API (AsyncTinyFish) |
-| Backend | FastAPI (Python) |
-| Database | SQLite |
-| Scheduler | APScheduler |
-| Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts |
-| Notifications | Discord Webhooks |
-| Voice | ElevenLabs API |
-| Drug Intelligence | Exa API — variant discovery (generic alternatives), WHO reference pricing (research paper index), drug info summaries |
-| LLM | OpenRouter |
-| Memory | Supermemory (search context recall) |
+The search system uses a 3-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
+
+### Tier 0: OCR Extract (optional)
+- Triggered by prescription image upload
+- GPT-4o vision extracts structured drug list
+- Tracked via **Model Router Panel** as "OCR → gpt-4o"
+
+### Tier 1: Pharmacy Search (5 parallel agents)
+- 5 TinyFish agents dispatched simultaneously
+- Each navigates a pharmacy website, extracts product cards
+- Results stream back via SSE with latency tracking
+- Tracked as "Search → TinyFish Agent"
+
+### Tier 2: Variant Discovery
+- As Tier 1 agents complete, Exa semantic search discovers generic alternatives
+- Query: `"{drug_name} generic alternative brand names Vietnam pharmacy"`
+- Uses `includeText` filter on active ingredient for precision
+- Tracked as "Discovery → Exa Neural"
+
+### Tier 3: Scout-Spawn Re-search
+- Top 3 discovered variants are re-searched across successful pharmacies
+- Results tagged as `is_variant_result: true` with `variant_of` label
+- This is the dynamic agent spawning from runtime discoveries that makes TinyFish irreplaceable
+
+### Enrichment (parallel, non-blocking)
+- **WHO reference pricing**: Exa `category: "research paper"` search for international benchmarks
+- **Drug info cards**: Exa `summary: true` for indications, side effects, dosage
+- **Government compliance**: Cross-reference against DAV ceiling prices (5 drugs seeded)
 
 ---
 
-## 7. API Endpoints
+## 7. Tech Stack
+
+| Layer | Technology | Sponsor |
+|-------|-----------|---------|
+| Web Agent | TinyFish API (AsyncTinyFish) | TinyFish |
+| Proxy | BrightData (Long Chau, Pharmacity, An Khang) | BrightData |
+| Backend | FastAPI (Python) | — |
+| Database | SQLite (WAL mode) | — |
+| Scheduler | APScheduler | — |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts | — |
+| Icons | Lucide React | — |
+| Drug Intelligence | Exa API (variants, WHO pricing, drug info) | Exa |
+| LLM Routing | OpenRouter (Qwen 2.5 72B, GPT-4o) | OpenRouter |
+| Normalization | Qwen 2.5 72B via OpenRouter | Qwen |
+| OCR | GPT-4o via OpenRouter | OpenAI |
+| Notifications | Discord Webhooks | Discord |
+| Voice Alerts | ElevenLabs TTS (Vietnamese) | ElevenLabs |
+| Voice Input | Web Speech API (browser-native) | — |
+| Memory | Supermemory (search context recall) | Supermemory |
+
+---
+
+## 8. API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/search` | Trigger parallel price search (SSE stream with live browser URLs) |
+| POST | `/api/search` | Trigger parallel price search (SSE stream with agent events, model tracking, compliance) |
 | POST | `/api/optimize` | Prescription cost optimizer (uses /run-batch for atomic multi-drug search) |
 | POST | `/api/optimize/prescription` | OCR prescription image → extract drugs → optimize (GPT-4o function calling) |
 | GET | `/api/prices/{drug_query}` | Get cached results |
 | GET | `/api/trends/{drug_query}` | Historical price data |
 | POST | `/api/alerts` | Configure price alerts |
-| POST | `/api/monitor` | Set up recurring monitor |
 | GET | `/api/alerts` | List active alerts |
 | DELETE | `/api/alerts/{id}` | Deactivate an alert |
+| POST | `/api/monitor` | Set up recurring monitor |
 | GET | `/api/monitors` | List active monitors |
 | POST | `/api/ocr` | OCR prescription image → extract drug names |
-| POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
+| POST | `/api/demo-alert` | Trigger demo Discord + ElevenLabs voice alert |
 | GET | `/api/memory/recall` | Supermemory context recall |
 | GET | `/health` | Health check |
-| GET | `/health/services` | Detailed service health status |
+| GET | `/health/services` | Detailed service health (TinyFish, Exa, OpenRouter, Discord, ElevenLabs) |
 
 ---
 
-## 8. Frontend — "The Abyss" Design System
+## 9. Frontend — "The Abyss" Design System
 
 ### Design Direction
 
-The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"** — deep-ocean themed with navy backgrounds, cyan accents, and dramatic red alerts. Data-dense, monospace-heavy, inspired by Bloomberg terminals meets deep-sea exploration.
+The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"** — deep-ocean themed with navy backgrounds, cyan accents, bioluminescent glow effects, and dramatic red alerts. Data-dense, monospace-heavy, inspired by Bloomberg terminals meets deep-sea exploration.
+
+### Visual Enhancements
+
+| Effect | Description |
+|--------|-------------|
+| **Bioluminescent Cards** | Glassmorphism with animated `bioGlow` keyframe, per-pharmacy glow colors |
+| **Sonar Pulse Dots** | Concentric ring expansion on active agent status indicators |
+| **Terminal Feed** | CRT scanline overlay, phosphor text glow, blinking cursor, window chrome |
+| **Animated Latency Bars** | Gradient-shift bars in Model Router, completion flash on done |
+| **Architecture Flow** | 3-column node-connector diagram with animated data flow connectors |
 
 ### Color Palette
 
@@ -216,65 +285,107 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `t2` | `#94A3B8` | Secondary text, data |
 | `t3` | `#64748B` | Muted labels, timestamps |
 
+**Pharmacy Source Colors** (consistent across all components):
+- Long Chau: `#3B82F6` (blue)
+- Pharmacity: `#22C55E` (green)
+- An Khang: `#F97316` (orange)
+- Than Thien: `#A855F7` (purple)
+- Medicare: `#14B8A6` (teal)
+
 ### Routes
 
 | Route | Page Title | Description |
 |-------|-----------|-------------|
-| `/` | Dashboard | Two-column layout: search + live SSE results + AWP/WAC chart + Pricing Abyss Index table + Sonar Filters sidebar |
+| `/` | Dashboard | Search + live SSE results + agent feed + metrics + price grid + savings + compliance + model router |
 | `/trends` | Depth Analysis | Recharts multi-source line chart, price summary table, time range selector |
 | `/alerts` | Megalodon Alert System | Price tripwires (ARMED status) + sonar probes (recurring monitors) |
 | `/optimize` | Prescription Optimizer | Multi-drug sourcing with OCR prescription upload, optimized vs single-source comparison |
-| `/architecture` | How It Works | Static architecture diagram for judges — pipeline visualization + tech stack + metrics |
-
-### NavBar
-
-```
-[MediScrape logo]  Dashboard | Trends | Alerts | Optimize | How It Works    [VN/EN]
-```
+| `/architecture` | System Architecture | 3-column node-connector diagram with all sponsor credits, tech stack, metrics |
 
 ### Key Components
 
 | Component | Purpose |
 |-----------|---------|
+| `SearchBar` | Drug search input with quick-search buttons and **voice input** (Web Speech API) |
+| `AgentActivityFeed` | Terminal-style real-time log of all agent events (spawn, searching, success, error, variant) with LIVE badge, sonar dots, blinking cursor |
+| `AgentCascade` | 3-tier pipeline visualization (OCR → Pharmacy → Variant) with sonar status dots |
+| `LiveMetricsBar` | 4 KPI counters: agents deployed, pharmacies scanned, products found, savings detected |
+| `ModelRouterPanel` | Collapsible panel showing which LLM handled each step, animated latency bars, sponsor attribution |
+| `PharmacyCards` | 5 agent status cards with bioluminescent glow, source colors, latency, result counts |
+| `PriceGrid` | Sortable data table with source color dots, stock status, best price badges, variant labels |
+| `SavingsBanner` | Prominent savings callout with VND amount and percentage |
+| `CeilingPanel` | Government DAV price ceiling compliance analysis with violation severity |
+| `SponsorBadge` | Tech sponsor pills (TinyFish, BrightData, Exa, OpenRouter, etc.) on result cards |
 | `MegalodonAlert` | Red warning bar for price spikes (>100% spread) |
-| `StatusPill` | Colored status badges (TINYFISH, CRITICAL, MONITOR, ARMED, etc.) |
-| `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips, manufacturer, price threshold slider |
+| `LiveBrowserPreview` | Collapsible iframe panel showing live TinyFish browser sessions |
+| `DemoAlertTrigger` | Button to fire Discord + ElevenLabs demo alert during presentation |
+| `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips |
 | `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
-| `PharmacyCards` | 5 agent status cards with source colors, latency, result counts |
-| `LiveBrowserPreview` | Collapsible iframe panel showing live TinyFish browser sessions per pharmacy |
-| `PriceGrid` | Sortable data table with source color dots, stock status, best price badges |
 | `AbyssFooter` | Live UTC sync clock, protocol links |
+
+### Accessibility
+
+- `prefers-reduced-motion` support: all continuous animations disabled
+- SVG icons via Lucide React (no emoji as structural icons)
+- `cursor: pointer` on all interactive elements
+- Touch target minimum 16px on interactive dots (within 44px+ containers)
+- High contrast text (WCAG AA compliant dark mode)
 
 ### Design Decisions Log
 
 1. **Dark-only** — no light mode toggle. The Abyss aesthetic is the product identity.
-2. **Mock data on dashboard** — AWP/WAC chart and Pricing Abyss Index table show demo data matching the SVG design. Real search results overlay above when a probe is deployed.
+2. **Bioluminescent UI** — animated glow cards, sonar pulses, terminal feed, gradient bars for maximum demo impact.
 3. **Supermemory integration** — search context recall hints shown above search bar when available.
 4. **Recharts over hand-rolled SVG** — cleaner code, proper tooltips, responsive containers.
 5. **VN/EN toggle** — decorative for demo, no i18n implementation.
-6. **Pharmacy source colors** — consistent across all components: Long Chau (#3B82F6), Pharmacity (#22C55E), An Khang (#F97316), Than Thien (#A855F7), Medicare (#14B8A6).
+6. **Lucide React icons** — consistent SVG icon family, no emoji as structural icons.
 7. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
-8. **Architecture page** — static, no backend dependency, explains TinyFish parallel agent approach for judges.
+8. **Architecture page** — 3-column node-connector diagram explaining full data flow with all sponsor credits.
+9. **Voice input** — Web Speech API for Vietnamese drug name input, accessibility differentiator.
+10. **Zalo share** — Deep link to share results via Vietnam's dominant messaging app.
 
 ---
 
-## 9. Demo Script (5 Minutes)
+## 10. Demo Script (5 Minutes)
 
 1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
-2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Deploy probe for "Metformin 500mg", expand Live Browser Preview to show real browsers navigating pharmacy sites in real time. Watch 5 pharmacy agent cards light up with latency data. Show Pricing Abyss Index table. Run prescription optimizer with OCR photo upload (uses /run-batch for atomic 25-run submission).
-3. **2:00-2:45 | Architecture**: Navigate to How It Works page — TinyFish parallel agents, asyncio.gather, SSE streaming, Supermemory context recall.
-4. **2:45-3:15 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies.
-5. **3:15-4:00 | Sponsors & Future**: TinyFish + AWS + BrightData + ElevenLabs + Exa + Supermemory. Expand to 50+ sources, hospital ERP integration, regional expansion.
+2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Use voice input or type "Metformin 500mg". Watch Agent Activity Feed log 47 agent events. 5 pharmacy cards light up with bioluminescent glow. Live Metrics Bar ticks up. Agent Cascade shows Tier 1 → Tier 2 → Tier 3 progression. Model Router shows Qwen → TinyFish → Exa pipeline with latency. SavingsBanner shows "Save ₫340,000 (47%)". Government Ceiling Panel flags violations.
+3. **2:00-2:30 | Prescription OCR**: Upload photo on Optimize page. Watch 50+ agents spawn for multi-drug search.
+4. **2:30-3:00 | Discord Alert**: Fire demo alert — play Vietnamese voice note from phone speaker.
+5. **3:00-3:30 | Architecture**: Navigate to System Architecture page — 3-column flow showing all sponsors.
+6. **3:30-4:00 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies. Share results via Zalo.
+7. **4:00-4:30 | Sponsors & Future**: TinyFish + BrightData + Exa + OpenRouter + ElevenLabs + Discord. Expand to 50+ sources, hospital ERP integration, regional expansion.
 
 ---
 
-## 10. Success Metrics
+## 11. Sponsor Integrations
+
+| Sponsor | Integration | Prize Eligibility |
+|---------|------------|-------------------|
+| **TinyFish** | 5 parallel stealth web agents, Tier 3 scout-spawn | Enterprise Track |
+| **BrightData** | Proxy for Long Chau, Pharmacity, An Khang | Data Collection |
+| **Exa** | Drug variant discovery, WHO reference pricing, drug info cards | AI Search |
+| **OpenRouter** | Model routing for Qwen + GPT-4o | LLM Integration |
+| **OpenAI** | GPT-4o for OCR prescription extraction | Vision AI |
+| **Qwen** | 2.5 72B for drug name normalization | LLM |
+| **ElevenLabs** | Vietnamese TTS voice alerts | Voice AI |
+| **Discord** | Webhook notifications for price alerts | Community |
+| **Supermemory** | Search context recall across sessions | Memory |
+
+---
+
+## 12. Success Metrics
 
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
-- Real-time SSE streaming with pharmacy cards lighting up
+- Real-time SSE streaming with pharmacy cards lighting up + agent activity feed
+- Multi-tier agent cascade: Tier 1 (search) → Tier 2 (Exa variants) → Tier 3 (scout-spawn)
 - Price variance >100% detected and displayed (Megalodon Alert)
-- Discord alerts with Vietnamese voice summaries
-- Prescription optimizer shows measurable savings
-- All 5 frontend routes render in Abyss dark theme without light-mode artifacts
-- Recharts price trend visualization working with real data
-- Architecture page clearly explains system for judges
+- Concrete savings shown in SavingsBanner with VND + percentage
+- Government ceiling compliance violations flagged
+- Discord alerts with Vietnamese voice summaries (ElevenLabs)
+- Model Router shows full LLM pipeline with latency tracking
+- Prescription optimizer shows measurable savings via OCR
+- All 5 frontend routes render in Abyss dark theme with bioluminescent effects
+- Architecture page clearly credits all sponsor integrations
+- Voice input works for Vietnamese drug names
+- All sponsor integrations visible via SponsorBadge on result cards

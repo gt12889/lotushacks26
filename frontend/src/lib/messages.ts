@@ -14,6 +14,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'search.scanning': 'Scanning...',
     'search.deploy': 'Deploy Probe',
     'search.quickScan': 'Quick scan:',
+    'search.listening': 'Listening...',
+    'search.voiceTitle': 'Voice search (Vietnamese)',
 
     'footer.privacy': 'Privacy Protocol',
     'footer.methodology': 'Abyssal Methodology',
@@ -145,6 +147,8 @@ export const messages: Record<Locale, Record<string, string>> = {
     'search.scanning': 'Đang quét...',
     'search.deploy': 'Gửi tác tử',
     'search.quickScan': 'Quét nhanh:',
+    'search.listening': 'Đang nghe...',
+    'search.voiceTitle': 'Tìm bằng giọng nói (tiếng Việt)',
 
     'footer.privacy': 'Quyền riêng tư',
     'footer.methodology': 'Phương pháp',

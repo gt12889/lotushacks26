@@ -1,16 +1,32 @@
-function ArchNode({ icon, name, desc, badge, color }: {
-  icon: string;
+import {
+  User,
+  Monitor,
+  Zap,
+  Fish,
+  Globe,
+  Search,
+  Bot,
+  Volume2,
+  MessageCircle,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+function ArchNode({ Icon, name, desc, badge, color }: {
+  Icon: LucideIcon;
   name: string;
   desc: string;
   badge?: string;
   color?: string;
 }) {
+  const c = color || '#00DBE7';
   return (
     <div className="bioluminescent-card p-4 text-center w-full">
-      <div className="text-2xl mb-1.5">{icon}</div>
+      <div className="flex justify-center mb-1.5">
+        <Icon size={24} color={c} strokeWidth={1.5} />
+      </div>
       <h3
         className="font-bold text-sm font-mono"
-        style={{ color: color || '#00DBE7', textShadow: `0 0 8px ${color || '#00DBE7'}40` }}
+        style={{ color: c, textShadow: `0 0 8px ${c}40` }}
       >
         {name}
       </h3>
@@ -47,9 +63,9 @@ export default function ArchitecturePage() {
         <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr] items-center gap-0">
           {/* Column 1: Input */}
           <div className="flex flex-col items-center gap-0">
-            <ArchNode icon="👤" name="User" desc="Drug search query" color="#D6E3FF" />
+            <ArchNode Icon={User} name="User" desc="Drug search query" color="#D6E3FF" />
             <VerticalConnector />
-            <ArchNode icon="⚛️" name="Next.js Frontend" desc="Real-time SSE dashboard" badge="React 19 + Tailwind v4" color="#00DBE7" />
+            <ArchNode Icon={Monitor} name="Next.js Frontend" desc="Real-time SSE dashboard" badge="React 19 + Tailwind v4" color="#00DBE7" />
           </div>
 
           {/* Horizontal connector 1→2 */}
@@ -66,7 +82,7 @@ export default function ArchitecturePage() {
 
           {/* Column 2: Orchestration */}
           <div className="flex flex-col items-center justify-center">
-            <ArchNode icon="⚡" name="FastAPI Backend" desc="Async orchestration hub" badge="Python + SSE" color="#00DBE7" />
+            <ArchNode Icon={Zap} name="FastAPI Backend" desc="Async orchestration hub" badge="Python + SSE" color="#00DBE7" />
           </div>
 
           {/* Horizontal connector 2→3 */}
@@ -83,12 +99,12 @@ export default function ArchitecturePage() {
 
           {/* Column 3: Services */}
           <div className="flex flex-col items-center gap-2">
-            <ArchNode icon="🐟" name="TinyFish" desc="5 parallel stealth agents" badge="tinyfish.ai" color="#F97316" />
-            <ArchNode icon="🌐" name="BrightData" desc="Proxy + anti-bot bypass" badge="brightdata.com" color="#22C55E" />
-            <ArchNode icon="🔍" name="Exa" desc="Drug intelligence & WHO pricing" badge="exa.ai" color="#A855F7" />
-            <ArchNode icon="🤖" name="OpenRouter" desc="Qwen / OpenAI model routing" badge="openrouter.ai" color="#F97316" />
-            <ArchNode icon="🔊" name="ElevenLabs" desc="Voice alerts" badge="elevenlabs.io" color="#2DD4BF" />
-            <ArchNode icon="💬" name="Discord" desc="Webhook notifications" badge="discord.com" color="#3B82F6" />
+            <ArchNode Icon={Fish} name="TinyFish" desc="5 parallel stealth agents" badge="tinyfish.ai" color="#F97316" />
+            <ArchNode Icon={Globe} name="BrightData" desc="Proxy + anti-bot bypass" badge="brightdata.com" color="#22C55E" />
+            <ArchNode Icon={Search} name="Exa" desc="Drug intelligence & WHO pricing" badge="exa.ai" color="#A855F7" />
+            <ArchNode Icon={Bot} name="OpenRouter" desc="Qwen / OpenAI model routing" badge="openrouter.ai" color="#F97316" />
+            <ArchNode Icon={Volume2} name="ElevenLabs" desc="Voice alerts" badge="elevenlabs.io" color="#2DD4BF" />
+            <ArchNode Icon={MessageCircle} name="Discord" desc="Webhook notifications" badge="discord.com" color="#3B82F6" />
           </div>
         </div>
 
