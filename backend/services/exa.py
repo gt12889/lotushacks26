@@ -1,8 +1,9 @@
-"""Exa service - semantic drug search for variant discovery, WHO pricing, and drug info"""
+"""Exa service - semantic drug search for variant discovery, WHO pricing, drug info, and counterfeit risk"""
 import re
 import time
 import httpx
 import logging
+from exa_py import Exa
 
 logger = logging.getLogger(__name__)
 
@@ -192,3 +193,124 @@ async def search_drug_info(drug_name: str, api_key: str) -> dict | None:
     _cache_set(cache_key, result)
     logger.info(f"Exa drug info found for {drug_name}: {best.get('title', '')[:60]}")
     return result
+
+
+async def research_counterfeit_risk(drug_name: str, api_key: str) -> dict | None:
+    """Use Exa Research API to generate a counterfeit drug risk report.
+
+    Triggered when anomalous pricing is detected (suspiciously low prices).
+    Returns structured risk assessment with recent incidents and warning signs.
+    """
+    if not api_key:
+        return None
+
+    cache_key = f"counterfeit:{drug_name.lower().strip()}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        logger.info(f"Exa cache HIT for counterfeit:{drug_name}")
+        return cached
+
+    active_ingredient = drug_name.strip().split()[0]
+
+    try:
+        exa = Exa(api_key)
+        research = exa.research.create(
+            model="exa-research",
+            instructions=f"""
+                Research counterfeit and substandard drug risks for {active_ingredient}
+                in Vietnam and Southeast Asia. Find:
+                - Recent seizures or recalls of fake {active_ingredient} in Vietnam
+                - Known counterfeit manufacturers or supply chain issues
+                - Vietnam Drug Administration warnings related to this drug
+                - Signs pharmacists should look for to identify counterfeits
+            """,
+            output_schema={
+                "type": "object",
+                "properties": {
+                    "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+                    "recent_incidents": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "warning_signs": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                    "regulatory_alerts": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                    },
+                },
+                "additionalProperties": False,
+            },
+        )
+
+        # Poll until finished (research tasks are async)
+        result = exa.research.poll_until_finished(research.id, timeout=30)
+
+        if not result or not hasattr(result, "output"):
+            logger.warning(f"Exa research returned no output for {drug_name}")
+            _cache_set(cache_key, None)
+            return None
+
+        output = result.output
+        if isinstance(output, str):
+            import json
+            try:
+                output = json.loads(output)
+            except (json.JSONDecodeError, ValueError):
+                logger.warning(f"Exa research output not valid JSON: {output[:200]}")
+                _cache_set(cache_key, None)
+                return None
+
+        report = {
+            "drug_name": drug_name,
+            "risk_level": output.get("risk_level", "unknown"),
+            "recent_incidents": output.get("recent_incidents", []),
+            "warning_signs": output.get("warning_signs", []),
+            "regulatory_alerts": output.get("regulatory_alerts", []),
+            "source": "Exa Research API",
+        }
+        _cache_set(cache_key, report)
+        logger.info(f"Exa counterfeit risk report for {drug_name}: {report['risk_level']}")
+        return report
+
+    except Exception as e:
+        logger.error(f"Exa research error for {drug_name}: {e}")
+        return None
+
+
+def detect_price_anomaly(products: list, threshold: float = 0.5) -> list[dict]:
+    """Detect suspiciously low-priced products that may indicate counterfeits.
+
+    A product is flagged if its unit price is less than threshold (default 50%)
+    of the median unit price across all products for the same drug.
+    """
+    if len(products) < 3:
+        return []
+
+    unit_prices = []
+    for p in products:
+        pack_size = getattr(p, "pack_size", 1) or 1
+        up = getattr(p, "unit_price", None) or (getattr(p, "price", 0) / pack_size)
+        if up > 0:
+            unit_prices.append((p, up))
+
+    if len(unit_prices) < 3:
+        return []
+
+    sorted_prices = sorted(up for _, up in unit_prices)
+    median = sorted_prices[len(sorted_prices) // 2]
+    cutoff = median * threshold
+
+    flagged = []
+    for product, up in unit_prices:
+        if up < cutoff:
+            flagged.append({
+                "product_name": getattr(product, "product_name", "Unknown"),
+                "unit_price": round(up, 1),
+                "median_price": round(median, 1),
+                "deviation_pct": round((1 - up / median) * 100, 1),
+            })
+
+    return flagged

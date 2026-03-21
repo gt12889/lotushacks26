@@ -8,7 +8,7 @@ from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult
 from services.tinyfish import search_single_pharmacy_safe, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
-from services.exa import search_who_reference_price, search_drug_info
+from services.exa import search_who_reference_price, search_drug_info, research_counterfeit_risk, detect_price_anomaly
 from services.qwen import normalize_vietnamese_drug_text
 from services.agent_manager import AgentManager, AgentTier
 from services import supermemory_mem
@@ -311,6 +311,19 @@ async def search_drugs(
             summary["who_reference"] = who_ref
         if drug_info:
             summary["drug_info"] = drug_info
+
+        # Counterfeit risk detection — flag anomalously low prices
+        anomalies = detect_price_anomaly(all_products)
+        if anomalies:
+            summary["price_anomalies"] = anomalies
+            # Fire Exa Research for counterfeit risk report (async, don't block)
+            try:
+                counterfeit_report = await research_counterfeit_risk(query, settings.exa_api_key)
+                if counterfeit_report:
+                    summary["counterfeit_risk"] = counterfeit_report
+                    yield f"data: {json.dumps({'type': 'model_used', 'step': 'counterfeit_research', 'model': 'exa-research', 'provider': 'Exa', 'latency_ms': None})}\n\n"
+            except Exception as e:
+                logger.warning(f"Counterfeit risk research failed: {e}")
 
         mem_tag = supermemory_mem.normalize_user_tag(memory_user) if memory_user else None
         if mem_tag and supermemory_mem.is_enabled():

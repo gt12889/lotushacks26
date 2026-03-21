@@ -26,6 +26,7 @@ import LiveBrowserPreview from '@/components/LiveBrowserPreview';
 import AgentCascade from '@/components/AgentCascade';
 import ModelRouterPanel from '@/components/ModelRouterPanel';
 import CeilingPanel from '@/components/CeilingPanel';
+import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -646,6 +647,10 @@ export default function DashboardHome() {
                   </div>
                 )}
                 <CeilingPanel compliance={(scanSummary as any)?.compliance ?? null} query={currentQuery} />
+                <CounterfeitRiskPanel
+                  anomalies={(scanSummary as any)?.price_anomalies ?? null}
+                  risk={(scanSummary as any)?.counterfeit_risk ?? null}
+                />
                 <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
                 <DemoAlertTrigger
                   drugName={currentQuery || 'Metformin 500mg'}
