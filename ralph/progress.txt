@@ -12,6 +12,8 @@
 - Components in src/components/ use mixed import styles: relative (`./Foo`) for siblings, alias (`@/components/Foo`) from app pages — replace both when swapping components
 - shadcn Badge v4 uses `useRender` from `@base-ui/react` — pass `className` overrides to customize colors
 - shadcn Collapsible v4 uses `defaultOpen` prop and manages state internally — no useState needed for expand/collapse
+- 21st.dev registry may return 500 errors — implement ReactBits components manually when needed
+- Custom Counter component at ui/counter.tsx provides animated number transitions (easeOutExpo, requestAnimationFrame)
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -78,5 +80,20 @@
   - Collapsible manages its own open/close state internally — no need for useState
   - For chevron rotation on open/close, use `[[data-panel-open]>&]:rotate-180` Tailwind selector targeting base-ui data attributes
   - The ▾/▸ text indicators can't easily toggle with Collapsible — use a static indicator or CSS-based approach instead
+---
+
+## 2026-03-21 - US-006
+- Created custom Counter component in src/components/ui/counter.tsx (21st.dev registry returned 500 errors)
+- Counter uses requestAnimationFrame with easeOutExpo easing for smooth number animation
+- Refactored LiveMetricsBar.tsx: all 4 metric values use Counter component
+- Pharmacies Scanned uses inline Counter for numerator with static denominator
+- Savings Detected conditionally renders Counter (when value exists) or em dash placeholder
+- tabular-nums font variant and status-based coloring preserved via style/className props
+- Files changed: ui/counter.tsx (new), LiveMetricsBar.tsx
+- **Learnings for future iterations:**
+  - 21st.dev registry may be unreliable — be prepared to implement components manually
+  - Counter component supports value, duration, className, style, and formatter props
+  - For composite displays like "X/Y", use inline Counter without className and wrap in parent span for styling
+  - formatVnd can be passed as Counter's formatter prop for currency formatting
 ---
 
