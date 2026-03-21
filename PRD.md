@@ -132,11 +132,12 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 | Backend | FastAPI (Python) |
 | Database | SQLite |
 | Scheduler | APScheduler |
-| Frontend | React (Next.js) + Tailwind |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts |
 | Notifications | Telegram Bot API |
 | Voice | ElevenLabs API |
 | Search | Exa API |
 | LLM | OpenRouter |
+| Memory | Supermemory (search context recall) |
 
 ---
 
@@ -153,20 +154,85 @@ Vietnam's pharmaceutical market is valued at ~$7-10B+ and growing 15%+ annually.
 
 ---
 
-## 8. Demo Script (5 Minutes)
+## 8. Frontend — "The Abyss" Design System
 
-1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
-2. **0:30-2:00 | Live Demo**: Type "Metformin 500mg", watch 5 pharmacy cards light up in real time. Show 3x price difference. Run prescription optimizer.
-3. **2:00-2:45 | Architecture**: TinyFish parallel agents, asyncio.gather, SSE streaming, APScheduler monitoring.
-4. **2:45-3:15 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies.
-5. **3:15-4:00 | Sponsors & Future**: TinyFish + AWS + BrightData + ElevenLabs + Exa. Expand to 50+ sources, hospital ERP integration, regional expansion.
+### Design Direction
+
+The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"** — deep-ocean themed with navy backgrounds, cyan accents, and dramatic red alerts. Data-dense, monospace-heavy, inspired by Bloomberg terminals meets deep-sea exploration.
+
+### Color Palette
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `abyss` | `#0D1C32` | Primary page background |
+| `deep` | `#010E24` | Input fields, nested panels |
+| `card` | `#1C2A41` | Cards, sidebar surfaces |
+| `cyan` | `#00DBE7` | Primary accent, active states |
+| `alert-red` | `#EE4042` | Alerts, critical status |
+| `success` | `#2DD4BF` | Stable, positive changes |
+| `warn` | `#F97316` | Warnings, moderate changes |
+| `t1` | `#D6E3FF` | Primary text |
+| `t2` | `#94A3B8` | Secondary text, data |
+| `t3` | `#64748B` | Muted labels, timestamps |
+
+### Routes
+
+| Route | Page Title | Description |
+|-------|-----------|-------------|
+| `/` | Dashboard | Two-column layout: search + live SSE results + AWP/WAC chart + Pricing Abyss Index table + Sonar Filters sidebar |
+| `/trends` | Depth Analysis | Recharts multi-source line chart, price summary table, time range selector |
+| `/alerts` | Megalodon Alert System | Price tripwires (ARMED status) + sonar probes (recurring monitors) |
+| `/optimize` | Prescription Optimizer | Multi-drug sourcing with OCR prescription upload, optimized vs single-source comparison |
+| `/architecture` | How It Works | Static architecture diagram for judges — pipeline visualization + tech stack + metrics |
+
+### NavBar
+
+```
+[MediScrape logo]  Dashboard | Trends | Alerts | Optimize | How It Works    [VN/EN]
+```
+
+### Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `MegalodonAlert` | Red warning bar for price spikes (>100% spread) |
+| `StatusPill` | Colored status badges (TINYFISH, CRITICAL, MONITOR, ARMED, etc.) |
+| `SonarFilters` | Right sidebar: molecule selector, AWP/WAC toggle, time range, drug class chips, manufacturer, price threshold slider |
+| `PricingChart` | Recharts area/line chart with gradient fills, multi-source overlay |
+| `PharmacyCards` | 5 agent status cards with source colors, latency, result counts |
+| `PriceGrid` | Sortable data table with source color dots, stock status, best price badges |
+| `AbyssFooter` | Live UTC sync clock, protocol links |
+
+### Design Decisions Log
+
+1. **Dark-only** — no light mode toggle. The Abyss aesthetic is the product identity.
+2. **Mock data on dashboard** — AWP/WAC chart and Pricing Abyss Index table show demo data matching the SVG design. Real search results overlay above when a probe is deployed.
+3. **Supermemory integration** — search context recall hints shown above search bar when available.
+4. **Recharts over hand-rolled SVG** — cleaner code, proper tooltips, responsive containers.
+5. **VN/EN toggle** — decorative for demo, no i18n implementation.
+6. **Pharmacy source colors** — consistent across all components: Long Chau (#3B82F6), Pharmacity (#22C55E), An Khang (#F97316), Than Thien (#A855F7), Medicare (#14B8A6).
+7. **OCR preserved** — Optimize page keeps prescription photo upload → AI drug extraction flow.
+8. **Architecture page** — static, no backend dependency, explains TinyFish parallel agent approach for judges.
 
 ---
 
-## 9. Success Metrics
+## 9. Demo Script (5 Minutes)
+
+1. **0:00-0:30 | Problem**: "Same Metformin costs 45K VND here, 135K VND there. 57,000 pharmacies. No unified pricing."
+2. **0:30-2:00 | Live Demo**: Open dashboard — Megalodon Alert bar shows price spike. Deploy probe for "Metformin 500mg", watch 5 pharmacy agent cards light up with latency data. Show Pricing Abyss Index table. Run prescription optimizer with OCR photo upload.
+3. **2:00-2:45 | Architecture**: Navigate to How It Works page — TinyFish parallel agents, asyncio.gather, SSE streaming, Supermemory context recall.
+4. **2:45-3:15 | Enterprise Impact**: $7B+ market, 1,192 hospitals, 24,000+ FDI companies.
+5. **3:15-4:00 | Sponsors & Future**: TinyFish + AWS + BrightData + ElevenLabs + Exa + Supermemory. Expand to 50+ sources, hospital ERP integration, regional expansion.
+
+---
+
+## 10. Success Metrics
 
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
 - Real-time SSE streaming with pharmacy cards lighting up
-- Price variance >100% detected and displayed
+- Price variance >100% detected and displayed (Megalodon Alert)
 - Telegram alerts with Vietnamese voice summaries
 - Prescription optimizer shows measurable savings
+- All 5 frontend routes render in Abyss dark theme without light-mode artifacts
+- Recharts price trend visualization working with real data
+- Architecture page clearly explains system for judges
