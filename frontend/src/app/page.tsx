@@ -5,7 +5,7 @@ import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
 import SavingsBanner from '@/components/SavingsBanner';
-import AgentCascade from '@/components/AgentCascade';
+import MegalodonAlert from '@/components/MegalodonAlert';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -67,14 +67,10 @@ export default function Home() {
 
           try {
             const event = JSON.parse(dataMatch[1]);
-
             if (event.task === 'summary') {
               setSummary(event);
             } else if (event.source_id) {
-              setResults(prev => ({
-                ...prev,
-                [event.source_id]: event,
-              }));
+              setResults(prev => ({ ...prev, [event.source_id]: event }));
             }
           } catch (parseErr) {
             console.warn('Parse error:', parseErr);
@@ -88,23 +84,41 @@ export default function Home() {
     }
   };
 
-  const activeAgents = Object.values(results).filter(r => r.status === 'searching').length;
-  const completedAgents = Object.values(results).filter(r => r.status === 'success' || r.status === 'error').length;
-  const totalAgents = Object.keys(results).length;
   const hasResults = Object.keys(results).length > 0;
+  const hasMegalodon = summary && summary.potential_savings && summary.best_price && summary.potential_savings > summary.best_price;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero + Search */}
-      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
+    <div className="min-h-screen">
+      {hasMegalodon && summary && (
+        <MegalodonAlert
+          drugName={summary.query}
+          message={`Price spread of ${summary.potential_savings?.toLocaleString()} VND detected across sources`}
+        />
+      )}
+
+      <div className="max-w-[1400px] mx-auto px-6 py-6 space-y-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-xl font-bold text-t1">Price Tracker: The Abyss</h2>
+          <p className="text-xs text-t3 mt-1">Surfacing deep market trajectories and molecular cost-signals.</p>
+          {hasResults && (
+            <div className="flex gap-3 mt-3">
+              <button className="px-3 py-1.5 text-xs border border-cyan text-cyan rounded hover:bg-cyan/10 transition-colors">
+                Export Intel
+              </button>
+              <button onClick={() => handleSearch(currentQuery)} className="px-3 py-1.5 text-xs border border-cyan text-cyan rounded hover:bg-cyan/10 transition-colors">
+                Deploy New Probe
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Empty state */}
         {!hasResults && !isSearching && (
-          <div className="text-center py-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-3">
-              Compare Drug Prices Across Vietnam
-            </h2>
-            <p className="text-lg text-gray-500 mb-8 max-w-2xl mx-auto">
-              Search any medication and instantly compare prices across 5+ pharmacy chains.
-              Powered by parallel AI web agents.
+          <div className="text-center py-16">
+            <h2 className="text-2xl font-bold text-t1 mb-3">Compare Drug Prices Across Vietnam</h2>
+            <p className="text-sm text-t3 mb-8 max-w-2xl mx-auto">
+              Deploy parallel AI agents across 5+ pharmacy chains. Results in under 30 seconds.
             </p>
           </div>
         )}
@@ -112,32 +126,18 @@ export default function Home() {
         <SearchBar onSearch={handleSearch} isSearching={isSearching} />
 
         {(hasResults || isSearching) && (
-          <>
+          <div className="space-y-6">
             {currentQuery && (
-              <h3 className="text-lg font-semibold text-gray-700">
-                Results for &ldquo;{currentQuery}&rdquo;
-              </h3>
-            )}
-
-            <AgentCascade
-              tier0Active={false}
-              tier1Active={activeAgents}
-              tier1Complete={completedAgents}
-              tier1Total={totalAgents}
-              tier2Variants={summary?.variants?.length ?? 0}
-              visible={isSearching || Object.keys(results).length > 0}
-            />
-
-            {isSearching && totalAgents > 0 && (
-              <div className="flex items-center gap-3 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="font-medium text-gray-700">
-                    {activeAgents} agent{activeAgents !== 1 ? 's' : ''} active
-                  </span>
-                </div>
-                <span className="text-gray-400">|</span>
-                <span className="text-gray-500">{completedAgents}/{totalAgents} complete</span>
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-mono text-t2">
+                  Scanning: <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
+                </h3>
+                {isSearching && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-cyan rounded-full animate-pulse" />
+                    <span className="text-xs text-t3 font-mono">Agents active</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -154,17 +154,17 @@ export default function Home() {
             )}
 
             {summary?.variants && summary.variants.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <p className="text-sm font-medium text-blue-700 mb-2">Generic alternatives found:</p>
+              <div className="bg-deep border border-cyan/20 rounded-lg p-4">
+                <p className="text-xs font-mono text-cyan mb-2">Generic alternatives detected:</p>
                 <div className="flex gap-2 flex-wrap">
                   {summary.variants.map((v) => (
                     <button
                       key={v}
                       onClick={() => handleSearch(v)}
                       disabled={isSearching}
-                      className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-full hover:bg-blue-100 transition-colors disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs bg-card text-cyan border border-cyan/30 rounded hover:bg-cyan/10 transition-colors disabled:opacity-50"
                     >
-                      Search &ldquo;{v}&rdquo;
+                      Scan &ldquo;{v}&rdquo;
                     </button>
                   ))}
                 </div>
@@ -172,41 +172,26 @@ export default function Home() {
             )}
 
             <PriceGrid results={results} bestPrice={summary?.best_price ?? null} />
-          </>
-        )}
-
-        {!hasResults && !isSearching && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">Parallel Agents</h3>
-              <p className="text-sm text-gray-600">5 AI agents search pharmacy websites simultaneously in under 30 seconds.</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">Price Intelligence</h3>
-              <p className="text-sm text-gray-600">Track price trends, set alerts, and find savings of up to 300%.</p>
-            </div>
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
-                <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                </svg>
-              </div>
-              <h3 className="font-bold text-gray-900 mb-2">Prescription Optimizer</h3>
-              <p className="text-sm text-gray-600">Optimize sourcing across pharmacies for entire prescriptions.</p>
-            </div>
           </div>
         )}
-      </main>
+
+        {/* Feature cards (empty state) */}
+        {!hasResults && !isSearching && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            {[
+              { icon: '\u26A1', title: 'Parallel Agents', desc: '5 AI agents search pharmacy websites simultaneously in under 30 seconds.', color: 'cyan' },
+              { icon: '\uD83D\uDCCA', title: 'Price Intelligence', desc: 'Track price trends, set alerts, and find savings of up to 300%.', color: 'success' },
+              { icon: '\uD83D\uDC8A', title: 'Prescription Optimizer', desc: 'Optimize sourcing across pharmacies for entire prescriptions.', color: 'warn' },
+            ].map((card) => (
+              <div key={card.title} className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors">
+                <div className="text-2xl mb-3">{card.icon}</div>
+                <h3 className="font-bold text-t1 text-sm mb-2">{card.title}</h3>
+                <p className="text-xs text-t3">{card.desc}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
