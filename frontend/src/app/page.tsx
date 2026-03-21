@@ -18,6 +18,13 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero Section */}
       <section className="relative pt-12 md:pt-16 pb-20 overflow-hidden">
+        {/* Video Background */}
+        <div className="video-bg-container">
+          <video autoPlay muted loop playsInline>
+            <source src="/ocean-bg.mp4" type="video/mp4" />
+          </video>
+          <div className="video-bg-overlay" />
+        </div>
         {/* Background Grid/Effect */}
         <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_center,rgba(0,219,231,0.08)_0%,transparent_70%)]" />
