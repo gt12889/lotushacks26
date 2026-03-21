@@ -33,7 +33,7 @@ interface PharmacyResult {
   error: string | null;
 }
 
-interface Summary {
+interface ScanSummary {
   query: string;
   best_price: number | null;
   best_source: string | null;
@@ -123,7 +123,7 @@ const MOCK_TABLE_DATA = [
 export default function Home() {
   const [isSearching, setIsSearching] = useState(false);
   const [results, setResults] = useState<Record<string, PharmacyResult>>({});
-  const [summary, setSummary] = useState<Summary | null>(null);
+  const [scanSummary, setScanSummary] = useState<ScanSummary | null>(null);
   const [currentQuery, setCurrentQuery] = useState('');
   const [memoryHints, setMemoryHints] = useState<string[]>([]);
   const [memoryEmptyHint, setMemoryEmptyHint] = useState(false);
@@ -136,14 +136,14 @@ export default function Home() {
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
-  const lastSummaryRef = useRef<Summary | null>(null);
+  const lastSummaryRef = useRef<ScanSummary | null>(null);
 
   const flushEvents = useCallback(() => {
     const buffer = eventBufferRef.current;
     if (buffer.length === 0) return;
 
     const newResults: Record<string, any> = {};
-    let newSummary: Summary | null = null;
+    let newSummary: ScanSummary | null = null;
 
     for (const evt of buffer) {
       if (evt.type === 'pharmacy') {
@@ -157,7 +157,7 @@ export default function Home() {
       setResults((prev) => ({ ...prev, ...newResults }));
     }
     if (newSummary) {
-      setSummary(newSummary);
+      setScanSummary(newSummary);
       lastSummaryRef.current = newSummary;
     }
 
@@ -196,7 +196,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const q = summary?.query?.trim();
+    const q = scanSummary?.query?.trim();
     if (!q) {
       setTrendData([]);
       return;
@@ -219,12 +219,12 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [summary?.query, summary?.best_price, summary?.total_results]);
+  }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results]);
 
   const handleSearch = async (query: string) => {
     setIsSearching(true);
     setResults({});
-    setSummary(null);
+    setScanSummary(null);
     lastSummaryRef.current = null;
     setInsight('');
     setInsightError(null);
@@ -303,7 +303,7 @@ export default function Home() {
       }
       flushEvents();
 
-      const lastSummary = lastSummaryRef.current;
+      const lastSummary = lastSummaryRef.current as ScanSummary | null;
       if (lastSummary) {
         setInsightLoading(true);
         try {
@@ -351,17 +351,17 @@ export default function Home() {
 
   const hasResults = Object.keys(results).length > 0;
   const hasMegalodon =
-    summary &&
-    summary.potential_savings &&
-    summary.best_price &&
-    summary.potential_savings > summary.best_price;
+    scanSummary &&
+    scanSummary.potential_savings &&
+    scanSummary.best_price &&
+    scanSummary.potential_savings > scanSummary.best_price;
 
   return (
     <div className="min-h-screen flex flex-col">
-      {hasMegalodon && summary && (
+      {hasMegalodon && scanSummary && (
         <MegalodonAlert
-          drugName={summary.query}
-          message={`Price spread of ${summary.potential_savings?.toLocaleString()} VND detected across sources`}
+          drugName={scanSummary.query}
+          message={`Price spread of ${scanSummary.potential_savings?.toLocaleString()} VND detected across sources`}
         />
       )}
 
@@ -430,20 +430,20 @@ export default function Home() {
                   </div>
                 )}
                 <PharmacyCards results={results} />
-                {summary && (
+                {scanSummary && (
                   <SavingsBanner
-                    bestPrice={summary.best_price}
-                    bestSource={summary.best_source}
-                    priceRange={summary.price_range}
-                    potentialSavings={summary.potential_savings}
-                    totalResults={summary.total_results}
+                    bestPrice={scanSummary.best_price}
+                    bestSource={scanSummary.best_source}
+                    priceRange={scanSummary.price_range}
+                    potentialSavings={scanSummary.potential_savings}
+                    totalResults={scanSummary.total_results}
                   />
                 )}
-                {summary?.price_fluctuations && summary.price_fluctuations.length > 0 && (
+                {scanSummary?.price_fluctuations && scanSummary.price_fluctuations.length > 0 && (
                   <div className="rounded-lg border border-border bg-card/40 px-4 py-3">
                     <p className="text-xs font-mono text-t2 mb-2">Price vs last scan (product + chain)</p>
                     <ul className="text-xs text-t3 space-y-1.5 list-disc list-inside">
-                      {summary.price_fluctuations.map((line, i) => (
+                      {scanSummary.price_fluctuations.map((line: string, i: number) => (
                         <li key={i}>{line}</li>
                       ))}
                     </ul>
@@ -463,11 +463,11 @@ export default function Home() {
                     )}
                   </div>
                 )}
-                {summary?.variants && summary.variants.length > 0 && (
+                {scanSummary?.variants && scanSummary.variants.length > 0 && (
                   <div className="bg-deep border border-cyan/20 rounded-lg p-3">
                     <p className="text-[10px] font-mono text-cyan mb-2">Generic alternatives detected:</p>
                     <div className="flex gap-2 flex-wrap">
-                      {summary.variants.map((v) => (
+                      {scanSummary.variants.map((v) => (
                         <button
                           key={v}
                           onClick={() => handleSearch(v)}
@@ -480,16 +480,16 @@ export default function Home() {
                     </div>
                   </div>
                 )}
-                <PriceGrid results={results} bestPrice={summary?.best_price ?? null} />
+                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} />
               </div>
             )}
 
-            {summary && (trendLoading || trendData.length > 0) && (
+            {scanSummary && (trendLoading || trendData.length > 0) && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <p className="text-xs font-mono text-t2">7-day price trajectory (stored scans)</p>
                   <Link
-                    href={`/trends?q=${encodeURIComponent(summary.query)}`}
+                    href={`/trends?q=${encodeURIComponent(scanSummary.query)}`}
                     className="text-xs text-cyan hover:underline font-mono"
                   >
                     Open full trends
