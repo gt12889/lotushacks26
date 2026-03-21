@@ -52,10 +52,16 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
     done: 'bg-success/5',
   };
 
-  const dotStyle: Record<string, string> = {
-    idle: 'bg-t3',
-    active: 'bg-warn animate-pulse',
-    done: 'bg-success',
+  const dotClass: Record<string, string> = {
+    idle: 'bg-t3 sonar-dot sonar-dot--idle',
+    active: 'bg-warn sonar-dot',
+    done: 'bg-success sonar-dot sonar-dot--idle',
+  };
+
+  const sonarColor: Record<string, string> = {
+    idle: '#64748B',
+    active: '#F97316',
+    done: '#2DD4BF',
   };
 
   const textColor: Record<string, string> = {
@@ -65,14 +71,17 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
   };
 
   return (
-    <div className="bg-deep border border-border rounded-lg p-4">
+    <div className="bioluminescent-card p-4">
       <h3 className="text-[10px] font-mono uppercase tracking-widest text-t2 mb-3">Agent Cascade Pipeline</h3>
       <div className="flex items-center gap-2">
         {tiers.map((tier, i) => (
           <div key={tier.label} className="contents">
             <div className={`flex-1 border rounded-lg p-3 transition-all duration-500 ${statusBorder[tier.status]} ${statusBg[tier.status]}`}>
               <div className="flex items-center gap-2 mb-1">
-                <div className={`w-2 h-2 rounded-full ${dotStyle[tier.status]}`} />
+                <div
+                  className={`w-2 h-2 rounded-full ${dotClass[tier.status]}`}
+                  style={{ '--sonar-color': sonarColor[tier.status] } as React.CSSProperties}
+                />
                 <span className={`text-[9px] font-mono font-bold uppercase tracking-wider ${textColor[tier.status]}`}>{tier.label}</span>
               </div>
               <div className="flex items-center gap-2">

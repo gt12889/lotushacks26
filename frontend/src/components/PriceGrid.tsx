@@ -86,7 +86,7 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [] }: 
   if (allProducts.length === 0) return null;
 
   return (
-    <div className="bg-deep border border-border rounded-lg overflow-hidden">
+    <div className="bioluminescent-card overflow-hidden">
       <div className="px-6 py-4 border-b border-border flex items-center justify-between">
         <h3 className="text-sm font-bold text-t1 uppercase tracking-wider">
           Pricing Abyss Index
@@ -172,18 +172,6 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [] }: 
           </tbody>
         </table>
       </div>
-      <style jsx global>{`
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

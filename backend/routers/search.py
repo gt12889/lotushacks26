@@ -314,16 +314,9 @@ async def search_drugs(
 
         # Counterfeit risk detection — flag anomalously low prices
         anomalies = detect_price_anomaly(all_products)
+        has_anomalies = bool(anomalies)
         if anomalies:
             summary["price_anomalies"] = anomalies
-            # Fire Exa Research for counterfeit risk report (async, don't block)
-            try:
-                counterfeit_report = await research_counterfeit_risk(query, settings.exa_api_key)
-                if counterfeit_report:
-                    summary["counterfeit_risk"] = counterfeit_report
-                    yield f"data: {json.dumps({'type': 'model_used', 'step': 'counterfeit_research', 'model': 'exa-research', 'provider': 'Exa', 'latency_ms': None})}\n\n"
-            except Exception as e:
-                logger.warning(f"Counterfeit risk research failed: {e}")
 
         mem_tag = supermemory_mem.normalize_user_tag(memory_user) if memory_user else None
         if mem_tag and supermemory_mem.is_enabled():
@@ -341,6 +334,16 @@ async def search_drugs(
             _mem_task.add_done_callback(_log_supermemory_remember_done)
 
         yield f"data: {json.dumps(summary, ensure_ascii=False)}\n\n"
+
+        # Post-summary: fire Exa Research for counterfeit risk (streams as late event)
+        if has_anomalies and settings.exa_api_key:
+            try:
+                counterfeit_report = await research_counterfeit_risk(query, settings.exa_api_key)
+                if counterfeit_report:
+                    yield f"data: {json.dumps({'type': 'counterfeit_risk', **counterfeit_report})}\n\n"
+                    yield f"data: {json.dumps({'type': 'model_used', 'step': 'counterfeit_research', 'model': 'exa-research', 'provider': 'Exa', 'latency_ms': None})}\n\n"
+            except Exception as e:
+                logger.warning(f"Counterfeit risk research failed: {e}")
 
     return StreamingResponse(
         event_generator(),

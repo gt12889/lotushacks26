@@ -16,6 +16,14 @@ interface AgentActivityFeedProps {
   isActive: boolean;
 }
 
+const SONAR_COLORS: Record<AgentEvent['type'], string> = {
+  spawn: '#00DBE7',
+  searching: '#F97316',
+  success: '#2DD4BF',
+  error: '#EE4042',
+  variant: '#A855F7',
+};
+
 const TYPE_COLORS: Record<AgentEvent['type'], string> = {
   spawn: 'bg-cyan',
   searching: 'bg-warn',
@@ -54,81 +62,95 @@ export default function AgentActivityFeed({ events, isActive }: AgentActivityFee
   }, [visibleEvents]);
 
   return (
-    <div className="bg-deep border border-border rounded-lg font-mono overflow-hidden">
-      {/* Header */}
+    <div className="bioluminescent-card font-mono overflow-hidden">
+      {/* Terminal chrome header */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-        <span className="relative flex h-2 w-2">
-          {isActive && (
-            <span className="absolute inline-flex h-full w-full rounded-full bg-cyan opacity-75 animate-ping" />
-          )}
-          <span
-            className={`relative inline-flex rounded-full h-2 w-2 ${
-              isActive ? 'bg-cyan' : 'bg-t3'
-            }`}
-          />
+        {/* Window dots */}
+        <div className="flex items-center gap-1.5 mr-2">
+          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#EE4042' }} />
+          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#FFBD2E' }} />
+          <span className="w-[6px] h-[6px] rounded-full" style={{ background: '#2DD4BF' }} />
+        </div>
+
+        {/* Terminal title */}
+        <span className="text-[9px] uppercase tracking-widest text-t3 font-semibold flex-1">
+          MEGALODON :: AGENT_FEED v2.1
         </span>
-        <span className="text-[10px] uppercase tracking-widest text-t2 font-semibold">
-          Agent Activity
-        </span>
+
+        {/* LIVE badge */}
+        {isActive && (
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-cyan/30 bg-cyan/5">
+            <span
+              className="sonar-dot w-[6px] h-[6px] rounded-full bg-cyan"
+              style={{ '--sonar-color': '#00DBE7' } as React.CSSProperties}
+            />
+            <span className="text-[8px] uppercase tracking-widest text-cyan font-bold">LIVE</span>
+          </div>
+        )}
       </div>
 
-      {/* Event list */}
+      {/* Event list with scanline overlay */}
       <div
         ref={scrollRef}
-        className="h-[200px] overflow-y-auto scrollbar-thin scrollbar-thumb-card scrollbar-track-transparent px-3 py-1"
+        className="terminal-feed h-[200px] overflow-y-auto px-3 py-1"
       >
         {visibleEvents.length === 0 ? (
           <div className="flex items-center justify-center h-full text-t3 text-[10px]">
             Waiting for agent events...
           </div>
         ) : (
-          visibleEvents.map((event) => (
-            <div
-              key={event.id}
-              className="flex items-start gap-2 py-[3px] animate-[fadeSlideIn_0.3s_ease-out]"
-            >
-              {/* Timestamp */}
-              <span className="text-[10px] text-t3 shrink-0 leading-4">
-                {formatTimestamp(event.timestamp)}
-              </span>
+          visibleEvents.map((event) => {
+            const isSearching = event.type === 'searching';
+            return (
+              <div
+                key={event.id}
+                className="flex items-start gap-2 py-[3px]"
+                style={{
+                  animation: 'terminalSlideIn 0.3s ease-out',
+                  textShadow: '0 0 4px rgba(0, 255, 204, 0.3)',
+                }}
+              >
+                {/* Prompt char */}
+                <span className="text-[10px] text-cyan/40 shrink-0 leading-4 select-none">&gt;</span>
 
-              {/* Status dot */}
-              <span className="relative flex h-[6px] w-[6px] mt-[5px] shrink-0">
-                {event.type === 'searching' && (
-                  <span
-                    className={`absolute inline-flex h-full w-full rounded-full ${TYPE_COLORS[event.type]} opacity-75 animate-ping`}
-                  />
-                )}
-                <span
-                  className={`relative inline-flex rounded-full h-[6px] w-[6px] ${TYPE_COLORS[event.type]}`}
-                />
-              </span>
-
-              {/* Agent + message */}
-              <span className="text-[10px] leading-4 min-w-0">
-                <span className={`${TYPE_TEXT_COLORS[event.type]} font-semibold`}>
-                  {event.agent}
+                {/* Timestamp */}
+                <span className="text-[10px] text-t3 shrink-0 leading-4">
+                  {formatTimestamp(event.timestamp)}
                 </span>
-                <span className="text-t3 mx-1">&middot;</span>
-                <span className="text-t2">{event.message}</span>
-              </span>
-            </div>
-          ))
+
+                {/* Status dot with sonar */}
+                <span
+                  className={`${isSearching ? 'sonar-dot' : 'sonar-dot sonar-dot--idle'} flex h-[6px] w-[6px] mt-[5px] shrink-0`}
+                  style={{ '--sonar-color': SONAR_COLORS[event.type] } as React.CSSProperties}
+                >
+                  <span
+                    className={`inline-flex rounded-full h-[6px] w-[6px] ${TYPE_COLORS[event.type]}`}
+                  />
+                </span>
+
+                {/* Agent + message */}
+                <span className="text-[10px] leading-4 min-w-0">
+                  <span className={`${TYPE_TEXT_COLORS[event.type]} font-semibold`}>
+                    {event.agent}
+                  </span>
+                  <span className="text-t3 mx-1">&middot;</span>
+                  <span className="text-t2">{event.message}</span>
+                </span>
+              </div>
+            );
+          })
+        )}
+
+        {/* Blinking cursor */}
+        {isActive && (
+          <div
+            className="text-[10px] text-cyan/60 leading-4 pl-3"
+            style={{ animation: 'blink 1s step-end infinite' }}
+          >
+            █
+          </div>
         )}
       </div>
-
-      <style jsx>{`
-        @keyframes fadeSlideIn {
-          from {
-            opacity: 0;
-            transform: translateY(6px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 }

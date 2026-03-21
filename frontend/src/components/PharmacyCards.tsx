@@ -76,12 +76,13 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
         return (
           <div
             key={id}
-            className={`bg-deep border border-border rounded-lg p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
+            className={`bioluminescent-card p-4 transition-all duration-500 ${!hasResult ? 'opacity-40' : ''}`}
             style={{
+              '--bio-color': `${color}15`,
               borderLeftColor: hasResult ? color : undefined,
               borderLeftWidth: hasResult ? 3 : 1,
               boxShadow: isGlowing ? `0 0 20px ${color}40, 0 0 40px ${color}20` : 'none',
-            }}
+            } as React.CSSProperties}
           >
             <div className="flex items-center justify-between mb-2">
               <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>

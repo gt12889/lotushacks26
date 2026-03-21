@@ -204,6 +204,8 @@ MOCK_RESULTS = {
     "long_chau": [
         ProductResult(product_name="Metformin Stada 500mg (hộp 100 viên)", price=45000, original_price=52000, manufacturer="Stada", dosage_form="tablet", pack_size=100, unit_price=450, in_stock=True, product_url="https://nhathuoclongchau.com.vn/metformin-stada-500mg"),
         ProductResult(product_name="Metformin Denk 500mg (hộp 50 viên)", price=38000, manufacturer="Denk Pharma", dosage_form="tablet", pack_size=50, unit_price=760, in_stock=True, product_url="https://nhathuoclongchau.com.vn/metformin-denk-500mg"),
+        # Suspiciously cheap — triggers counterfeit risk detection
+        ProductResult(product_name="Metformin 500mg (hộp 100 viên) - No Brand", price=8000, manufacturer="Unknown", dosage_form="tablet", pack_size=100, unit_price=80, in_stock=True, product_url="https://nhathuoclongchau.com.vn/metformin-nobrand"),
     ],
     "pharmacity": [
         ProductResult(product_name="Glucophage 500mg (hộp 50 viên)", price=89000, manufacturer="Merck", dosage_form="tablet", pack_size=50, unit_price=1780, in_stock=True, product_url="https://pharmacity.vn/glucophage-500mg"),
@@ -258,11 +260,54 @@ MOCK_PARACETAMOL = {
     ],
 }
 
+MOCK_LOSARTAN = {
+    "long_chau": [
+        ProductResult(product_name="Losartan Stada 50mg (hộp 30 viên)", price=65000, manufacturer="Stada", dosage_form="tablet", pack_size=30, unit_price=2167, in_stock=True, product_url="https://nhathuoclongchau.com.vn/losartan-stada"),
+    ],
+    "pharmacity": [
+        ProductResult(product_name="Cozaar 50mg (hộp 30 viên)", price=185000, manufacturer="MSD", dosage_form="tablet", pack_size=30, unit_price=6167, in_stock=True, product_url="https://pharmacity.vn/cozaar-50mg"),
+        ProductResult(product_name="Losartan Domesco 50mg (hộp 30 viên)", price=45000, manufacturer="Domesco", dosage_form="tablet", pack_size=30, unit_price=1500, in_stock=True, product_url="https://pharmacity.vn/losartan-domesco"),
+    ],
+    "an_khang": [
+        ProductResult(product_name="Losartan 50mg DHG (hộp 30 viên)", price=55000, manufacturer="DHG Pharma", dosage_form="tablet", pack_size=30, unit_price=1833, in_stock=True, product_url="https://ankhang.vn/losartan-dhg"),
+    ],
+    "than_thien": [
+        ProductResult(product_name="Losartan 50mg TV.Pharm (hộp 30 viên)", price=42000, manufacturer="TV.Pharm", dosage_form="tablet", pack_size=30, unit_price=1400, in_stock=True, product_url="https://nhathuocthanhtien.vn/losartan-tvpharm"),
+    ],
+    "medicare": [
+        ProductResult(product_name="Cozaar 50mg MSD (hộp 30 viên)", price=195000, manufacturer="MSD", dosage_form="tablet", pack_size=30, unit_price=6500, in_stock=True, product_url="https://medicare.vn/cozaar-50mg"),
+    ],
+}
+
+MOCK_OMEPRAZOLE = {
+    "long_chau": [
+        ProductResult(product_name="Omeprazole Stada 20mg (hộp 30 viên)", price=45000, manufacturer="Stada", dosage_form="capsule", pack_size=30, unit_price=1500, in_stock=True, product_url="https://nhathuoclongchau.com.vn/omeprazole-stada"),
+    ],
+    "pharmacity": [
+        ProductResult(product_name="Losec 20mg (hộp 14 viên)", price=210000, manufacturer="AstraZeneca", dosage_form="capsule", pack_size=14, unit_price=15000, in_stock=True, product_url="https://pharmacity.vn/losec-20mg"),
+    ],
+    "an_khang": [
+        ProductResult(product_name="Omeprazole 20mg DHG (hộp 30 viên)", price=38000, manufacturer="DHG Pharma", dosage_form="capsule", pack_size=30, unit_price=1267, in_stock=True, product_url="https://ankhang.vn/omeprazole-dhg"),
+        # Suspiciously cheap — triggers counterfeit detection
+        ProductResult(product_name="Omeprazole 20mg (hộp 100 viên) - Unbranded", price=15000, manufacturer="Unknown", dosage_form="capsule", pack_size=100, unit_price=150, in_stock=True, product_url="https://ankhang.vn/omeprazole-cheap"),
+    ],
+    "than_thien": [
+        ProductResult(product_name="Omeprazole 20mg Domesco (hộp 30 viên)", price=42000, manufacturer="Domesco", dosage_form="capsule", pack_size=30, unit_price=1400, in_stock=True, product_url="https://nhathuocthanhtien.vn/omeprazole-domesco"),
+    ],
+    "medicare": [
+        ProductResult(product_name="Nexium 20mg (hộp 14 viên)", price=245000, manufacturer="AstraZeneca", dosage_form="capsule", pack_size=14, unit_price=17500, in_stock=True, product_url="https://medicare.vn/nexium-20mg"),
+    ],
+}
+
 MOCK_DATA_BY_QUERY = {
     "metformin": MOCK_RESULTS,
     "amoxicillin": MOCK_AMOXICILLIN,
     "paracetamol": MOCK_PARACETAMOL,
     "panadol": MOCK_PARACETAMOL,
+    "losartan": MOCK_LOSARTAN,
+    "cozaar": MOCK_LOSARTAN,
+    "omeprazole": MOCK_OMEPRAZOLE,
+    "nexium": MOCK_OMEPRAZOLE,
 }
 
 

@@ -27,7 +27,7 @@ export default function LiveMetricsBar({
     <div
       className={`
         flex items-center justify-between
-        bg-deep border border-border rounded-lg px-6 py-3
+        bioluminescent-card px-6 py-3
         font-mono
         ${isActive ? 'animate-pulse-left-border' : ''}
       `}

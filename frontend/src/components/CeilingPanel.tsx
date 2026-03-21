@@ -40,7 +40,7 @@ export default function CeilingPanel({ compliance, query }: CeilingPanelProps) {
 
   if (!compliance.has_ceiling) {
     return (
-      <div className="bg-deep border border-border rounded-lg p-5">
+      <div className="bioluminescent-card p-5">
         <div className="flex items-center gap-2 mb-2">
           <div className="w-2 h-2 rounded-full bg-t3" />
           <p className="text-[10px] uppercase tracking-wider text-t3 font-mono">
@@ -70,7 +70,7 @@ export default function CeilingPanel({ compliance, query }: CeilingPanelProps) {
   } = compliance;
 
   return (
-    <div className="bg-deep border border-border rounded-lg p-5">
+    <div className="bioluminescent-card p-5">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <div

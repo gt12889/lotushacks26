@@ -16,6 +16,8 @@
   --font-mono: 'Geist Mono', ui-monospace, monospace;
 }
 
+/* ───────── Existing animations ───────── */
+
 @keyframes pulse-left-border {
   0%, 100% { border-left-color: #00DBE7; }
   50% { border-left-color: rgba(0, 219, 231, 0.2); }
@@ -23,6 +25,143 @@
 
 .animate-pulse-left-border {
   animation: pulse-left-border 2s ease-in-out infinite;
+}
+
+/* ───────── Shared: fadeSlideIn (migrated from component <style jsx>) ───────── */
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ───────── Section 1: Bioluminescent Cards ───────── */
+
+@keyframes bioGlow {
+  0%, 100% { box-shadow: 0 0 0px 0px var(--bio-color, rgba(0, 219, 231, 0.05)); }
+  50% { box-shadow: 0 0 8px 4px var(--bio-color, rgba(0, 219, 231, 0.05)); }
+}
+
+.bioluminescent-card {
+  background: rgba(1, 14, 36, 0.85);
+  border: 1px solid rgba(0, 219, 231, 0.15);
+  border-radius: 0.5rem;
+  animation: bioGlow 4s ease-in-out infinite;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.bioluminescent-card:hover {
+  border-color: rgba(0, 219, 231, 0.3);
+}
+
+/* ───────── Section 2: Sonar Pulse ───────── */
+
+@keyframes sonarPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+.sonar-dot {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sonar-dot::before,
+.sonar-dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--sonar-color, #00DBE7);
+  animation: sonarPulse 2s ease-out infinite;
+}
+
+.sonar-dot::after {
+  animation-delay: 0.7s;
+}
+
+.sonar-dot--idle::before,
+.sonar-dot--idle::after {
+  animation: none;
+  display: none;
+}
+
+/* ───────── Section 3: Terminal Feed ───────── */
+
+@keyframes terminalSlideIn {
+  0% { opacity: 0; transform: translateY(6px); }
+  30% { opacity: 0.5; transform: translateY(3px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.terminal-feed {
+  position: relative;
+}
+
+.terminal-feed::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 255, 204, 0.03) 2px,
+    rgba(0, 255, 204, 0.03) 4px
+  );
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.terminal-feed::-webkit-scrollbar {
+  width: 4px;
+}
+
+.terminal-feed::-webkit-scrollbar-thumb {
+  background: rgba(0, 219, 231, 0.2);
+  border-radius: 2px;
+}
+
+.terminal-feed::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ───────── Section 4: Model Router animated bars ───────── */
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes completionFlash {
+  0% { box-shadow: 0 0 0px rgba(45, 212, 191, 0); }
+  50% { box-shadow: 0 0 8px rgba(45, 212, 191, 0.4); }
+  100% { box-shadow: 0 0 0px rgba(45, 212, 191, 0); }
+}
+
+/* ───────── Section 5: Architecture flow connectors ───────── */
+
+@keyframes flowPulse {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
 }
 
 body {

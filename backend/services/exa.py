@@ -245,15 +245,19 @@ async def research_counterfeit_risk(drug_name: str, api_key: str) -> dict | None
             },
         )
 
-        # Poll until finished (research tasks are async)
-        result = exa.research.poll_until_finished(research.id, timeout=30)
+        # Poll until finished (research tasks are async, can take 1-3 min)
+        result = exa.research.poll_until_finished(research.research_id, timeout_ms=120_000)
 
-        if not result or not hasattr(result, "output"):
-            logger.warning(f"Exa research returned no output for {drug_name}")
+        if not result or result.status != "completed":
+            logger.warning(f"Exa research not completed for {drug_name}: {getattr(result, 'status', 'unknown')}")
             _cache_set(cache_key, None)
             return None
 
-        output = result.output
+        output = getattr(result, "output", None)
+        if output is None:
+            # Try to get output from model_dump
+            rd = result.model_dump()
+            output = rd.get("output")
         if isinstance(output, str):
             import json
             try:

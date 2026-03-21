@@ -336,7 +336,10 @@ export default function DashboardHome() {
           if (!dataMatch) continue;
           try {
             const event = JSON.parse(dataMatch[1]);
-            if (event.type === 'model_used') {
+            if (event.type === 'counterfeit_risk') {
+              // Late-arriving counterfeit risk report from Exa Research
+              setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
+            } else if (event.type === 'model_used') {
               setModelSteps(prev => prev.map(s =>
                 s.step === event.step
                   ? { ...s, model: event.model || s.model, provider: event.provider || s.provider, latency_ms: event.latency_ms, status: 'done', count: s.count + 1 }
