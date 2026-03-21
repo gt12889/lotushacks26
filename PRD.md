@@ -306,6 +306,12 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 | `/optimize` | Prescription Optimizer | Multi-drug sourcing with OCR prescription upload, optimized vs single-source comparison |
 | `/architecture` | System Architecture | 3-column node-connector diagram with all sponsor credits, tech stack, metrics |
 
+### NavBar
+
+```
+[Megladon MD logo]  Dashboard | Trends | Alerts | Optimize | How It Works    [VN/EN]
+```
+
 ### Key Components
 
 | Component | Purpose |

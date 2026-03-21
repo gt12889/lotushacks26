@@ -56,7 +56,7 @@ export default function ArchitecturePage() {
         {/* Title */}
         <div className="text-center">
           <h2 className="text-xl font-bold text-t1">System Architecture</h2>
-          <p className="text-xs text-t3 mt-1">End-to-end data flow of the MediScrape intelligence platform</p>
+          <p className="text-xs text-t3 mt-1">End-to-end data flow of the Megladon MD intelligence platform</p>
         </div>
 
         {/* 3-Column Architecture Flow */}
