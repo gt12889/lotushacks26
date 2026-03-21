@@ -93,6 +93,12 @@ async def search_drugs(
         results = {}
         all_products = []
 
+        # Queue for streaming URLs emitted early by TinyFish before search completes
+        streaming_url_queue: asyncio.Queue = asyncio.Queue()
+
+        def on_streaming_url(source_id: str, url: str):
+            streaming_url_queue.put_nowait({"source_id": source_id, "url": url})
+
         # Spawn Tier 1 search agents
         agent_ids = {}
         tasks = {}
@@ -100,7 +106,7 @@ async def search_drugs(
             aid = mgr.spawn(AgentTier.SEARCH, f"Search {PHARMACY_CONFIGS[sid]['name']}", sid)
             agent_ids[sid] = aid
             tasks[sid] = asyncio.create_task(
-                search_single_pharmacy_safe(sid, query, settings.tinyfish_api_key)
+                search_single_pharmacy_safe(sid, query, settings.tinyfish_api_key, streaming_url_callback=on_streaming_url)
             )
 
         # Emit initial spawn events
@@ -122,6 +128,12 @@ async def search_drugs(
         pending = set(tasks.values())
         while pending:
             done, pending = await asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED)
+
+            # Drain any streaming URLs that arrived while waiting
+            while not streaming_url_queue.empty():
+                su = streaming_url_queue.get_nowait()
+                yield f"data: {json.dumps({'type': 'streaming_url', 'source_id': su['source_id'], 'streaming_url': su['url']})}\n\n"
+
             for completed_task in done:
                 result = completed_task.result()
                 results[result.source_id] = result

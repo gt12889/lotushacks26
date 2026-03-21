@@ -378,6 +378,11 @@ export default function DashboardHome() {
               );
             } else if (event.type === 'agent_fail') {
               addAgentEvent('error', event.agent_id || 'Agent', String(event.error || 'failed'));
+            } else if (event.type === 'streaming_url' && event.source_id && event.streaming_url) {
+              setStreamingUrls((prev) => ({
+                ...prev,
+                [event.source_id]: event.streaming_url,
+              }));
             } else if (event.type === 'pharmacy_status' && event.status === 'searching') {
               addAgentEvent(
                 'searching',
