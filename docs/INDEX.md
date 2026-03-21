@@ -19,6 +19,7 @@ All project markdown lives under **`docs/`** (except stubs in `README.md` at rep
 |-----|---------|
 | [README.md](./README.md) | Main project readme (quick start, API table, deploy) |
 | [SETUP.md](./SETUP.md) | Focused local setup |
+| [DOCKER-COMPOSE.md](./DOCKER-COMPOSE.md) | Compose stack + free VM / tunnel hosting |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System diagram & flows |
 | [SHIPLIST.md](./SHIPLIST.md) | What shipped checklist |
 | [PRD.md](./PRD.md) | Product requirements |

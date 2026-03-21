@@ -1,3 +1,51 @@
-# Megladon MD uses SQLite - no external database needed
-# This file is kept for future Redis/Postgres migration
-services: {}
+# Megladon MD — API + web on one machine (local, VPS, or free cloud VM).
+# See docs/DOCKER-COMPOSE.md for “free hosting” options and public-URL env vars.
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "${API_PUBLISH_PORT:-8000}:8000"
+    environment:
+      PORT: "8000"
+      # Browser origins allowed to call the API (comma-separated, no spaces)
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3005,http://127.0.0.1:3005}
+      TINYFISH_API_KEY: ${TINYFISH_API_KEY:-}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      BRIGHTDATA_PROXY_URL: ${BRIGHTDATA_PROXY_URL:-}
+      SUPERMEMORY_API_KEY: ${SUPERMEMORY_API_KEY:-}
+      ELEVENLABS_API_KEY: ${ELEVENLABS_API_KEY:-}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 25s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Must be reachable from the USER'S BROWSER (not the web container hostname)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "${WEB_PUBLISH_PORT:-3005}:3000"
+    environment:
+      PORT: "3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped

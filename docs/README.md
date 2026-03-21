@@ -94,6 +94,10 @@ In Railway: **New** → **Docker Image** → paste image name → add env vars o
 **C. Switch back to Nixpacks**  
 If you prefer Railway’s auto build without Docker, change `[build] builder = "NIXPACKS"` and remove `dockerfilePath` in each `railway.toml`, and set `startCommand` again as in git history.
 
+### Docker Compose (no Railway)
+
+Run **API + web** on any machine with Docker: see **[DOCKER-COMPOSE.md](./DOCKER-COMPOSE.md)** and root **`docker-compose.yml`**, **`.env.docker.example`**.
+
 ## Tech Stack
 
 | Layer | Technology |
