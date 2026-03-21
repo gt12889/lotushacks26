@@ -12,29 +12,31 @@ export default function SavingsBanner({ bestPrice, bestSource, priceRange, poten
   if (!bestPrice) return null;
 
   return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl p-6">
-      <div className="flex items-center justify-between flex-wrap gap-4">
+    <div className="bg-deep border border-border rounded-lg p-6">
+      <div className="flex items-center justify-between flex-wrap gap-6">
         <div>
-          <p className="text-sm font-medium text-green-700">Best Price Found</p>
-          <p className="text-3xl font-bold text-green-900">{bestPrice.toLocaleString()} VND</p>
-          <p className="text-sm text-green-600">at {bestSource}</p>
+          <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Best Price Detected</p>
+          <p className="text-2xl font-bold font-mono text-success">{bestPrice.toLocaleString()} VND</p>
+          <p className="text-xs text-t3">at <span className="text-cyan">{bestSource}</span></p>
         </div>
         {priceRange && (
           <div className="text-center">
-            <p className="text-sm font-medium text-gray-600">Price Range</p>
-            <p className="text-lg font-semibold text-gray-900">{priceRange}</p>
+            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Price Range</p>
+            <p className="text-sm font-mono text-t1">{priceRange}</p>
           </div>
         )}
         {potentialSavings && potentialSavings > 0 && (
           <div className="text-center">
-            <p className="text-sm font-medium text-orange-600">Potential Savings</p>
-            <p className="text-2xl font-bold text-orange-700">{potentialSavings.toLocaleString()} VND ({Math.round((potentialSavings / (bestPrice + potentialSavings)) * 100)}%)</p>
-            <p className="text-xs text-orange-500">vs most expensive option</p>
+            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Potential Savings</p>
+            <p className="text-xl font-bold font-mono text-warn">
+              {potentialSavings.toLocaleString()} VND
+              <span className="text-sm ml-1">({Math.round((potentialSavings / (bestPrice + potentialSavings)) * 100)}%)</span>
+            </p>
           </div>
         )}
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-600">Total Results</p>
-          <p className="text-2xl font-bold text-gray-900">{totalResults}</p>
+          <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Total Results</p>
+          <p className="text-xl font-bold font-mono text-t1">{totalResults}</p>
         </div>
       </div>
     </div>

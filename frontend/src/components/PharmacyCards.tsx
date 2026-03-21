@@ -1,5 +1,7 @@
 'use client';
 
+import StatusPill from './StatusPill';
+
 interface PharmacyResult {
   source_id: string;
   source_name: string;
@@ -15,12 +17,12 @@ interface PharmacyCardsProps {
   results: Record<string, PharmacyResult>;
 }
 
-const PHARMACY_COLORS: Record<string, string> = {
-  long_chau: 'from-blue-500 to-blue-600',
-  pharmacity: 'from-green-500 to-green-600',
-  an_khang: 'from-orange-500 to-orange-600',
-  than_thien: 'from-purple-500 to-purple-600',
-  medicare: 'from-teal-500 to-teal-600',
+const SOURCE_COLORS: Record<string, string> = {
+  long_chau: '#3B82F6',
+  pharmacity: '#22C55E',
+  an_khang: '#F97316',
+  than_thien: '#A855F7',
+  medicare: '#14B8A6',
 };
 
 const PHARMACY_INITIALS: Record<string, string> = {
@@ -31,19 +33,6 @@ const PHARMACY_INITIALS: Record<string, string> = {
   medicare: 'MC',
 };
 
-function StatusIndicator({ status }: { status: string }) {
-  if (status === 'searching') {
-    return <div className="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" />;
-  }
-  if (status === 'success') {
-    return <div className="w-3 h-3 bg-green-500 rounded-full" />;
-  }
-  if (status === 'error') {
-    return <div className="w-3 h-3 bg-red-500 rounded-full" />;
-  }
-  return <div className="w-3 h-3 bg-gray-300 rounded-full" />;
-}
-
 export default function PharmacyCards({ results }: PharmacyCardsProps) {
   const pharmacies = ['long_chau', 'pharmacity', 'an_khang', 'than_thien', 'medicare'];
 
@@ -51,41 +40,38 @@ export default function PharmacyCards({ results }: PharmacyCardsProps) {
     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
       {pharmacies.map((id) => {
         const result = results[id];
-        const isActive = result && result.status !== 'pending';
-        const color = PHARMACY_COLORS[id] || 'from-gray-500 to-gray-600';
+        const color = SOURCE_COLORS[id] || '#64748B';
+        const statusType = result?.status === 'success' ? 'active' : result?.status === 'error' ? 'error' : result?.status === 'searching' ? 'searching' : 'monitor';
 
         return (
           <div
             key={id}
-            className={`rounded-xl p-4 transition-all duration-500 ${
-              isActive
-                ? `bg-gradient-to-br ${color} text-white shadow-lg scale-100`
-                : 'bg-gray-100 text-gray-400 scale-95'
-            }`}
+            className="bg-deep border border-border rounded-lg p-4 transition-all duration-500"
+            style={{ borderLeftColor: result ? color : undefined, borderLeftWidth: result ? 3 : 1 }}
           >
             <div className="flex items-center justify-between mb-2">
-              <span className="text-2xl font-bold">{PHARMACY_INITIALS[id]}</span>
-              <StatusIndicator status={result?.status || 'pending'} />
+              <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
+              {result && <StatusPill status={statusType} />}
             </div>
-            <div className="text-xs opacity-80 mb-2">{result?.source_name || id}</div>
+            <div className="text-[10px] text-t3 mb-2">{result?.source_name || id}</div>
             {result?.status === 'searching' && (
-              <div className="text-sm animate-pulse">Searching...</div>
+              <div className="text-xs text-warn animate-pulse font-mono">Scanning...</div>
             )}
             {result?.status === 'success' && (
               <>
-                <div className="text-sm">{result.result_count} results</div>
+                <div className="text-xs text-t2 font-mono">{result.result_count} results</div>
                 {result.lowest_price && (
-                  <div className="text-lg font-bold mt-1">
+                  <div className="text-base font-bold font-mono text-t1 mt-1">
                     {result.lowest_price.toLocaleString()}đ
                   </div>
                 )}
                 {result.response_time_ms && (
-                  <div className="text-xs opacity-60">{(result.response_time_ms / 1000).toFixed(1)}s</div>
+                  <div className="text-[10px] text-t3 font-mono">{(result.response_time_ms / 1000).toFixed(1)}s latency</div>
                 )}
               </>
             )}
             {result?.status === 'error' && (
-              <div className="text-xs text-red-200">Failed</div>
+              <div className="text-[10px] text-alert-red font-mono">Signal lost</div>
             )}
           </div>
         );

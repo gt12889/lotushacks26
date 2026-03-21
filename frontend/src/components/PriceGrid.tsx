@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import StatusPill from './StatusPill';
 
 interface Product {
   product_name: string;
@@ -28,10 +29,17 @@ interface PriceGridProps {
 
 type SortKey = 'price' | 'unit_price' | 'source' | 'name';
 
+const SOURCE_COLORS: Record<string, string> = {
+  long_chau: '#3B82F6',
+  pharmacity: '#22C55E',
+  an_khang: '#F97316',
+  than_thien: '#A855F7',
+  medicare: '#14B8A6',
+};
+
 export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
   const [sortBy, setSortBy] = useState<SortKey>('price');
 
-  // Flatten all products with source info
   const allProducts: (Product & { source_id: string; source_name: string })[] = [];
   for (const [sourceId, result] of Object.entries(results)) {
     if (result.status === 'success') {
@@ -41,7 +49,6 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
     }
   }
 
-  // Sort
   allProducts.sort((a, b) => {
     switch (sortBy) {
       case 'price': return a.price - b.price;
@@ -55,77 +62,71 @@ export default function PriceGrid({ results, bestPrice }: PriceGridProps) {
   if (allProducts.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold text-gray-900">
-            Price Comparison ({allProducts.length} products)
-          </h3>
-          <div className="flex gap-2 text-sm">
-            <span className="text-gray-500">Sort by:</span>
-            {(['price', 'unit_price', 'source', 'name'] as SortKey[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => setSortBy(key)}
-                className={`px-3 py-1 rounded-full ${
-                  sortBy === key ? 'bg-blue-100 text-blue-700 font-medium' : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {key === 'unit_price' ? 'Unit Price' : key.charAt(0).toUpperCase() + key.slice(1)}
-              </button>
-            ))}
-          </div>
+    <div className="bg-deep border border-border rounded-lg overflow-hidden">
+      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+        <h3 className="text-sm font-bold text-t1 uppercase tracking-wider">
+          Pricing Abyss Index
+          <span className="text-t3 font-normal ml-2 normal-case tracking-normal">({allProducts.length} products)</span>
+        </h3>
+        <div className="flex gap-1 text-xs">
+          {(['price', 'unit_price', 'source', 'name'] as SortKey[]).map((key) => (
+            <button
+              key={key}
+              onClick={() => setSortBy(key)}
+              className={`px-3 py-1 rounded transition-colors ${
+                sortBy === key ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-t3 hover:text-t2 border border-transparent'
+              }`}
+            >
+              {key === 'unit_price' ? 'Unit' : key.charAt(0).toUpperCase() + key.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-semibold text-gray-600"></th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-600">Product</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-600">Pharmacy</th>
-              <th className="text-right py-3 px-4 font-semibold text-gray-600">Price (VND)</th>
-              <th className="text-right py-3 px-4 font-semibold text-gray-600">Unit Price</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-600">Manufacturer</th>
-              <th className="text-center py-3 px-4 font-semibold text-gray-600">Stock</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono"></th>
+              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Drug Name</th>
+              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Source</th>
+              <th className="text-right py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Price (VND)</th>
+              <th className="text-right py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Unit</th>
+              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Mfr</th>
+              <th className="text-center py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Status</th>
             </tr>
           </thead>
           <tbody>
             {allProducts.map((p, i) => (
-              <tr key={i} className={`border-b border-gray-50 hover:bg-gray-50 ${p.price === bestPrice ? 'bg-green-50' : ''}`}>
-                <td className="py-3 px-4">
-                  {p.price === bestPrice && (
-                    <span className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-bold rounded-full">
-                      BEST
-                    </span>
-                  )}
+              <tr key={i} className="border-b border-border/50 hover:bg-card/50 transition-colors">
+                <td className="py-2.5 px-4">
+                  {p.price === bestPrice && <StatusPill status="best" label="BEST" />}
                 </td>
-                <td className="py-3 px-4 text-gray-900 font-medium">
-                  {p.product_url ? (
-                    <a href={p.product_url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-600">
-                      {p.product_name}
-                    </a>
-                  ) : p.product_name}
+                <td className="py-2.5 px-4">
+                  <div className="text-t1 font-medium">
+                    {p.product_url ? (
+                      <a href={p.product_url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">{p.product_name}</a>
+                    ) : p.product_name}
+                  </div>
+                  {p.manufacturer && <div className="text-[10px] text-t3 font-mono">{p.manufacturer}</div>}
                 </td>
-                <td className="py-3 px-4 text-gray-600">{p.source_name}</td>
-                <td className="py-3 px-4 text-right font-mono text-gray-900 font-medium">
+                <td className="py-2.5 px-4">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SOURCE_COLORS[p.source_id] || '#64748B' }} />
+                    <span className="text-t2 text-xs">{p.source_name}</span>
+                  </div>
+                </td>
+                <td className="py-2.5 px-4 text-right font-mono text-t1">
                   {p.price.toLocaleString()}
                   {p.original_price && p.original_price > p.price && (
-                    <span className="ml-2 text-gray-400 line-through text-xs">
-                      {p.original_price.toLocaleString()}
-                    </span>
+                    <span className="ml-2 text-t3 line-through text-[10px]">{p.original_price.toLocaleString()}</span>
                   )}
                 </td>
-                <td className="py-3 px-4 text-right font-mono text-gray-600">
-                  {p.unit_price ? `${Math.round(p.unit_price).toLocaleString()}/unit` : '-'}
+                <td className="py-2.5 px-4 text-right font-mono text-t2 text-xs">
+                  {p.unit_price ? `${Math.round(p.unit_price).toLocaleString()}/u` : '—'}
                 </td>
-                <td className="py-3 px-4 text-gray-600">{p.manufacturer || '-'}</td>
-                <td className="py-3 px-4 text-center">
-                  {p.in_stock ? (
-                    <span className="text-green-600 text-xs font-medium">In Stock</span>
-                  ) : (
-                    <span className="text-red-500 text-xs font-medium">Out</span>
-                  )}
+                <td className="py-2.5 px-4 text-t3 text-xs">{p.manufacturer || '—'}</td>
+                <td className="py-2.5 px-4 text-center">
+                  {p.in_stock ? <StatusPill status="active" label="IN STOCK" /> : <StatusPill status="out-of-stock" label="OUT" />}
                 </td>
               </tr>
             ))}
