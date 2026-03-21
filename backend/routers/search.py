@@ -53,17 +53,19 @@ async def search_drugs(
                 # Store in database
                 try:
                     db = await get_db()
-                    for product in result.products:
-                        await db.execute(
-                            """INSERT INTO prices (drug_query, source_id, product_name, price, original_price,
-                               pack_size, unit_price, manufacturer, in_stock, product_url)
-                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                            (query, result.source_id, product.product_name, product.price,
-                             product.original_price, product.pack_size, product.unit_price,
-                             product.manufacturer, product.in_stock, product.product_url),
-                        )
-                    await db.commit()
-                    await db.close()
+                    try:
+                        for product in result.products:
+                            await db.execute(
+                                """INSERT INTO prices (drug_query, source_id, product_name, price, original_price,
+                                   pack_size, unit_price, manufacturer, in_stock, product_url)
+                                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                                (query, result.source_id, product.product_name, product.price,
+                                 product.original_price, product.pack_size, product.unit_price,
+                                 product.manufacturer, product.in_stock, product.product_url),
+                            )
+                        await db.commit()
+                    finally:
+                        await db.close()
                 except Exception as e:
                     logger.error(f"DB store error: {e}")
 

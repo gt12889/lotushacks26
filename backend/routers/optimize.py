@@ -20,19 +20,19 @@ async def optimize_prescription(request: OptimizeRequest):
 
     items = []
     for drug, results in zip(request.drugs, all_results):
-        best_price = float("inf")
+        best_price: int | None = None
         best_source = ""
         best_name = ""
 
         for source_id, result in results.items():
             if result.status == "success":
                 for product in result.products:
-                    if product.price < best_price:
+                    if best_price is None or product.price < best_price:
                         best_price = product.price
                         best_source = result.source_name
                         best_name = product.product_name
 
-        if best_price < float("inf"):
+        if best_price is not None:
             items.append(OptimizeDrugResult(
                 drug=drug,
                 best_source=best_source,

@@ -11,6 +11,16 @@ router = APIRouter(prefix="/api")
 
 async def run_monitor_job(monitor_id: int, drug_query: str):
     """Execute a monitoring job - search and check alerts."""
+    import logging
+    _logger = logging.getLogger(__name__)
+    try:
+        await _run_monitor_job(monitor_id, drug_query)
+    except Exception as e:
+        _logger.error(f"Monitor job {monitor_id} failed: {e}")
+
+
+async def _run_monitor_job(monitor_id: int, drug_query: str):
+    """Internal monitor job execution."""
     from database import get_db as _get_db
     results = await search_all_pharmacies(drug_query, settings.tinyfish_api_key)
 

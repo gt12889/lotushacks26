@@ -5,6 +5,7 @@ import json
 import logging
 import time
 from models.schemas import ProductResult, PharmacySearchResult
+from services.normalizer import normalize_drug_name, fuzzy_match_score
 from config import settings as app_settings
 
 logger = logging.getLogger(__name__)
@@ -236,13 +237,20 @@ async def search_single_pharmacy(
         products = []
         for p in products_data:
             try:
+                product_name = p.get("product_name", "Unknown")
+                # Filter out irrelevant results using fuzzy matching
+                if fuzzy_match_score(query, product_name) < 0.3:
+                    logger.debug(f"Filtered low-relevance product: {product_name}")
+                    continue
                 price = int(str(p.get("price", 0)).replace(".", "").replace(",", ""))
+                if price <= 0:
+                    continue
                 pack_size = int(p.get("pack_size", 1)) or 1
                 orig = p.get("original_price")
                 if orig:
                     orig = int(str(orig).replace(".", "").replace(",", ""))
                 products.append(ProductResult(
-                    product_name=p.get("product_name", "Unknown"),
+                    product_name=product_name,
                     price=price,
                     original_price=orig,
                     manufacturer=p.get("manufacturer"),
