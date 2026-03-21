@@ -1,7 +1,7 @@
 # 
 
 > **MEGLADON MD**  Vietnamese pharmaceutical price intelligence with parallel AI web agents.
->
+
 > Vietnam has 57,000+ pharmacies. Same medication can vary 100-300% in price. No unified pricing exists.
 
 AI-powered pharmaceutical price intelligence platform that deploys parallel TinyFish web agents across Vietnamese pharmacy chain websites, returning unified drug pricing data in real time.
@@ -11,7 +11,7 @@ Built for **LotusHacks 2026** | Enterprise Track
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 
 - Python 3.11+
 
 ### 1. Environment Setup
