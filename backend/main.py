@@ -8,6 +8,7 @@ from routers.prices import router as prices_router
 from routers.alerts import router as alerts_router
 from routers.monitor import router as monitor_router
 from routers.optimize import router as optimize_router
+from routers.ocr import router as ocr_router
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ app.include_router(prices_router)
 app.include_router(alerts_router)
 app.include_router(monitor_router)
 app.include_router(optimize_router)
+app.include_router(ocr_router)
 
 
 @app.get("/health")

@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 from models.schemas import PharmacySearchResult, SearchResponse
 from services.tinyfish import search_single_pharmacy, PHARMACY_CONFIGS
+from services.variants import extract_variants_from_results, suggest_generic_alternatives
 from config import settings
 from database import get_db
 
@@ -81,6 +82,16 @@ async def search_drugs(
                     best_source = r.source_name
                     break
 
+        # Collect all products for variant discovery
+        all_products = []
+        for r in results.values():
+            if r.status == "success":
+                all_products.extend(r.products)
+
+        discovered_variants = extract_variants_from_results(query, all_products)
+        generic_suggestions = suggest_generic_alternatives(query)
+        all_variants = list(set(discovered_variants + generic_suggestions))[:5]
+
         summary = {
             "task": "summary",
             "query": query,
@@ -89,6 +100,7 @@ async def search_drugs(
             "price_range": f"{best_price:,} - {worst_price:,} VND" if best_price and worst_price else None,
             "potential_savings": worst_price - best_price if best_price and worst_price else 0,
             "total_results": sum(r.result_count for r in results.values()),
+            "variants": all_variants,
         }
         yield f"data: {json.dumps(summary)}\n\n"
 

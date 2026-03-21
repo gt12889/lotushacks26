@@ -16,6 +16,8 @@ export default function OptimizePage() {
   const [drugs, setDrugs] = useState(['']);
   const [result, setResult] = useState<OptimizeResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [ocrLoading, setOcrLoading] = useState(false);
 
   const addDrug = () => setDrugs([...drugs, '']);
   const removeDrug = (i: number) => setDrugs(drugs.filter((_, idx) => idx !== i));
@@ -23,6 +25,30 @@ export default function OptimizePage() {
     const updated = [...drugs];
     updated[i] = val;
     setDrugs(updated);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => setImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    setOcrLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+      const res = await fetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data.drugs && data.drugs.length > 0) {
+        setDrugs(data.drugs);
+      }
+    } catch (e) {
+      console.error('OCR error:', e);
+    } finally {
+      setOcrLoading(false);
+    }
   };
 
   const optimize = async () => {
@@ -53,6 +79,29 @@ export default function OptimizePage() {
 
         {/* Drug input rows */}
         <div className="bg-white rounded-2xl shadow-lg p-8 space-y-3">
+          {/* Prescription Photo Upload */}
+          <div className="border-b border-gray-100 pb-6 mb-6">
+            <h4 className="text-sm font-semibold text-gray-700 mb-3">Upload Prescription Photo</h4>
+            <label className="block cursor-pointer">
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Prescription" className="max-h-32 mx-auto rounded mb-2" />
+                ) : (
+                  <div className="text-gray-400">
+                    <svg className="mx-auto h-10 w-10 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-sm">Click to upload prescription photo</p>
+                    <p className="text-xs text-gray-400 mt-1">AI will extract drug names automatically</p>
+                  </div>
+                )}
+                {ocrLoading && <p className="text-sm text-blue-600 animate-pulse mt-2">Extracting drugs from image...</p>}
+              </div>
+              <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+            </label>
+          </div>
+
+          <h4 className="text-sm font-semibold text-gray-700 mb-3">Or Enter Manually</h4>
           {drugs.map((drug, i) => (
             <div key={i} className="flex gap-3 items-center">
               <span className="text-sm font-medium text-gray-400 w-6">{i + 1}.</span>

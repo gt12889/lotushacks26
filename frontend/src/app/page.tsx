@@ -26,6 +26,7 @@ interface Summary {
   price_range: string | null;
   potential_savings: number | null;
   total_results: number;
+  variants?: string[];
 }
 
 export default function Home() {
@@ -86,6 +87,9 @@ export default function Home() {
     }
   };
 
+  const activeAgents = Object.values(results).filter(r => r.status === 'searching').length;
+  const completedAgents = Object.values(results).filter(r => r.status === 'success' || r.status === 'error').length;
+  const totalAgents = Object.keys(results).length;
   const hasResults = Object.keys(results).length > 0;
 
   return (
@@ -114,6 +118,19 @@ export default function Home() {
               </h3>
             )}
 
+            {isSearching && totalAgents > 0 && (
+              <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="font-medium text-gray-700">
+                    {activeAgents} agent{activeAgents !== 1 ? 's' : ''} active
+                  </span>
+                </div>
+                <span className="text-gray-400">|</span>
+                <span className="text-gray-500">{completedAgents}/{totalAgents} complete</span>
+              </div>
+            )}
+
             <PharmacyCards results={results} />
 
             {summary && (
@@ -124,6 +141,24 @@ export default function Home() {
                 potentialSavings={summary.potential_savings}
                 totalResults={summary.total_results}
               />
+            )}
+
+            {summary?.variants && summary.variants.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p className="text-sm font-medium text-blue-700 mb-2">Generic alternatives found:</p>
+                <div className="flex gap-2 flex-wrap">
+                  {summary.variants.map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => handleSearch(v)}
+                      disabled={isSearching}
+                      className="px-3 py-1.5 text-sm bg-white text-blue-700 border border-blue-300 rounded-full hover:bg-blue-100 transition-colors disabled:opacity-50"
+                    >
+                      Search &ldquo;{v}&rdquo;
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
 
             <PriceGrid results={results} bestPrice={summary?.best_price ?? null} />

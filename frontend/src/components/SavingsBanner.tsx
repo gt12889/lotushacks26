@@ -28,7 +28,7 @@ export default function SavingsBanner({ bestPrice, bestSource, priceRange, poten
         {potentialSavings && potentialSavings > 0 && (
           <div className="text-center">
             <p className="text-sm font-medium text-orange-600">Potential Savings</p>
-            <p className="text-2xl font-bold text-orange-700">{potentialSavings.toLocaleString()} VND</p>
+            <p className="text-2xl font-bold text-orange-700">{potentialSavings.toLocaleString()} VND ({Math.round((potentialSavings / (bestPrice + potentialSavings)) * 100)}%)</p>
             <p className="text-xs text-orange-500">vs most expensive option</p>
           </div>
         )}
