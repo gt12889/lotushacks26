@@ -117,7 +117,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 7,
-      "passes": false,
+      "passes": true,
       "notes": "Stats section is in /frontend/src/app/page.tsx around lines 150-180."
     },
     {
@@ -137,7 +137,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 8,
-      "passes": false,
+      "passes": true,
       "notes": "AgentActivityFeed is 157 lines. Only replace the list animation mechanism — keep the terminal styling and event rendering."
     },
     {

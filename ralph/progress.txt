@@ -14,6 +14,7 @@
 - shadcn Collapsible v4 uses `defaultOpen` prop and manages state internally — no useState needed for expand/collapse
 - 21st.dev registry may return 500 errors — implement ReactBits components manually when needed
 - Custom Counter component at ui/counter.tsx provides animated number transitions (easeOutExpo, requestAnimationFrame)
+- Custom AnimatedList component at ui/animated-list.tsx wraps keyed children with CSS slide-in animation (plays once per mount)
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -95,5 +96,34 @@
   - Counter component supports value, duration, className, style, and formatter props
   - For composite displays like "X/Y", use inline Counter without className and wrap in parent span for styling
   - formatVnd can be passed as Counter's formatter prop for currency formatting
+---
+
+## 2026-03-21 - US-007
+- Added Counter animations to landing page stats section (< 30s, 14.2M+, 99.9%, Top 5)
+- Extracted StatsSection component with IntersectionObserver to trigger counters on scroll into view
+- Counters animate from 0 to target value with 1.5s duration; observer fires once at 0.3 threshold
+- Numbers format correctly: 14.2M+ and 99.9% use toFixed(1) formatter, 30s and Top 5 use integer default
+- tabular-nums font variant applied for stable alignment during animation
+- Files changed: frontend/src/app/page.tsx
+- **Learnings for future iterations:**
+  - Counter component works well with prefix/suffix text — just wrap Counter inline between string fragments
+  - IntersectionObserver with disconnect-on-first-intersect is the simplest scroll-trigger pattern
+  - For decimal values, pass a formatter to Counter since it rounds by default (Math.round)
+  - Extracting section to its own component keeps hooks (useRef, useState) isolated from the parent
+---
+
+## 2026-03-21 - US-008
+- Created custom AnimatedList component in src/components/ui/animated-list.tsx (21st.dev registry returned 500)
+- AnimatedList wraps keyed children with CSS animation that plays once per mount — no re-animation on re-render
+- Refactored AgentActivityFeed.tsx: event items render via AnimatedList with slide-in animation
+- Removed inline terminalSlideIn animation style from event items
+- Added animatedListSlideIn keyframe to globals.css (same easing as terminalSlideIn)
+- All terminal styling preserved: mac dots, LIVE badge, sonar dots, event colors, blinking cursor, 50-event limit
+- Files changed: ui/animated-list.tsx (new), AgentActivityFeed.tsx, globals.css
+- **Learnings for future iterations:**
+  - AnimatedList relies on stable React keys — items with the same key won't re-mount or re-animate
+  - CSS animation with `both` fill-mode plays once on mount, which is the correct behavior for list entry animations
+  - terminalSlideIn keyframe is still in globals.css — US-014 cleanup story should audit whether it's still used elsewhere
+  - 21st.dev registry continues to be unreliable (500 errors) — always be prepared to implement manually
 ---
 
