@@ -9,6 +9,8 @@
 - shadcn v4.1.0 uses `base-nova` style (not `new-york`/`default` — those are removed in v4+)
 - shadcn init with `-d -y` flags for non-interactive defaults
 - App is always dark-themed — no .dark class toggle needed, :root vars set to abyss theme directly
+- Components in src/components/ use mixed import styles: relative (`./Foo`) for siblings, alias (`@/components/Foo`) from app pages — replace both when swapping components
+- shadcn Badge v4 uses `useRender` from `@base-ui/react` — pass `className` overrides to customize colors
 
 ## 2026-03-21 - US-001
 - Initialized shadcn/ui via `npx shadcn@latest init -d -y`
@@ -20,5 +22,18 @@
   - shadcn init merges with existing globals.css rather than overwriting — appends :root/.dark vars at the bottom
   - The app body colors are set via plain CSS (`body { background-color: #0D1C32; color: #D6E3FF; }`) not @apply
   - clsx and tailwind-merge are auto-installed as dependencies by shadcn init
+---
+
+## 2026-03-21 - US-002
+- Installed shadcn Badge component via `npx shadcn@latest add badge -y`
+- Created MegalodonBadge wrapper in src/components/ui/megalodon-badge.tsx mapping all 7 status types to Badge with outline variant and custom theme colors
+- Replaced all StatusPill imports/usages in PharmacyCards.tsx, PriceGrid.tsx, DashboardHome.tsx, alerts/page.tsx
+- Deleted StatusPill.tsx
+- Files changed: ui/badge.tsx (new), ui/megalodon-badge.tsx (new), PharmacyCards.tsx, PriceGrid.tsx, DashboardHome.tsx, alerts/page.tsx, StatusPill.tsx (deleted)
+- **Learnings for future iterations:**
+  - shadcn v4 Badge uses `useRender` from `@base-ui/react` — different API than older shadcn versions
+  - StatusPill was used in 4 files with 8 total usages — always grep broadly when replacing components
+  - Some files import components with relative paths (`./StatusPill`), others use alias (`@/components/StatusPill`) — replace both patterns
+  - MegalodonBadge preserves the same prop interface (status, label) for drop-in replacement
 ---
 

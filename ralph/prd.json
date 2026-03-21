@@ -33,7 +33,7 @@
         "Verify in browser using dev-browser skill"
       ],
       "priority": 2,
-      "passes": false,
+      "passes": true,
       "notes": "StatusPill is used in PharmacyCards.tsx and PriceGrid.tsx. Check all import references."
     },
     {
