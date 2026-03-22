@@ -86,4 +86,4 @@ We don't just find the cheapest price — we find the **safest cheapest price**:
 
 ---
 
-**Demo script**: [docs/DEMO.md](docs/DEMO.md) | **Slides**: [docs/SLIDES.md](docs/SLIDES.md) | **Q&A prep**: [docs/Q&A.md](docs/Q&A.md)
+**Demo script & Q&A**: [docs/DEMO.md](docs/DEMO.md) | **Full PRD**: [docs/PRD.md](docs/PRD.md)
