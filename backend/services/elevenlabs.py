@@ -22,10 +22,19 @@ VOICE_SETTINGS = {
 
 MAX_TEXT_LENGTH = 250  # Keep short to conserve credits
 
+# Track quota exhaustion to avoid repeated failed calls
+_quota_exhausted = False
+
 
 async def generate_audio(text: str, api_key: str) -> bytes | None:
     """Generate Vietnamese speech audio with fallback voices."""
+    global _quota_exhausted
+
     if not api_key or not text:
+        return None
+
+    if _quota_exhausted:
+        logger.warning("ElevenLabs quota exhausted — skipping TTS call")
         return None
 
     # Truncate to conserve credits
@@ -51,9 +60,14 @@ async def generate_audio(text: str, api_key: str) -> bytes | None:
                 if response.status_code == 200:
                     logger.info(f"ElevenLabs audio generated ({len(response.content)} bytes, voice: {voice_id})")
                     return response.content
-                elif response.status_code == 401 and "quota" in response.text.lower():
-                    logger.warning(f"ElevenLabs quota exceeded for voice {voice_id}")
-                    continue  # Try next voice
+                elif response.status_code == 401:
+                    body = response.text.lower()
+                    if "quota" in body:
+                        logger.warning(f"ElevenLabs quota exceeded — 0 credits remaining")
+                        _quota_exhausted = True
+                        return None  # Don't keep trying other voices
+                    logger.error(f"ElevenLabs 401 (bad key): {response.text[:200]}")
+                    return None  # Bad API key — stop entirely
                 else:
                     logger.warning(f"ElevenLabs voice {voice_id} failed: {response.status_code}")
                     continue

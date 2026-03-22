@@ -348,7 +348,7 @@ def _validate_tinyfish_result(event: dict, source_id: str) -> tuple[str, str]:
 
 
 AGENT_TIMEOUT = 15.0  # seconds for mock mode
-MAX_RETRIES = 3
+MAX_RETRIES = 1  # single attempt for demo speed (was 3)
 RETRY_DELAYS = [1.0, 3.0, 5.0]  # exponential-ish backoff
 # VND price bounds for sanity checking
 MIN_PRICE_VND = 1_000
@@ -359,7 +359,7 @@ async def search_single_pharmacy_safe(source_id: str, query: str, api_key: str, 
     """Timeout-isolated wrapper with retry logic around search_single_pharmacy."""
     config = PHARMACY_CONFIGS.get(source_id)
     name = config["name"] if config else "Unknown"
-    effective_timeout = 180.0 if api_key else timeout
+    effective_timeout = 25.0 if api_key else timeout  # was 180s, reduced for demo
     last_error = None
 
     for attempt in range(MAX_RETRIES):

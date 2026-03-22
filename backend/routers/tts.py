@@ -50,6 +50,10 @@ async def tts_summary(req: TTSSummaryRequest):
     text = _build_vietnamese_summary(req)
     logger.info(f"TTS summary text: {text}")
 
+    from services.elevenlabs import _quota_exhausted
+    if _quota_exhausted:
+        return Response(status_code=503, content="ElevenLabs quota exhausted — 0 credits remaining")
+
     audio = await generate_audio(text, settings.elevenlabs_api_key)
     if not audio:
         return Response(status_code=502, content="TTS generation failed")

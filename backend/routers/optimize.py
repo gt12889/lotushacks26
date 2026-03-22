@@ -1,14 +1,41 @@
 """Prescription optimizer endpoint"""
 import asyncio
 import json
+import logging
 from fastapi import APIRouter, UploadFile, File
 from fastapi.responses import StreamingResponse
 from models.schemas import OptimizeRequest, OptimizeResponse, OptimizeDrugResult
 from services.tinyfish import search_all_pharmacies, search_all_pharmacies_batch
 from services.ocr import extract_drugs_from_image
 from config import settings
+from database import get_db
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
+
+
+async def _get_cached_prices(drug: str) -> list[dict]:
+    """Fall back to cached prices in DB when live search returns no results."""
+    db = await get_db()
+    try:
+        cursor = await db.execute(
+            """SELECT product_name, price, source_id,
+                      (SELECT name FROM sources WHERE id = p.source_id) as source_name
+               FROM prices p
+               WHERE LOWER(drug_query) LIKE LOWER(?)
+               ORDER BY price ASC""",
+            (f"%{drug.split()[0]}%",),
+        )
+        rows = await cursor.fetchall()
+        # Deduplicate by product_name, keeping cheapest
+        seen = {}
+        for row in rows:
+            name = row["product_name"]
+            if name not in seen or row["price"] < seen[name]["price"]:
+                seen[name] = dict(row)
+        return list(seen.values())
+    finally:
+        await db.close()
 
 
 @router.post("/optimize", response_model=OptimizeResponse)
@@ -17,6 +44,7 @@ async def optimize_prescription(request: OptimizeRequest):
 
     Uses /run-batch for atomic multi-drug submission when API key is configured,
     falling back to individual parallel searches for mock mode.
+    Falls back to cached DB prices when live search returns no results.
     """
     if settings.tinyfish_api_key:
         # Batch: single POST for all drugs x pharmacies
@@ -33,6 +61,8 @@ async def optimize_prescription(request: OptimizeRequest):
         all_results = dict(zip(request.drugs, gathered))
 
     items = []
+    source_totals = {}
+
     for drug, results in all_results.items():
         best_price: int | None = None
         best_source = ""
@@ -46,6 +76,15 @@ async def optimize_prescription(request: OptimizeRequest):
                         best_source = result.source_name
                         best_name = product.product_name
 
+        # Fallback: use cached DB prices when live search has no results
+        if best_price is None:
+            logger.info(f"Optimize: live search empty for '{drug}', falling back to cached DB prices")
+            cached = await _get_cached_prices(drug)
+            if cached:
+                best_price = cached[0]["price"]
+                best_source = cached[0]["source_name"] or cached[0]["source_id"]
+                best_name = cached[0]["product_name"]
+
         if best_price is not None:
             items.append(OptimizeDrugResult(
                 drug=drug,
@@ -56,14 +95,27 @@ async def optimize_prescription(request: OptimizeRequest):
 
     total_optimized = sum(i.best_price for i in items)
 
-    # Calculate single-source comparison
-    source_totals = {}
+    # Calculate single-source comparison from live results
     for drug, results in all_results.items():
         for source_id, result in results.items():
             if result.status == "success" and result.products:
                 cheapest = min(p.price for p in result.products)
                 source_totals.setdefault(result.source_name, 0)
                 source_totals[result.source_name] += cheapest
+
+    # If no live source totals, build from cached DB prices
+    if not source_totals and items:
+        for drug in request.drugs:
+            cached = await _get_cached_prices(drug)
+            # Group by source, pick cheapest per source
+            per_source: dict[str, int] = {}
+            for row in cached:
+                src = row["source_name"] or row["source_id"]
+                if src not in per_source or row["price"] < per_source[src]:
+                    per_source[src] = row["price"]
+            for src, price in per_source.items():
+                source_totals.setdefault(src, 0)
+                source_totals[src] += price
 
     best_single = min(source_totals.items(), key=lambda x: x[1]) if source_totals else None
 
