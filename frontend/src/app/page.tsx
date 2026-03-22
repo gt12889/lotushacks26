@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLocale } from '@/components/LocaleProvider';
-import { Counter } from '@/components/ui/counter';
 import { LampDemo } from '@/components/ui/lamp';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
@@ -15,17 +14,6 @@ import { SponsorHighlight } from '@/components/SponsorHighlight';
 import { LANDING_SPONSOR_KEYS, LANDING_SPONSOR_BRAND } from '@/lib/landing-sponsors';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { Zap, FlaskConical, Radio } from 'lucide-react';
-
-type HeroStat =
-  | {
-      kind: 'counter';
-      label: string;
-      prefix?: string;
-      suffix?: string;
-      value: number;
-      formatter?: (v: number) => string;
-    }
-  | { kind: 'text'; label: string; value: string };
 
 export default function LandingPage() {
   const { t } = useLocale();
@@ -77,23 +65,6 @@ export default function LandingPage() {
       .catch(() => {});
   }, []);
 
-  useEffect(() => {
-    if (!mounted) return;
-    const el = statsRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setStatsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.3 },
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [mounted]);
-
   if (!mounted) {
     return (
       <div className="min-h-screen bg-abyss flex flex-col items-center justify-center gap-4">
@@ -122,84 +93,43 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero: parallax background + staggered copy */}
       <HeroParallax
-        className="relative pt-40 sm:pt-44 md:pt-52 pb-32 md:pb-44 overflow-hidden min-h-[min(100dvh,56rem)]"
+        className="relative pt-[11.5rem] sm:pt-[12.65rem] md:pt-[14.95rem] pb-[9.2rem] md:pb-[12.65rem] overflow-hidden min-h-[min(100dvh,64.4rem)]"
         parallaxBack={<HeroSplineBackground />}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-x-14 lg:gap-y-12 items-start">
-            <motion.div
-              className="lg:col-span-7 text-left space-y-6 sm:space-y-7 max-w-2xl lg:max-w-none"
-              variants={heroStagger}
-              initial="hidden"
-              animate="show"
+          <motion.div
+            className="text-left space-y-7 sm:space-y-8 max-w-3xl"
+            variants={heroStagger}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.h1
+              variants={heroItem}
+              className="text-[clamp(2.156rem,4.83vw,3.738rem)] sm:text-[3.45rem] lg:text-[3.738rem] font-semibold tracking-tight text-t1 leading-[1.08]"
             >
-              <motion.h1
+              {t('landing.heroLine1')} <br />
+              <span className="text-cyan">{t('landing.heroLine2')}</span>
+            </motion.h1>
+
+            {t('landing.heroSub') && (
+              <motion.p
                 variants={heroItem}
-                className="text-[clamp(1.875rem,4.2vw,3.25rem)] sm:text-5xl lg:text-[3.25rem] font-semibold tracking-tight text-t1 leading-[1.08]"
+                className="max-w-xl text-[1.15rem] sm:text-[1.3rem] text-t3 font-light leading-relaxed"
               >
-                {t('landing.heroLine1')} <br />
-                <span className="text-cyan">{t('landing.heroLine2')}</span>
-              </motion.h1>
+                {t('landing.heroSub')}
+              </motion.p>
+            )}
 
-              {t('landing.heroSub') && (
-                <motion.p
-                  variants={heroItem}
-                  className="max-w-xl text-base sm:text-lg text-t3 font-light leading-relaxed"
-                >
-                  {t('landing.heroSub')}
-                </motion.p>
-              )}
-
-              <motion.div variants={heroItem} className="pt-1">
-                <LiquidButton
-                  href="/dashboard"
-                  size="lg"
-                  className="btn-press w-full sm:w-auto min-h-11 sm:min-h-12 rounded-lg px-7 text-sm sm:text-base font-bold text-cyan"
-                >
-                  {t('landing.enterDashboard')}
-                </LiquidButton>
-              </motion.div>
+            <motion.div variants={heroItem} className="pt-1">
+              <LiquidButton
+                href="/dashboard"
+                size="lg"
+                className="btn-press w-full sm:w-auto min-h-[3.15rem] sm:min-h-[3.45rem] rounded-xl px-8 sm:px-9 text-base sm:text-lg font-bold text-cyan"
+              >
+                {t('landing.enterDashboard')}
+              </LiquidButton>
             </motion.div>
-
-            <div className="lg:col-span-5 w-full lg:pt-1">
-              <div
-                ref={statsRef}
-                className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md sm:max-w-lg lg:max-w-none lg:ml-auto"
-              >
-                {stats.map((s, i) => (
-                  <motion.div
-                    key={i}
-                    initial={reduceMotion ? false : { opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: '-40px' }}
-                    transition={{ delay: reduceMotion ? 0 : 0.05 * i, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                    className="interactive-lift flex flex-col justify-between min-h-[5.5rem] sm:min-h-[6.25rem] p-4 sm:p-5 rounded-xl bg-card/20 border border-border/40 backdrop-blur-sm"
-                  >
-                    <div
-                      className="text-xl sm:text-2xl lg:text-[1.65rem] font-bold text-cyan leading-none flex items-baseline flex-wrap gap-x-0.5 [font-variant-numeric:tabular-nums]"
-                    >
-                      {s.kind === 'text' ? (
-                        s.value
-                      ) : statsVisible ? (
-                        <>
-                          {s.prefix}
-                          <Counter value={s.value} duration={1500} formatter={s.formatter} />
-                          {s.suffix}
-                        </>
-                      ) : (
-                        <>
-                          {s.prefix ?? ''}0{s.suffix ?? ''}
-                        </>
-                      )}
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] font-mono text-t3 uppercase tracking-wider sm:tracking-widest leading-snug mt-2">
-                      {s.label}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </div>
+          </motion.div>
         </div>
       </HeroParallax>
 
@@ -213,7 +143,7 @@ export default function LandingPage() {
         <LampDemo
           line1={t('landing.lampLine1')}
           line2={t('landing.lampLine2')}
-          className="min-h-[150vh] rounded-none"
+          className="min-h-[135vh] rounded-none"
           compact
         />
         </ScrollReveal>

@@ -1,5 +1,6 @@
 'use client';
 
+import { Component, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import type { Application } from '@splinetool/runtime';
 
@@ -36,6 +37,28 @@ const overlays = {
   none: 'none',
 };
 
+const FALLBACK_GRADIENT =
+  'linear-gradient(135deg,#0D1C32_0%,#0a1628_25%,#05101f_50%,#0D1C32_75%,#0a1628_100%)';
+
+/** Catches Spline "Data read, but end of buffer not reached" and similar runtime errors */
+class SplineErrorBoundary extends Component<
+  { children: ReactNode; fallback: ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
+
 export function SplineSceneBackground({
   sceneUrl,
   overlay = 'abyss',
@@ -43,17 +66,26 @@ export function SplineSceneBackground({
   disableControls = true,
   className = '',
 }: SplineSceneBackgroundProps) {
+  const containerClass = `absolute inset-0 w-full h-full overflow-hidden ${className}`;
+
   return (
-    <div
-      className={`absolute inset-0 w-full h-full overflow-hidden ${className}`}
-      aria-hidden
-    >
-      <Spline
-        scene={sceneUrl}
-        className="!absolute !inset-0 !w-full !h-full"
-        renderOnDemand={false}
-        onLoad={(s) => onSplineLoad(s, zoom, disableControls)}
-      />
+    <div className={containerClass} aria-hidden>
+      <SplineErrorBoundary
+        fallback={
+          <div
+            className="absolute inset-0"
+            style={{ background: FALLBACK_GRADIENT }}
+            aria-hidden
+          />
+        }
+      >
+        <Spline
+          scene={sceneUrl}
+          className="!absolute !inset-0 !w-full !h-full"
+          renderOnDemand={false}
+          onLoad={(s) => onSplineLoad(s, zoom, disableControls)}
+        />
+      </SplineErrorBoundary>
       {overlay !== 'none' && (
         <div
           className="absolute inset-0 pointer-events-none z-[1]"

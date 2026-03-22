@@ -3,16 +3,15 @@
 import Link from 'next/link';
 import { SplineSceneBackground } from '@/components/SplineSceneBackground';
 
-// Gradient Sphere scene - export from https://my.spline.design/gradientspherecopycopy-a1M44pCCvPegifqvCL6BLexy-VN6/
-// If the scene doesn't load, export as "Code" > "React" from Spline and paste the prod.spline.design URL
-const GRADIENT_SPHERE_SCENE =
-  'https://prod.spline.design/gradientspherecopycopy-a1M44pCCvPegifqvCL6BLexy-VN6/scene.splinecode';
+// Gradient Sphere had "Data read, but end of buffer not reached" - use hero scene which is known to work.
+// To fix Gradient Sphere: in Spline export, use Viewer URL instead of Public URL.
+const ABOUT_SCENE = 'https://prod.spline.design/A3OzKbt9KVVITkmz/scene.splinecode';
 
 export default function AboutPage() {
   return (
     <div className="min-h-screen relative overflow-hidden">
       <SplineSceneBackground
-        sceneUrl={GRADIENT_SPHERE_SCENE}
+        sceneUrl={ABOUT_SCENE}
         overlay="abyss"
         zoom={1.2}
         disableControls

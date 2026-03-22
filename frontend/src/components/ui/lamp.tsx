@@ -29,7 +29,7 @@ export function LampDemo({
         className={cn(
           "bg-gradient-to-br from-slate-300 to-slate-500 bg-clip-text text-center font-medium tracking-tight text-transparent",
           compact
-            ? "mt-4 py-6 text-6xl sm:text-7xl md:text-8xl leading-[1.05]"
+            ? "mt-3 py-5 text-[3.375rem] sm:text-[4.05rem] md:text-[5.4rem] leading-[1.05]"
             : "mt-8 py-4 text-4xl md:text-7xl"
         )}
       >
@@ -127,7 +127,7 @@ export const LampContainer = ({
       <div
         className={cn(
           "relative z-50 flex flex-col items-center px-5 max-w-[95vw]",
-          compact ? "-translate-y-28 md:-translate-y-36" : "-translate-y-80"
+          compact ? "-translate-y-[6.3rem] md:-translate-y-[8.1rem]" : "-translate-y-80"
         )}
       >
         {children}

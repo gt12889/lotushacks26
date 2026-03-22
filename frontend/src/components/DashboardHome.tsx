@@ -594,7 +594,7 @@ export default function DashboardHome() {
               </div>
             )}
 
-            {(hasResults || isSearching) && (
+            {(hasResults || isSearching) ? (
               <div className="space-y-4">
                 {currentQuery && (
                 <div className="space-y-1">
@@ -757,8 +757,6 @@ export default function DashboardHome() {
                   bestPrice={scanSummary?.best_price ?? undefined}
                   bestSource={scanSummary?.best_source ?? undefined}
                 />
-              </div>
-            )}
 
             {scanSummary && (trendLoading || trendData.length > 0) && (
               <div className="space-y-3">
@@ -801,7 +799,7 @@ export default function DashboardHome() {
               </div>
             </div>
           </div>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
