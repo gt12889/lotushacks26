@@ -19,8 +19,8 @@ import CeilingPanel from '@/components/CeilingPanel';
 import VoiceSummary from '@/components/VoiceSummary';
 import ActionLabel from '@/components/ActionLabel';
 import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
-import { ApiErrorBanner } from '@/components/ApiErrorBanner';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import DiscordPreview from '@/components/DiscordPreview';
+import Disclosure from '@/components/Disclosure';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
 import { Zap, BarChart3, Pill, Eye, Shield, Bell, TrendingUp, Brain } from 'lucide-react';
@@ -94,8 +94,6 @@ export default function DashboardHome() {
   const [insightError, setInsightError] = useState<string | null>(null);
   const [trendData, setTrendData] = useState<TrendPoint[]>([]);
   const [trendLoading, setTrendLoading] = useState(false);
-  const [trendError, setTrendError] = useState<string | null>(null);
-  const [searchError, setSearchError] = useState<string | null>(null);
   const [sparklineData, setSparklineData] = useState<Record<string, { source_name: string; points: { price: number; time: string }[] }>>({});
   const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
@@ -193,32 +191,19 @@ export default function DashboardHome() {
     const q = scanSummary?.query?.trim();
     if (!q) {
       setTrendData([]);
-      setTrendError(null);
       return;
     }
     let cancelled = false;
     setTrendLoading(true);
-    setTrendError(null);
     void (async () => {
       try {
         const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
-        if (!res.ok) {
-          if (!cancelled) {
-            setTrendData([]);
-            setTrendError(t('error.server', { status: res.status }));
-          }
-          return;
-        }
         const json = await res.json();
         if (!cancelled) {
           setTrendData(Array.isArray(json.data) ? json.data : []);
-          setTrendError(null);
         }
       } catch {
-        if (!cancelled) {
-          setTrendData([]);
-          setTrendError(t('error.trends'));
-        }
+        if (!cancelled) setTrendData([]);
       } finally {
         if (!cancelled) setTrendLoading(false);
       }
@@ -226,7 +211,7 @@ export default function DashboardHome() {
     return () => {
       cancelled = true;
     };
-  }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results, t]);
+  }, [scanSummary?.query, scanSummary?.best_price, scanSummary?.total_results]);
 
   useEffect(() => {
     if (!scanSummary?.query) return;
@@ -243,7 +228,6 @@ export default function DashboardHome() {
   }, [scanSummary?.query]);
 
   const handleSearch = async (query: string) => {
-    setSearchError(null);
     const searchStart = Date.now();
     setIsSearching(true);
     setResults({});
@@ -296,17 +280,7 @@ export default function DashboardHome() {
         `${API_URL}/api/search?query=${encodeURIComponent(query)}${memQ}`,
         { method: 'POST' }
       );
-      if (!response.ok || !response.body) {
-        addAgentEvent(
-          'error',
-          'Orchestrator',
-          response.ok ? t('error.searchStream') : t('error.server', { status: response.status })
-        );
-        setSearchError(
-          response.ok ? t('error.searchStream') : t('error.server', { status: response.status })
-        );
-        return;
-      }
+      if (!response.ok || !response.body) throw new Error('Search failed');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
@@ -332,7 +306,6 @@ export default function DashboardHome() {
                 `${event.product_name}: ${event.manufacturer_check?.known_good ? 'Verified mfr' : 'Unverified mfr'}`
               );
             } else if (event.type === 'counterfeit_risk') {
-              // Late-arriving counterfeit risk report from Exa Research
               setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
             } else if (event.type === 'model_used') {
               if (event.step === 'normalize' && event.original_query && event.normalized_query) {
@@ -463,10 +436,6 @@ export default function DashboardHome() {
       }
     } catch (error) {
       console.error('Search error:', error);
-      const msg =
-        error instanceof TypeError ? t('error.network') : t('error.searchStream');
-      setSearchError(msg);
-      addAgentEvent('error', 'Orchestrator', msg);
     } finally {
       setIsSearching(false);
       setSearchTimeMs(Date.now() - searchStart);
@@ -510,297 +479,314 @@ export default function DashboardHome() {
         />
       )}
 
-      <div className="border-b border-border">
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-t1 tracking-tight">
-                {t('dash.title')} <span className="text-cyan">{t('dash.abyss')}</span>
-              </h2>
-              <p className="text-[11px] text-t3 mt-0.5 italic">
-                {t('dash.subtitle')}
+      <div className="max-w-[1400px] mx-auto w-full">
+        <div className="p-6 space-y-6">
+          {/* ── Search ── */}
+          <SearchBar onSearch={handleSearch} isSearching={isSearching} defaultQuery="Metformin 500mg" />
+
+          {memoryHints.length > 0 && (
+            <div className="rounded-lg border border-cyan/20 bg-cyan/5 px-4 py-2.5">
+              <p className="text-[10px] font-mono text-cyan mb-1.5 flex items-center gap-2">
+                {t('dash.supermemoryTitle')} <SponsorBadge sponsors={['Supermemory']} />
               </p>
-            </div>
-            <div className="flex gap-2 mt-1">
-              <button
-                onClick={() => (currentQuery ? handleSearch(currentQuery) : null)}
-                className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider"
-              >
-                {t('dash.deployNewProbe')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-1 max-w-[1400px] mx-auto w-full">
-        <div className="flex-1 min-w-0">
-          <div className="p-6 space-y-5">
-            {memoryHints.length > 0 && (
-              <div className="rounded-lg border border-cyan/25 bg-cyan/5 px-4 py-3">
-                <p className="text-xs font-mono text-cyan mb-2 flex items-center gap-2">{t('dash.supermemoryTitle')} <SponsorBadge sponsors={['Supermemory']} /></p>
-                <ul className="text-xs text-t2 space-y-1 list-disc list-inside">
-                  {memoryHints.slice(0, 5).map((s, i) => (
-                    <li key={i}>{s}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {memoryEmptyHint && memoryHints.length === 0 && (
-              <p className="text-xs text-t3 font-mono">{t('dash.supermemoryHint')}</p>
-            )}
-
-            {searchError && (
-              <ApiErrorBanner
-                message={`${t('dash.searchErrorTitle')}: ${searchError}`}
-                onDismiss={() => setSearchError(null)}
-              />
-            )}
-
-            <SearchBar onSearch={handleSearch} isSearching={isSearching} defaultQuery="Metformin 500mg" />
-
-            {!hasResults && !isSearching && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                {[
-                  {
-                    key: 'agents',
-                    icon: <Zap className="w-5 h-5 text-cyan" />,
-                    title: t('dash.cardAgentsTitle'),
-                    desc: t('dash.cardAgentsDesc'),
-                  },
-                  {
-                    key: 'intel',
-                    icon: <BarChart3 className="w-5 h-5 text-cyan" />,
-                    title: t('dash.cardIntelTitle'),
-                    desc: t('dash.cardIntelDesc'),
-                  },
-                  {
-                    key: 'opt',
-                    icon: <Pill className="w-5 h-5 text-cyan" />,
-                    title: t('dash.cardOptTitle'),
-                    desc: t('dash.cardOptDesc'),
-                  },
-                ].map((card) => (
-                  <div
-                    key={card.key}
-                    className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors"
-                  >
-                    <div className="mb-3">{card.icon}</div>
-                    <h3 className="font-bold text-t1 text-sm mb-2">{card.title}</h3>
-                    <p className="text-xs text-t3">{card.desc}</p>
-                  </div>
+              <ul className="text-[11px] text-t2 space-y-0.5 list-disc list-inside">
+                {memoryHints.slice(0, 3).map((s, i) => (
+                  <li key={i}>{s}</li>
                 ))}
-              </div>
-            )}
+              </ul>
+            </div>
+          )}
 
-            {(hasResults || isSearching) ? (
-              <div className="space-y-4">
-                {currentQuery && (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-xs font-mono text-t2">
-                      {t('dash.scanning')}{' '}
-                      <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
-                    </h3>
-                    {isSearching && (
-                      <div className="flex items-center gap-2">
-                        <LoadingSpinner
-                          size="sm"
-                          className="[&_span]:border-cyan/20 [&_span]:border-t-cyan"
-                        />
-                        <span className="text-[10px] text-t3 font-mono">{t('dash.agentsActive')}</span>
-                      </div>
-                    )}
-                  </div>
+          {memoryEmptyHint && memoryHints.length === 0 && (
+            <p className="text-[10px] text-t3 font-mono">{t('dash.supermemoryHint')}</p>
+          )}
+
+          {/* ── Empty state ── */}
+          {!hasResults && !isSearching && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {[
+                {
+                  key: 'agents',
+                  icon: <Zap className="w-5 h-5 text-cyan" />,
+                  title: t('dash.cardAgentsTitle'),
+                  desc: t('dash.cardAgentsDesc'),
+                },
+                {
+                  key: 'intel',
+                  icon: <BarChart3 className="w-5 h-5 text-cyan" />,
+                  title: t('dash.cardIntelTitle'),
+                  desc: t('dash.cardIntelDesc'),
+                },
+                {
+                  key: 'opt',
+                  icon: <Pill className="w-5 h-5 text-cyan" />,
+                  title: t('dash.cardOptTitle'),
+                  desc: t('dash.cardOptDesc'),
+                },
+              ].map((card) => (
+                <div
+                  key={card.key}
+                  className="bg-deep border border-border rounded-lg p-6 hover:border-cyan/30 transition-colors"
+                >
+                  <div className="mb-3">{card.icon}</div>
+                  <h3 className="font-bold text-t1 text-sm mb-2">{card.title}</h3>
+                  <p className="text-xs text-t3">{card.desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── Results ── */}
+          {(hasResults || isSearching) && (
+            <div className="space-y-4">
+              {/* Status line — minimal */}
+              {currentQuery && (
+                <div className="flex items-center gap-3">
+                  <h3 className="text-xs font-mono text-t2">
+                    {isSearching ? t('dash.scanning') : 'Results for'}{' '}
+                    <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
+                  </h3>
+                  {isSearching && (
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
+                      <span className="text-[10px] text-t3 font-mono">{pharmaciesComplete}/5</span>
+                    </div>
+                  )}
+                  {!isSearching && searchTimeMs && (
+                    <span className="text-[10px] text-t3 font-mono">{(searchTimeMs / 1000).toFixed(1)}s</span>
+                  )}
                   {normalization && (
-                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono ml-auto">
                       <SponsorBadge sponsors={['Qwen']} />
-                      <span className="text-t3">&ldquo;{normalization.original}&rdquo;</span>
+                      <span className="text-t3">{normalization.original}</span>
                       <span className="text-cyan">→</span>
-                      <span className="text-t1">&ldquo;{normalization.normalized}&rdquo;</span>
+                      <span className="text-t1">{normalization.normalized}</span>
                     </div>
                   )}
                 </div>
               )}
-              <LiveBrowserPreview
-                  streamingUrls={streamingUrls}
-                  pharmacyNames={Object.fromEntries(
-                    Object.values(results).map((r) => [r.source_id, r.source_name])
+
+              {/* ── Hero: Pharmacy cards + savings ── */}
+              <PharmacyCards results={results} sparklines={sparklineData} />
+
+              {scanSummary && (
+                <SavingsBanner
+                  bestPrice={scanSummary.best_price}
+                  bestSource={scanSummary.best_source}
+                  priceRange={scanSummary.price_range}
+                  potentialSavings={scanSummary.potential_savings}
+                  totalResults={scanSummary.total_results}
+                />
+              )}
+
+              {/* ── Compact metrics row ── */}
+              <LiveMetricsBar
+                agentsSpawned={agentEvents.filter((e) => e.type === 'spawn').length}
+                pharmaciesComplete={pharmaciesComplete}
+                pharmaciesTotal={5}
+                productsFound={productsFound}
+                savingsVnd={scanSummary?.potential_savings ?? null}
+                isActive={isSearching}
+              />
+
+              {/* ── Collapsible detail sections ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Left column */}
+                <div className="space-y-3">
+                  {/* Agent Pipeline */}
+                  <Disclosure
+                    title="Agent Pipeline"
+                    icon={<Eye className="w-3.5 h-3.5 text-cyan" />}
+                    defaultOpen={false}
+                    badge={`${pharmaciesComplete}/5`}
+                  >
+                    <LiveBrowserPreview
+                      streamingUrls={streamingUrls}
+                      pharmacyNames={Object.fromEntries(
+                        Object.values(results).map((r) => [r.source_id, r.source_name])
+                      )}
+                      isSearching={isSearching}
+                      agentStatuses={(() => {
+                        const statuses: Record<string, 'active' | 'success' | 'error'> = {};
+                        for (const [sid, r] of Object.entries(results)) {
+                          if (r.status === 'success') statuses[sid] = 'success';
+                          else if (r.status === 'error') statuses[sid] = 'error';
+                        }
+                        if (isSearching) {
+                          for (const sid of Object.keys(streamingUrls)) {
+                            if (!statuses[sid]) statuses[sid] = 'active';
+                          }
+                        }
+                        return statuses;
+                      })()}
+                      agentResults={(() => {
+                        const res: Record<string, { resultCount: number; price?: number }> = {};
+                        for (const [sid, r] of Object.entries(results)) {
+                          if (r.status === 'success') {
+                            res[sid] = { resultCount: r.result_count, price: r.lowest_price ?? undefined };
+                          }
+                        }
+                        return res;
+                      })()}
+                    />
+                    <AgentCascade
+                      tier0Active={false}
+                      tier1Active={isSearching ? 5 - pharmaciesComplete : 0}
+                      tier1Complete={pharmaciesComplete}
+                      tier1Total={5}
+                      tier2Variants={scanSummary?.variants?.length ?? 0}
+                      tier3ScoutSpawnCount={scanSummary?.variants?.length ?? 0}
+                      tier4AnalystActive={!!scanSummary && !analystVerdict}
+                      tier4AnalystComplete={!!analystVerdict}
+                      tier5InvestigationCount={0}
+                      visible={isSearching || hasResults}
+                    />
+                    <AgentActivityFeed events={agentEvents} isActive={isSearching} />
+                    <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
+                  </Disclosure>
+
+                  {/* Price Trends */}
+                  {scanSummary && (trendLoading || trendData.length > 0) && (
+                    <Disclosure
+                      title="Price Trends"
+                      icon={<TrendingUp className="w-3.5 h-3.5 text-[#2DD4BF]" />}
+                      accent="#2DD4BF"
+                      defaultOpen={false}
+                    >
+                      <div className="flex items-center justify-end">
+                        <Link
+                          href={`/trends?q=${encodeURIComponent(scanSummary.query)}`}
+                          className="text-[10px] text-cyan hover:underline font-mono"
+                        >
+                          {t('dash.trendsOpen')}
+                        </Link>
+                      </div>
+                      {trendLoading && (
+                        <p className="text-xs text-t3 animate-pulse font-mono">{t('dash.trendsLoading')}</p>
+                      )}
+                      {!trendLoading && trendData.length > 0 && <PricingChart data={trendData} />}
+                    </Disclosure>
                   )}
-                  isSearching={isSearching}
-                  agentStatuses={(() => {
-                    const statuses: Record<string, 'active' | 'success' | 'error'> = {};
-                    for (const [sid, r] of Object.entries(results)) {
-                      if (r.status === 'success') statuses[sid] = 'success';
-                      else if (r.status === 'error') statuses[sid] = 'error';
-                    }
-                    if (isSearching) {
-                      for (const sid of Object.keys(streamingUrls)) {
-                        if (!statuses[sid]) statuses[sid] = 'active';
-                      }
-                    }
-                    return statuses;
-                  })()}
-                  agentResults={(() => {
-                    const res: Record<string, { resultCount: number; price?: number }> = {};
-                    for (const [sid, r] of Object.entries(results)) {
-                      if (r.status === 'success') {
-                        res[sid] = { resultCount: r.result_count, price: r.lowest_price ?? undefined };
-                      }
-                    }
-                    return res;
-                  })()}
-                />
-                <LiveMetricsBar
-                  agentsSpawned={agentEvents.filter((e) => e.type === 'spawn').length}
-                  pharmaciesComplete={pharmaciesComplete}
-                  pharmaciesTotal={5}
-                  productsFound={productsFound}
-                  savingsVnd={scanSummary?.potential_savings ?? null}
-                  isActive={isSearching}
-                />
-                <AgentCascade
-                  tier0Active={false}
-                  tier1Active={isSearching ? 5 - pharmaciesComplete : 0}
-                  tier1Complete={pharmaciesComplete}
-                  tier1Total={5}
-                  tier2Variants={scanSummary?.variants?.length ?? 0}
-                  tier3ScoutSpawnCount={scanSummary?.variants?.length ?? 0}
-                  tier4AnalystActive={!!scanSummary && !analystVerdict}
-                  tier4AnalystComplete={!!analystVerdict}
-                  tier5InvestigationCount={0}
-                  visible={isSearching || hasResults}
-                />
-                <PharmacyCards results={results} sparklines={sparklineData} />
-                <AgentActivityFeed events={agentEvents} isActive={isSearching} />
-                <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
-                {analystVerdict && (
-                  <ActionLabel verdict={analystVerdict} signals={(scanSummary as any)?.confidence_scoring?.signals ?? null} />
-                )}
-                {scanSummary && (
-                  <>
-                    <SavingsBanner
-                      bestPrice={scanSummary.best_price}
-                      bestSource={scanSummary.best_source}
-                      priceRange={scanSummary.price_range}
-                      potentialSavings={scanSummary.potential_savings}
-                      totalResults={scanSummary.total_results}
-                    />
-                    <VoiceSummary
-                      query={scanSummary.query}
-                      bestPrice={scanSummary.best_price}
-                      bestSource={scanSummary.best_source}
-                      potentialSavings={scanSummary.potential_savings}
-                      totalResults={scanSummary.total_results}
-                    />
-                    <ComparisonBanner
-                      searchTimeMs={searchTimeMs}
-                      pharmacyCount={pharmaciesComplete}
-                      productCount={productsFound}
-                    />
-                  </>
-                )}
-                {scanSummary?.price_fluctuations && scanSummary.price_fluctuations.length > 0 && (
-                  <div className="rounded-lg border border-border bg-card/40 px-4 py-3">
-                    <p className="text-xs font-mono text-t2 mb-2">{t('dash.fluctuationTitle')}</p>
-                    <ul className="text-xs text-t3 space-y-1.5 list-disc list-inside">
-                      {scanSummary.price_fluctuations.map((line: string, i: number) => (
-                        <li key={i}>{line}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {(insightLoading || insight || insightError) && (
-                  <div className="rounded-lg border border-cyan/30 bg-deep px-4 py-3">
-                    <p className="text-xs font-mono text-cyan mb-2 flex items-center gap-2">{t('dash.insightTitle')} <SponsorBadge sponsors={['Supermemory']} /></p>
-                    {insightLoading && (
-                      <div className="flex items-center gap-2 text-xs text-t3">
-                        <LoadingSpinner size="sm" />
-                        <span>{t('dash.insightLoading')}</span>
+                </div>
+
+                {/* Right column */}
+                <div className="space-y-3">
+                  {/* Price Comparison */}
+                  <Disclosure
+                    title="Price Comparison"
+                    icon={<BarChart3 className="w-3.5 h-3.5 text-cyan" />}
+                    badge={productsFound || null}
+                    defaultOpen={true}
+                  >
+                    {analystVerdict && (
+                      <ActionLabel verdict={analystVerdict} signals={(scanSummary as any)?.confidence_scoring?.signals ?? null} />
+                    )}
+                    {scanSummary && (
+                      <ComparisonBanner
+                        searchTimeMs={searchTimeMs}
+                        pharmacyCount={pharmaciesComplete}
+                        productCount={productsFound}
+                      />
+                    )}
+                    <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} whoRef={scanSummary?.who_reference ?? null} />
+                  </Disclosure>
+
+                  {/* Market Intelligence */}
+                  <Disclosure
+                    title="Market Intelligence"
+                    icon={<Brain className="w-3.5 h-3.5 text-[#A78BFA]" />}
+                    accent="#A78BFA"
+                    defaultOpen={false}
+                  >
+                    {scanSummary?.price_fluctuations && scanSummary.price_fluctuations.length > 0 && (
+                      <div className="rounded-lg border border-border bg-card/40 px-3 py-2.5">
+                        <p className="text-[10px] font-mono text-t2 mb-1.5">{t('dash.fluctuationTitle')}</p>
+                        <ul className="text-[11px] text-t3 space-y-1 list-disc list-inside">
+                          {scanSummary.price_fluctuations.map((line: string, i: number) => (
+                            <li key={i}>{line}</li>
+                          ))}
+                        </ul>
                       </div>
                     )}
-                    {!insightLoading && insight && (
-                      <p className="text-sm text-t2 leading-relaxed whitespace-pre-wrap">{insight}</p>
+                    {(insightLoading || insight || insightError) && (
+                      <div className="rounded-lg border border-cyan/20 bg-deep px-3 py-2.5">
+                        <p className="text-[10px] font-mono text-cyan mb-1.5 flex items-center gap-2">{t('dash.insightTitle')} <SponsorBadge sponsors={['Supermemory']} /></p>
+                        {insightLoading && (
+                          <p className="text-[11px] text-t3 animate-pulse">{t('dash.insightLoading')}</p>
+                        )}
+                        {!insightLoading && insight && (
+                          <p className="text-xs text-t2 leading-relaxed whitespace-pre-wrap">{insight}</p>
+                        )}
+                        {!insightLoading && insightError && (
+                          <p className="text-[11px] text-t3">{insightError}</p>
+                        )}
+                      </div>
                     )}
-                    {!insightLoading && insightError && (
-                      <p className="text-xs text-t3">{insightError}</p>
+                    {scanSummary?.variants && scanSummary.variants.length > 0 && (
+                      <div className="bg-deep border border-cyan/15 rounded-lg p-2.5">
+                        <p className="text-[10px] font-mono text-cyan mb-1.5">{t('dash.variantsTitle')}</p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {scanSummary.variants.map((v) => (
+                            <button
+                              key={v}
+                              onClick={() => handleSearch(v)}
+                              disabled={isSearching}
+                              className="px-2 py-0.5 text-[10px] bg-card text-cyan border border-cyan/25 rounded hover:bg-cyan/10 transition-colors disabled:opacity-50"
+                            >
+                              {t('dash.scanDrug', { name: v })}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                  </div>
-                )}
-                {scanSummary?.variants && scanSummary.variants.length > 0 && (
-                  <div className="bg-deep border border-cyan/20 rounded-lg p-3">
-                    <p className="text-[10px] font-mono text-cyan mb-2">{t('dash.variantsTitle')}</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {scanSummary.variants.map((v) => (
-                        <button
-                          key={v}
-                          onClick={() => handleSearch(v)}
-                          disabled={isSearching}
-                          className="px-2.5 py-1 text-[10px] bg-card text-cyan border border-cyan/30 rounded hover:bg-cyan/10 transition-colors disabled:opacity-50"
-                        >
-                          {t('dash.scanDrug', { name: v })}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                <CeilingPanel compliance={(scanSummary as any)?.compliance ?? null} query={currentQuery} />
-                <CounterfeitRiskPanel
-                  anomalies={(scanSummary as any)?.price_anomalies ?? null}
-                  risk={(scanSummary as any)?.counterfeit_risk ?? null}
-                  investigations={investigationResults}
-                />
-                <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} whoRef={scanSummary?.who_reference ?? null} />
-                <DemoAlertTrigger
-                  drugName={currentQuery || 'Metformin 500mg'}
-                  bestPrice={scanSummary?.best_price ?? undefined}
-                  bestSource={scanSummary?.best_source ?? undefined}
-                />
+                    {scanSummary && (
+                      <VoiceSummary
+                        query={scanSummary.query}
+                        bestPrice={scanSummary.best_price}
+                        bestSource={scanSummary.best_source}
+                        potentialSavings={scanSummary.potential_savings}
+                        totalResults={scanSummary.total_results}
+                      />
+                    )}
+                  </Disclosure>
 
-            {scanSummary && (trendLoading || trendData.length > 0) && (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <p className="text-xs font-mono text-t2">{t('dash.trendsTitle')}</p>
-                  <Link
-                    href={`/trends?q=${encodeURIComponent(scanSummary.query)}`}
-                    className="text-xs text-cyan hover:underline font-mono"
+                  {/* Compliance & Risk */}
+                  <Disclosure
+                    title="Compliance & Risk"
+                    icon={<Shield className="w-3.5 h-3.5 text-[#F97316]" />}
+                    accent="#F97316"
+                    defaultOpen={false}
                   >
-                    {t('dash.trendsOpen')}
-                  </Link>
-                </div>
-                {trendLoading && (
-                  <div className="flex items-center gap-2 text-xs text-t3 font-mono">
-                    <LoadingSpinner size="sm" />
-                    <span>{t('dash.trendsLoading')}</span>
-                  </div>
-                )}
-                {!trendLoading && trendError && (
-                  <ApiErrorBanner message={trendError} onDismiss={() => setTrendError(null)} />
-                )}
-                {!trendLoading && trendData.length > 0 && <PricingChart data={trendData} />}
-              </div>
-            )}
+                    <CeilingPanel compliance={(scanSummary as any)?.compliance ?? null} query={currentQuery} />
+                    <CounterfeitRiskPanel
+                      anomalies={(scanSummary as any)?.price_anomalies ?? null}
+                      risk={(scanSummary as any)?.counterfeit_risk ?? null}
+                      investigations={investigationResults}
+                    />
+                  </Disclosure>
 
-            <div className="flex items-center gap-6 text-[10px]">
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-cyan rounded-sm" />
-                <span className="text-t2 font-mono">
-                  {t('dash.chartAwp')}{' '}
-                  <span className="text-t3">{t('dash.chartAwpDrug')}</span>
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-white/20 rounded-sm" />
-                <span className="text-t2 font-mono">
-                  {t('dash.chartWac')}{' '}
-                  <span className="text-t3">{t('dash.chartWacDrug')}</span>
-                </span>
+                  {/* Alerts & Notifications */}
+                  <Disclosure
+                    title="Alerts"
+                    icon={<Bell className="w-3.5 h-3.5 text-[#F97316]" />}
+                    accent="#F97316"
+                    defaultOpen={false}
+                  >
+                    <DemoAlertTrigger
+                      drugName={currentQuery || 'Metformin 500mg'}
+                      bestPrice={scanSummary?.best_price ?? undefined}
+                      bestSource={scanSummary?.best_source ?? undefined}
+                    />
+                    <DiscordPreview
+                      drugName={currentQuery || 'Metformin 500mg'}
+                      bestPrice={scanSummary?.best_price ?? undefined}
+                      bestSource={scanSummary?.best_source ?? undefined}
+                    />
+                  </Disclosure>
+                </div>
               </div>
             </div>
-          </div>
-            ) : null}
-          </div>
+          )}
         </div>
       </div>
       </div>

@@ -13,8 +13,8 @@ interface SavingsBannerProps {
 
 function shareViaZalo(query: string, bestPrice: number, bestSource: string, savings: number | null) {
   const text = savings && savings > 0
-    ? `MediScrape: ${query} - Best price ${bestPrice.toLocaleString()} VND at ${bestSource}. Save ${savings.toLocaleString()} VND (${Math.round((savings / (bestPrice + savings)) * 100)}%)!`
-    : `MediScrape: ${query} - Best price ${bestPrice.toLocaleString()} VND at ${bestSource}`;
+    ? `MegalodonMD: ${query} - Best price ${bestPrice.toLocaleString()} VND at ${bestSource}. Save ${savings.toLocaleString()} VND (${Math.round((savings / (bestPrice + savings)) * 100)}%)!`
+    : `MegalodonMD: ${query} - Best price ${bestPrice.toLocaleString()} VND at ${bestSource}`;
   const url = `https://zalo.me/share?text=${encodeURIComponent(text)}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
@@ -22,60 +22,59 @@ function shareViaZalo(query: string, bestPrice: number, bestSource: string, savi
 export default function SavingsBanner({ bestPrice, bestSource, priceRange, potentialSavings, totalResults, query }: SavingsBannerProps) {
   if (!bestPrice) return null;
 
+  const savingsPct = potentialSavings && potentialSavings > 0
+    ? Math.round((potentialSavings / (bestPrice + potentialSavings)) * 100)
+    : null;
+
   return (
-    <div className="bioluminescent-card p-6">
-      <div className="flex items-center justify-between flex-wrap gap-6">
+    <div className="panel p-4">
+      <div className="flex items-center gap-6 flex-wrap">
+        {/* Best price */}
         <div>
-          <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Best Price Detected</p>
-          <p className="text-2xl font-bold font-mono text-success">{bestPrice.toLocaleString()} VND</p>
-          <p className="text-xs text-t3">at <span className="text-cyan">{bestSource}</span></p>
+          <p className="text-[10px] text-t3 mb-0.5">Best price</p>
+          <p className="text-xl font-bold font-mono text-success">{bestPrice.toLocaleString()} <span className="text-sm font-normal text-t3">VND</span></p>
+          <p className="text-[11px] text-t3">at <span className="text-t2">{bestSource}</span></p>
         </div>
+
+        {/* Divider */}
+        <div className="w-px h-10 bg-border hidden md:block" />
+
+        {/* Range */}
         {priceRange && (
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Price Range</p>
+          <div>
+            <p className="text-[10px] text-t3 mb-0.5">Range</p>
             <p className="text-sm font-mono text-t1">{priceRange}</p>
           </div>
         )}
+
+        {/* Savings */}
         {potentialSavings && potentialSavings > 0 && (
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Potential Savings</p>
-            <p className="text-xl font-bold font-mono text-warn">
-              {potentialSavings.toLocaleString()} VND
-              <span className="text-sm ml-1">({Math.round((potentialSavings / (bestPrice + potentialSavings)) * 100)}%)</span>
+          <div>
+            <p className="text-[10px] text-t3 mb-0.5">Savings</p>
+            <p className="text-lg font-bold font-mono text-warn">
+              {potentialSavings.toLocaleString()} <span className="text-sm font-normal">({savingsPct}%)</span>
             </p>
           </div>
         )}
-        <div className="text-center">
-          <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Total Results</p>
-          <p className="text-xl font-bold font-mono text-t1">{totalResults}</p>
+
+        {/* Divider */}
+        <div className="w-px h-10 bg-border hidden md:block" />
+
+        {/* Results count */}
+        <div>
+          <p className="text-[10px] text-t3 mb-0.5">Products</p>
+          <p className="text-lg font-bold font-mono text-t1">{totalResults}</p>
         </div>
 
-        {/* Procurement savings calculator */}
-        {potentialSavings && potentialSavings > 0 && bestSource && (
-          <div className="bg-deep border border-success/20 rounded-lg px-4 py-3 text-center">
-            <p className="text-[10px] uppercase tracking-wider text-t3 font-mono mb-1">Procurement Projection</p>
-            <p className="text-xs text-t2 leading-relaxed">
-              Sourcing from <span className="text-cyan font-medium">{bestSource}</span> saves{' '}
-              <span className="text-success font-bold">{potentialSavings.toLocaleString()} VND</span>/unit.
-            </p>
-            <p className="text-xs text-t2 mt-1">
-              At 500 units/month → annual savings:{' '}
-              <span className="text-warn font-bold text-base">
-                {(potentialSavings * 500 * 12).toLocaleString()} VND
-              </span>
-            </p>
-          </div>
-        )}
-
-        {/* Zalo share */}
+        {/* Zalo share — pushed right */}
         {bestSource && query && (
           <button
             onClick={() => shareViaZalo(query, bestPrice, bestSource, potentialSavings ?? null)}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan/10 border border-cyan/30 text-cyan hover:bg-cyan/20 transition-colors text-xs font-mono"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-t3 hover:text-cyan hover:bg-cyan/5 transition-colors text-[11px]"
             title="Share via Zalo"
           >
-            <Share2 size={14} strokeWidth={1.5} />
-            Share via Zalo
+            <Share2 size={12} strokeWidth={1.5} />
+            Share
           </button>
         )}
       </div>
