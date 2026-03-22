@@ -33,6 +33,13 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [liveStats, setLiveStats] = useState<{
+    total_products: number;
+    total_scans: number;
+    pharmacies_covered: number;
+    drugs_tracked: number;
+    avg_scan_time_ms: number;
+  } | null>(null);
 
   const heroStagger = useMemo(
     () => ({
@@ -64,6 +71,10 @@ export default function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
+    fetch('http://localhost:8000/api/stats')
+      .then((r) => r.json())
+      .then(setLiveStats)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -92,15 +103,17 @@ export default function LandingPage() {
     );
   }
 
+  const scanTimeSec = liveStats ? liveStats.avg_scan_time_ms / 1000 : 30;
   const stats: HeroStat[] = [
     {
       kind: 'counter',
       label: t('landing.statLatency'),
       prefix: t('landing.statLatencyValuePrefix'),
       suffix: t('landing.statLatencyValueSuffix'),
-      value: 30,
+      value: scanTimeSec,
+      formatter: (v: number) => v.toFixed(1),
     },
-    { kind: 'counter', label: t('landing.statChains'), value: 5 },
+    { kind: 'counter', label: t('landing.statChains'), value: liveStats ? liveStats.total_scans : 5 },
     { kind: 'text', label: t('landing.statPharmacies'), value: t('landing.statPharmaciesValue') },
     { kind: 'text', label: t('landing.statMarket'), value: t('landing.statMarketValue') },
   ];
@@ -109,7 +122,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero: parallax background + staggered copy */}
       <HeroParallax
-        className="relative pt-20 sm:pt-24 md:pt-28 pb-32 md:pb-44 overflow-hidden min-h-[min(100dvh,56rem)]"
+        className="relative pt-40 sm:pt-44 md:pt-52 pb-32 md:pb-44 overflow-hidden min-h-[min(100dvh,56rem)]"
         parallaxBack={<HeroSplineBackground />}
       >
         <div className="max-w-7xl mx-auto px-6 sm:px-8">

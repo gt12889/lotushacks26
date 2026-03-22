@@ -8,11 +8,12 @@ import { LoadingSpinner } from '@/components/ui/loading-spinner';
 interface SearchBarProps {
   onSearch: (query: string) => void;
   isSearching: boolean;
+  defaultQuery?: string;
 }
 
-export default function SearchBar({ onSearch, isSearching }: SearchBarProps) {
+export default function SearchBar({ onSearch, isSearching, defaultQuery = '' }: SearchBarProps) {
   const { t } = useLocale();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(defaultQuery);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
 

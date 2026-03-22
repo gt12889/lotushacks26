@@ -5,7 +5,7 @@ import logging
 import time
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
-from models.schemas import PharmacySearchResult
+from models.schemas import PharmacySearchResult, ProductResult
 from services.tinyfish import search_single_pharmacy_safe, PHARMACY_CONFIGS
 from services.variants import discover_variants_with_exa
 from services.exa import search_who_reference_price, search_drug_info, research_counterfeit_risk, detect_price_anomaly, investigate_anomalous_product
@@ -191,6 +191,75 @@ async def search_drugs(
                     variant_tasks.append(asyncio.create_task(
                         _discover_variants(result.products, t2_aid)
                     ))
+
+        # --- Cache fallback: if ALL Tier 1 agents failed, load from DB ---
+        all_failed = all(r.status != "success" for r in results.values())
+        if all_failed:
+            try:
+                db = await get_db()
+                try:
+                    cursor = await db.execute(
+                        """SELECT source_id, product_name, price, original_price,
+                                  pack_size, unit_price, manufacturer, in_stock, product_url
+                           FROM prices
+                           WHERE LOWER(drug_query) LIKE '%' || LOWER(?) || '%'
+                              OR LOWER(?) LIKE '%' || LOWER(drug_query) || '%'
+                           ORDER BY observed_at DESC""",
+                        (query, query),
+                    )
+                    rows = await cursor.fetchall()
+                finally:
+                    await db.close()
+
+                if rows:
+                    # Group cached rows by source_id, dedup by product_name (keep cheapest)
+                    cached_by_source: dict[str, list] = {}
+                    seen_products: dict[str, set] = {}
+                    for row in rows:
+                        sid = row["source_id"] or "unknown"
+                        pname = row["product_name"]
+                        if sid not in seen_products:
+                            seen_products[sid] = set()
+                        if pname in seen_products[sid]:
+                            continue
+                        seen_products[sid].add(pname)
+                        cached_by_source.setdefault(sid, []).append(row)
+
+                    for sid, sid_rows in cached_by_source.items():
+                        products = []
+                        for row in sid_rows:
+                            products.append(ProductResult(
+                                product_name=row["product_name"],
+                                price=row["price"],
+                                original_price=row["original_price"],
+                                pack_size=row["pack_size"] or 1,
+                                unit_price=row["unit_price"],
+                                manufacturer=row["manufacturer"],
+                                in_stock=bool(row["in_stock"]),
+                                product_url=row["product_url"],
+                            ))
+                        source_name = PHARMACY_CONFIGS.get(sid, {}).get("name", sid)
+                        lowest = min(p.price for p in products)
+                        cached_result = PharmacySearchResult(
+                            source_id=sid,
+                            source_name=source_name,
+                            status="success",
+                            products=products,
+                            lowest_price=lowest,
+                            result_count=len(products),
+                            response_time_ms=0,
+                        )
+                        results[sid] = cached_result
+                        all_products.extend(products)
+
+                        # Emit the cached pharmacy result for the frontend
+                        yield f"data: {json.dumps(cached_result.model_dump())}\n\n"
+
+                    cache_count = sum(len(ps) for ps in cached_by_source.values())
+                    yield f"data: {json.dumps({'type': 'cache_fallback', 'message': 'Using cached price data', 'count': cache_count})}\n\n"
+                    logger.info(f"Cache fallback: loaded {cache_count} products for query '{query}'")
+            except Exception as e:
+                logger.error(f"Cache fallback DB error: {e}")
 
         # Collect variant results
         all_variants = []

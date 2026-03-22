@@ -115,6 +115,7 @@ export default function DashboardHome() {
   const latestQueryRef = useRef('');
   const lastSummaryRef = useRef<ScanSummary | null>(null);
   const eventIdRef = useRef(0);
+  const autoSearchedRef = useRef(false);
 
   const pharmaciesComplete = Object.values(results).filter(
     (r) => r.status === 'success' || r.status === 'error'
@@ -472,6 +473,13 @@ export default function DashboardHome() {
     }
   };
 
+  // Auto-search on initial mount so judges see results immediately
+  useEffect(() => {
+    if (autoSearchedRef.current) return;
+    autoSearchedRef.current = true;
+    handleSearch('Metformin 500mg');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const hasResults = Object.keys(results).length > 0;
   const hasMegalodon =
     scanSummary &&
@@ -480,7 +488,19 @@ export default function DashboardHome() {
     scanSummary.potential_savings > scanSummary.best_price;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none z-0"
+      >
+        <source src="/drone-ocean-bg.mp4" type="video/mp4" />
+      </video>
+
+      <div className="relative z-10 min-h-screen flex flex-col">
       {hasMegalodon && scanSummary && (
         <MegalodonAlert
           drugName={scanSummary.query}
@@ -538,7 +558,7 @@ export default function DashboardHome() {
               />
             )}
 
-            <SearchBar onSearch={handleSearch} isSearching={isSearching} />
+            <SearchBar onSearch={handleSearch} isSearching={isSearching} defaultQuery="Metformin 500mg" />
 
             {!hasResults && !isSearching && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
@@ -784,6 +804,7 @@ export default function DashboardHome() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

@@ -37,7 +37,7 @@ const QUICK_SUGGESTIONS = [
 function TrendsContent() {
   const { t } = useLocale();
   const searchParams = useSearchParams();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState('Metformin 500mg');
   const [days, setDays] = useState(7);
   const [data, setData] = useState<PricePoint[]>([]);
   const [loading, setLoading] = useState(false);
@@ -112,6 +112,14 @@ function TrendsContent() {
       setLoading(false);
     }
   };
+
+  // Auto-load Metformin 500mg on mount if no search param provided
+  useEffect(() => {
+    if (!searchParams.get('q')) {
+      fetchTrends('Metformin 500mg');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleNLSearch = async (nlQuery: string) => {
     setNlLoading(true);
