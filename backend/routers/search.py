@@ -61,6 +61,7 @@ async def search_drugs(
 ):
     """SSE streaming search with agent orchestration."""
     # Normalize Vietnamese drug query via Qwen (OpenRouter) for better matching
+    original_query = query
     qwen_latency: int | None = None
     if settings.openrouter_api_key:
         _qwen_start = time.time()
@@ -88,7 +89,11 @@ async def search_drugs(
 
         # Emit Qwen normalization model_used event (measured in outer scope)
         if qwen_latency is not None:
-            yield f"data: {json.dumps({'type': 'model_used', 'step': 'normalize', 'model': 'qwen/qwen-2.5-72b-instruct', 'provider': 'OpenRouter', 'latency_ms': qwen_latency})}\n\n"
+            norm_event = {'type': 'model_used', 'step': 'normalize', 'model': 'qwen/qwen-2.5-72b-instruct', 'provider': 'OpenRouter', 'latency_ms': qwen_latency}
+            if original_query != query:
+                norm_event['original_query'] = original_query
+                norm_event['normalized_query'] = query
+            yield f"data: {json.dumps(norm_event, ensure_ascii=False)}\n\n"
 
         mgr = AgentManager()
         results = {}

@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import SponsorBadge from '@/components/SponsorBadge';
 
 interface LiveBrowserPreviewProps {
   streamingUrls: Record<string, string>;
@@ -10,6 +11,8 @@ interface LiveBrowserPreviewProps {
   agentStatuses?: Record<string, 'active' | 'success' | 'error'>;
   agentResults?: Record<string, { resultCount: number; price?: number }>;
 }
+
+const BRIGHTDATA_PROXIED = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
 const PHARMACY_NAME_MAP: Record<string, string> = {
   long_chau: 'FPT Long Chau',
@@ -98,6 +101,12 @@ export default function LiveBrowserPreview({
                   <span className="text-[9px] font-mono text-t2 uppercase tracking-wider truncate">
                     {getPharmacyName(sourceId)}
                   </span>
+                  {BRIGHTDATA_PROXIED.has(sourceId) && (
+                    <span className="flex items-center gap-1">
+                      <SponsorBadge sponsors={['BrightData']} />
+                      <span className="text-[7px] text-t3 font-mono">VN proxy</span>
+                    </span>
+                  )}
                 </div>
 
                 <iframe

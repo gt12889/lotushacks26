@@ -29,7 +29,7 @@ MegalodonMD deploys **5 parallel TinyFish stealth agents** across Vietnam's larg
 
 ## What Makes This Different
 
-### 5-Tier Agent Cascade
+### 6-Tier Agent Cascade (Tiers 0-5)
 
 | Tier | Agent | What It Does |
 |------|-------|-------------|
@@ -65,7 +65,7 @@ We don't just find the cheapest price — we find the **safest cheapest price**:
 |--------|-------|
 | Pharmacy chains scraped simultaneously | 5 |
 | Total pharmacy stores covered | 3,751+ |
-| Agent tiers in cascade | 5 (includes investigation swarm) |
+| Agent tiers in cascade | 6 (Tiers 0-5: OCR → Search → Variant → Scout-Spawn → Analyst → Investigation) |
 | SSE event types | 24+ |
 | Sponsor integrations | 9 |
 | Exa use cases | 5 |

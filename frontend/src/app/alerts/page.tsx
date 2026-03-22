@@ -5,6 +5,7 @@ import MegalodonBadge from '@/components/ui/megalodon-badge';
 import { ApiErrorBanner } from '@/components/ApiErrorBanner';
 import { LoadingPanel, LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocale } from '@/components/LocaleProvider';
+import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -143,7 +144,7 @@ export default function AlertsPage() {
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-8">
         <div>
           <h2 className="text-xl font-bold text-t1">Megalodon Alert System</h2>
-          <p className="text-xs text-t3 mt-1">Set price alerts and monitoring schedules</p>
+          <p className="text-xs text-t3 mt-1 flex items-center gap-2">Set price alerts and monitoring schedules <SponsorBadge sponsors={['Discord']} /></p>
         </div>
 
         {listError && (
