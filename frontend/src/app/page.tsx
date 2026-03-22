@@ -14,9 +14,20 @@ export default function LandingPage() {
   const [mounted, setMounted] = useState(false);
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
+  const [liveStats, setLiveStats] = useState<{
+    total_products: number;
+    total_scans: number;
+    pharmacies_covered: number;
+    drugs_tracked: number;
+    avg_scan_time_ms: number;
+  } | null>(null);
 
   useEffect(() => {
     setMounted(true);
+    fetch('http://localhost:8000/api/stats')
+      .then((r) => r.json())
+      .then(setLiveStats)
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -37,11 +48,12 @@ export default function LandingPage() {
 
   if (!mounted) return null;
 
+  const scanTimeSec = liveStats ? liveStats.avg_scan_time_ms / 1000 : 30;
   const stats = [
-    { label: t('landing.statLatency'), prefix: '< ', value: 30, suffix: 's' },
-    { label: t('landing.statData'), value: 14.2, suffix: 'M+', formatter: (v: number) => v.toFixed(1) },
-    { label: t('landing.statAccuracy'), value: 99.9, suffix: '%', formatter: (v: number) => v.toFixed(1) },
-    { label: t('landing.statCoverage'), prefix: 'Top ', value: 5, suffix: '' },
+    { label: t('landing.statLatency'), prefix: '< ', value: scanTimeSec, suffix: 's', formatter: (v: number) => v.toFixed(1) },
+    { label: t('landing.statData'), value: liveStats ? liveStats.total_scans : 14.2, suffix: liveStats ? '' : 'M+' },
+    { label: t('landing.statAccuracy'), value: liveStats ? liveStats.pharmacies_covered : 99.9, suffix: liveStats ? ' pharmacies' : '%', formatter: liveStats ? undefined : (v: number) => v.toFixed(1) },
+    { label: t('landing.statCoverage'), value: liveStats ? liveStats.drugs_tracked : 5, suffix: liveStats ? ' drugs' : '', prefix: liveStats ? '' : 'Top ' },
   ];
 
   return (
