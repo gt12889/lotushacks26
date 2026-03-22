@@ -5,6 +5,7 @@ import { Camera } from 'lucide-react';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
 import LiveMetricsBar from '@/components/LiveMetricsBar';
 import AgentCascade from '@/components/AgentCascade';
+import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -240,7 +241,10 @@ export default function OptimizePage() {
 
         <div className="bg-deep border border-border rounded-lg p-6 space-y-4">
           <div className="border-b border-border pb-6">
-            <h4 className="text-xs uppercase tracking-wider text-t3 font-mono mb-3">Upload Prescription Photo</h4>
+            <div className="flex items-center gap-2 mb-3">
+              <h4 className="text-xs uppercase tracking-wider text-t3 font-mono">Upload Prescription Photo</h4>
+              <SponsorBadge sponsors={['OpenAI']} />
+            </div>
             <label className="block cursor-pointer">
               <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-cyan/30 transition-colors">
                 {imagePreview ? (
@@ -258,7 +262,10 @@ export default function OptimizePage() {
             </label>
           </div>
 
-          <h4 className="text-xs uppercase tracking-wider text-t3 font-mono">Prescription Manifest</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="text-xs uppercase tracking-wider text-t3 font-mono">Prescription Manifest</h4>
+            <SponsorBadge sponsors={['TinyFish']} />
+          </div>
           {drugs.map((drug, i) => (
             <div key={i} className="flex gap-3 items-center">
               <span className="text-xs font-mono text-t3 w-6">{i + 1}.</span>
@@ -283,8 +290,10 @@ export default function OptimizePage() {
           tier1Complete={drugsComplete}
           tier1Total={drugsTotal}
           tier2Variants={0}
-          tier3AnalystActive={false}
-          tier3AnalystComplete={false}
+          tier3ScoutSpawnCount={0}
+          tier4AnalystActive={false}
+          tier4AnalystComplete={false}
+          tier5InvestigationCount={0}
           visible={isActive || !!result}
         />
 

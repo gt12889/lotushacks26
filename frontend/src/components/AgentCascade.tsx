@@ -1,21 +1,26 @@
 'use client';
 
-import { Camera, Search, Dna, Brain } from 'lucide-react';
+import { Camera, Search, Dna, GitBranch, Brain, Shield } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface AgentCascadeProps {
-  tier0Active: boolean;  // OCR running
-  tier1Active: number;   // number of pharmacy agents active
-  tier1Complete: number; // number completed
-  tier1Total: number;    // total pharmacy agents
-  tier2Variants: number; // number of variants discovered
-  tier3AnalystActive: boolean;
-  tier3AnalystComplete: boolean;
+  tier0Active: boolean;
+  tier1Active: number;
+  tier1Complete: number;
+  tier1Total: number;
+  tier2Variants: number;
+  tier3ScoutSpawnCount: number;
+  tier4AnalystActive: boolean;
+  tier4AnalystComplete: boolean;
+  tier5InvestigationCount: number;
   visible: boolean;
 }
 
-export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, tier1Total, tier2Variants, tier3AnalystActive, tier3AnalystComplete, visible }: AgentCascadeProps) {
+export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, tier1Total, tier2Variants, tier3ScoutSpawnCount, tier4AnalystActive, tier4AnalystComplete, tier5InvestigationCount, visible }: AgentCascadeProps) {
   if (!visible) return null;
+
+  const tier2Done = tier2Variants > 0;
+  const tier4Done = tier4AnalystComplete;
 
   const tiers: { label: string; name: string; status: string; detail: string; Icon: LucideIcon }[] = [
     {
@@ -45,12 +50,30 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
     },
     {
       label: 'Tier 3',
+      name: 'Scout-Spawn',
+      status: tier3ScoutSpawnCount > 0 ? 'done' : (tier2Done ? 'active' : 'idle'),
+      detail: tier3ScoutSpawnCount > 0
+        ? `${tier3ScoutSpawnCount} re-searches`
+        : 'Awaiting variants...',
+      Icon: GitBranch,
+    },
+    {
+      label: 'Tier 4',
       name: 'Analyst Verdict',
-      status: tier3AnalystComplete ? 'done' : (tier3AnalystActive ? 'active' : 'idle'),
-      detail: tier3AnalystComplete
+      status: tier4AnalystComplete ? 'done' : (tier4AnalystActive ? 'active' : 'idle'),
+      detail: tier4AnalystComplete
         ? 'Verdict delivered'
-        : tier3AnalystActive ? 'Cross-validating...' : 'Awaiting data',
+        : tier4AnalystActive ? 'Cross-validating...' : 'Awaiting data',
       Icon: Brain,
+    },
+    {
+      label: 'Tier 5',
+      name: 'Investigation Swarm',
+      status: tier5InvestigationCount > 0 ? 'done' : (tier4Done ? 'active' : 'idle'),
+      detail: tier5InvestigationCount > 0
+        ? `${tier5InvestigationCount} investigated`
+        : 'Awaiting anomalies...',
+      Icon: Shield,
     },
   ];
 
@@ -93,10 +116,10 @@ export default function AgentCascade({ tier0Active, tier1Active, tier1Complete, 
   return (
     <div className="bioluminescent-card p-4">
       <h3 className="text-[10px] font-mono uppercase tracking-widest text-t2 mb-3">Agent Cascade Pipeline</h3>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {tiers.map((tier, i) => (
           <div key={tier.label} className="contents">
-            <div className={`flex-1 border rounded-lg p-3 transition-all duration-500 ${statusBorder[tier.status]} ${statusBg[tier.status]}`}>
+            <div className={`min-w-[120px] border rounded-lg p-3 transition-all duration-500 ${statusBorder[tier.status]} ${statusBg[tier.status]}`}>
               <div className="flex items-center gap-2 mb-1">
                 <div
                   className={`w-2 h-2 rounded-full ${dotClass[tier.status]}`}

@@ -22,6 +22,7 @@ import CounterfeitRiskPanel from '@/components/CounterfeitRiskPanel';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
 import { Zap, BarChart3, Pill } from 'lucide-react';
+import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -103,6 +104,7 @@ export default function DashboardHome() {
     { step: 'analyst', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
   ]);
   const [analystVerdict, setAnalystVerdict] = useState<any>(null);
+  const [normalization, setNormalization] = useState<{ original: string; normalized: string } | null>(null);
   const [investigationResults, setInvestigationResults] = useState<any[]>([]);
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -234,6 +236,7 @@ export default function DashboardHome() {
     setCurrentQuery(query);
     setAgentEvents([]);
     setAnalystVerdict(null);
+    setNormalization(null);
     setStreamingUrls({});
     setInvestigationResults([]);
     setSearchTimeMs(null);
@@ -303,6 +306,9 @@ export default function DashboardHome() {
               // Late-arriving counterfeit risk report from Exa Research
               setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
             } else if (event.type === 'model_used') {
+              if (event.step === 'normalize' && event.original_query && event.normalized_query) {
+                setNormalization({ original: event.original_query, normalized: event.normalized_query });
+              }
               setModelSteps(prev => prev.map(s =>
                 s.step === event.step
                   ? { ...s, model: event.model || s.model, provider: event.provider || s.provider, latency_ms: event.latency_ms, status: 'done', count: s.count + 1 }
@@ -479,7 +485,7 @@ export default function DashboardHome() {
         <div className="p-6 space-y-5">
           {memoryHints.length > 0 && (
             <div className="rounded-lg border border-cyan/25 bg-cyan/5 px-4 py-3">
-              <p className="text-xs font-mono text-cyan mb-2">{t('dash.supermemoryTitle')}</p>
+              <p className="text-xs font-mono text-cyan mb-2 flex items-center gap-2">{t('dash.supermemoryTitle')} <SponsorBadge sponsors={['Supermemory']} /></p>
               <ul className="text-xs text-t2 space-y-1 list-disc list-inside">
                 {memoryHints.slice(0, 5).map((s, i) => (
                   <li key={i}>{s}</li>
@@ -531,15 +537,25 @@ export default function DashboardHome() {
           {(hasResults || isSearching) && (
             <div className="space-y-4">
               {currentQuery && (
-                <div className="flex items-center gap-3">
-                  <h3 className="text-xs font-mono text-t2">
-                    {t('dash.scanning')}{' '}
-                    <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
-                  </h3>
-                  {isSearching && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
-                      <span className="text-[10px] text-t3 font-mono">{t('dash.agentsActive')}</span>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-xs font-mono text-t2">
+                      {t('dash.scanning')}{' '}
+                      <span className="text-cyan">&ldquo;{currentQuery}&rdquo;</span>
+                    </h3>
+                    {isSearching && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
+                        <span className="text-[10px] text-t3 font-mono">{t('dash.agentsActive')}</span>
+                      </div>
+                    )}
+                  </div>
+                  {normalization && (
+                    <div className="flex items-center gap-2 text-[10px] font-mono">
+                      <SponsorBadge sponsors={['Qwen']} />
+                      <span className="text-t3">&ldquo;{normalization.original}&rdquo;</span>
+                      <span className="text-cyan">→</span>
+                      <span className="text-t1">&ldquo;{normalization.normalized}&rdquo;</span>
                     </div>
                   )}
                 </div>
@@ -587,15 +603,17 @@ export default function DashboardHome() {
                 tier1Complete={pharmaciesComplete}
                 tier1Total={5}
                 tier2Variants={scanSummary?.variants?.length ?? 0}
-                tier3AnalystActive={!!scanSummary && !analystVerdict}
-                tier3AnalystComplete={!!analystVerdict}
+                tier3ScoutSpawnCount={scanSummary?.variants?.length ?? 0}
+                tier4AnalystActive={!!scanSummary && !analystVerdict}
+                tier4AnalystComplete={!!analystVerdict}
+                tier5InvestigationCount={0}
                 visible={isSearching || hasResults}
               />
               <PharmacyCards results={results} sparklines={sparklineData} />
               <AgentActivityFeed events={agentEvents} isActive={isSearching} />
               <ModelRouterPanel steps={modelSteps} isActive={isSearching} />
               {analystVerdict && (
-                <ActionLabel verdict={analystVerdict} />
+                <ActionLabel verdict={analystVerdict} signals={(scanSummary as any)?.confidence_scoring?.signals ?? null} />
               )}
               {scanSummary && (
                 <>
@@ -632,7 +650,7 @@ export default function DashboardHome() {
               )}
               {(insightLoading || insight || insightError) && (
                 <div className="rounded-lg border border-cyan/30 bg-deep px-4 py-3">
-                  <p className="text-xs font-mono text-cyan mb-2">{t('dash.insightTitle')}</p>
+                  <p className="text-xs font-mono text-cyan mb-2 flex items-center gap-2">{t('dash.insightTitle')} <SponsorBadge sponsors={['Supermemory']} /></p>
                   {insightLoading && (
                     <p className="text-xs text-t3 animate-pulse">{t('dash.insightLoading')}</p>
                   )}

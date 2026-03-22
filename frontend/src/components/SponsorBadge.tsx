@@ -15,6 +15,7 @@ const SPONSOR_COLORS: Record<string, string> = {
   ElevenLabs: '#EC4899',
   OpenAI: '#94A3B8',
   Supermemory: '#8B5CF6',
+  Discord: '#5865F2',
 };
 
 export default function SponsorBadge({ sponsors }: SponsorBadgeProps) {

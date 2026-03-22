@@ -12,6 +12,13 @@ interface AnalystVerdict {
   buy_recommendation: boolean;
 }
 
+interface ConfidenceSignal {
+  signal: string;
+  weight: number;
+  value: number;
+  explanation: string;
+}
+
 const RISK_CONFIG = {
   safe: {
     border: 'border-success',
@@ -43,7 +50,15 @@ const RISK_CONFIG = {
   },
 };
 
-export default function ActionLabel({ verdict }: { verdict: AnalystVerdict }) {
+const SIGNAL_LABELS: Record<string, string> = {
+  source_agreement: 'Source Agreement',
+  price_convergence: 'Price Convergence',
+  compliance_clear: 'Compliance',
+  anomaly_free: 'Anomaly-Free',
+  variant_coverage: 'Variant Coverage',
+};
+
+export default function ActionLabel({ verdict, signals }: { verdict: AnalystVerdict; signals?: ConfidenceSignal[] | null }) {
   const config = RISK_CONFIG[verdict.risk_level] || RISK_CONFIG.caution;
   const { Icon } = config;
 
@@ -75,15 +90,39 @@ export default function ActionLabel({ verdict }: { verdict: AnalystVerdict }) {
         </AccordionTrigger>
 
         <AccordionContent>
-          <div className="mt-3 pt-3 border-t border-border/40">
+          <div className="mt-3 pt-3 border-t border-border/40 space-y-3">
             <p className="text-xs text-t2 leading-relaxed">{verdict.reasoning}</p>
-            <div className="flex gap-4 mt-2 text-[10px] font-mono text-t3">
+            <div className="flex gap-4 text-[10px] font-mono text-t3">
               <span>RISK: <span className={config.text}>{verdict.risk_level.toUpperCase()}</span></span>
               <span>CONFIDENCE: <span className="text-t1">{verdict.confidence_score}%</span></span>
               <span>BUY: <span className={verdict.buy_recommendation ? 'text-success' : 'text-alert-red'}>
                 {verdict.buy_recommendation ? 'YES' : 'NO'}
               </span></span>
             </div>
+            {signals && signals.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[9px] font-mono uppercase tracking-widest text-t3">Confidence Signals</p>
+                {signals.map((s) => {
+                  const pct = Math.round((s.value / s.weight) * 100);
+                  return (
+                    <div key={s.signal} className="flex items-center gap-2">
+                      <span className="text-[10px] font-mono text-t2 w-[130px] shrink-0">
+                        {SIGNAL_LABELS[s.signal] || s.signal}
+                      </span>
+                      <div className="flex-1 h-1.5 bg-border/40 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-success' : pct >= 40 ? 'bg-warn' : 'bg-alert-red'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-mono text-t3 w-[60px] text-right">
+                        {s.value}/{s.weight}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </AccordionContent>
       </AccordionItem>
