@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import MegalodonBadge from '@/components/ui/megalodon-badge';
+import { demoFetch } from '@/lib/api';
 import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -17,13 +18,13 @@ export default function AlertsPage() {
   const [newMonitorDrug, setNewMonitorDrug] = useState('');
   const [newMonitorInterval, setNewMonitorInterval] = useState('15');
 
-  const fetchAlerts = useCallback(async () => { try { const res = await fetch(`${API_URL}/api/alerts`); setAlerts(await res.json()); } catch (e) { console.error(e); } }, []);
-  const fetchMonitors = useCallback(async () => { try { const res = await fetch(`${API_URL}/api/monitors`); setMonitors(await res.json()); } catch (e) { console.error(e); } }, []);
+  const fetchAlerts = useCallback(async () => { try { const res = await demoFetch(`${API_URL}/api/alerts`); setAlerts(await res.json()); } catch (e) { console.error(e); } }, []);
+  const fetchMonitors = useCallback(async () => { try { const res = await demoFetch(`${API_URL}/api/monitors`); setMonitors(await res.json()); } catch (e) { console.error(e); } }, []);
   useEffect(() => { fetchAlerts(); fetchMonitors(); }, [fetchAlerts, fetchMonitors]);
 
-  const createAlert = async () => { if (!newAlertDrug.trim() || !newAlertThreshold) return; await fetch(`${API_URL}/api/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drug_query: newAlertDrug, price_threshold: parseInt(newAlertThreshold) }) }); setNewAlertDrug(''); setNewAlertThreshold(''); fetchAlerts(); };
-  const deleteAlert = async (id: number) => { await fetch(`${API_URL}/api/alerts/${id}`, { method: 'DELETE' }); fetchAlerts(); };
-  const createMonitor = async () => { if (!newMonitorDrug.trim()) return; await fetch(`${API_URL}/api/monitor`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drug_query: newMonitorDrug, interval_minutes: parseInt(newMonitorInterval) }) }); setNewMonitorDrug(''); setNewMonitorInterval('15'); fetchMonitors(); };
+  const createAlert = async () => { if (!newAlertDrug.trim() || !newAlertThreshold) return; await demoFetch(`${API_URL}/api/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drug_query: newAlertDrug, price_threshold: parseInt(newAlertThreshold) }) }); setNewAlertDrug(''); setNewAlertThreshold(''); fetchAlerts(); };
+  const deleteAlert = async (id: number) => { await demoFetch(`${API_URL}/api/alerts/${id}`, { method: 'DELETE' }); fetchAlerts(); };
+  const createMonitor = async () => { if (!newMonitorDrug.trim()) return; await demoFetch(`${API_URL}/api/monitor`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ drug_query: newMonitorDrug, interval_minutes: parseInt(newMonitorInterval) }) }); setNewMonitorDrug(''); setNewMonitorInterval('15'); fetchMonitors(); };
 
   return (
     <div className="min-h-screen">

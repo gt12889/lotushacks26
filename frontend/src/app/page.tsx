@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '@/components/LocaleProvider';
+import { demoFetch } from '@/lib/api';
 import { LiquidButton } from '@/components/ui/liquid-glass-button';
 import { Counter } from '@/components/ui/counter';
 import { Aurora } from '@/components/ui/aurora';
@@ -28,7 +29,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetch('http://localhost:8000/api/stats')
+    demoFetch('http://localhost:8000/api/stats')
       .then((r) => r.json())
       .then(setLiveStats)
       .catch(() => {});

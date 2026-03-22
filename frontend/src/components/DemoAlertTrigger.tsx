@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from 'react';
 
+import { demoFetch } from '@/lib/api';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface DemoAlertTriggerProps {
@@ -27,7 +29,7 @@ export default function DemoAlertTrigger({
     setErrorMsg('');
 
     try {
-      const res = await fetch(`${API_URL}/api/demo-alert`, {
+      const res = await demoFetch(`${API_URL}/api/demo-alert`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

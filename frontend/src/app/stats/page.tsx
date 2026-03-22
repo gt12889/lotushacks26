@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
+import { demoFetch } from '@/lib/api';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 const METRIC_LABELS: Record<string, string> = {
@@ -22,7 +24,7 @@ function StatsDetailContent() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`${API_URL}/api/stats/details?metric=${metric}`)
+    demoFetch(`${API_URL}/api/stats/details?metric=${metric}`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));

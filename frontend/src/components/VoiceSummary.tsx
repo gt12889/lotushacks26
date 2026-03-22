@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Volume2, VolumeX, Loader2 } from 'lucide-react';
 
+import { demoFetch } from '@/lib/api';
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 interface VoiceSummaryProps {
@@ -29,7 +31,7 @@ export default function VoiceSummary({
     setStatus('loading');
 
     try {
-      const res = await fetch(`${API_URL}/api/tts/summary`, {
+      const res = await demoFetch(`${API_URL}/api/tts/summary`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

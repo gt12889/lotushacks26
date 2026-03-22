@@ -23,6 +23,7 @@ import DiscordPreview from '@/components/DiscordPreview';
 import Disclosure from '@/components/Disclosure';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
+import { demoFetch } from '@/lib/api';
 import { Zap, BarChart3, Pill, Eye, Shield, Bell, TrendingUp, Brain } from 'lucide-react';
 import SponsorBadge from '@/components/SponsorBadge';
 
@@ -170,7 +171,7 @@ export default function DashboardHome() {
         return { enabled: false, snippets: [] };
       }
       try {
-        const r = await fetch(
+        const r = await demoFetch(
           `${API_URL}/api/memory/recall?q=${encodeURIComponent(q.trim())}&user=${encodeURIComponent(userId)}`
         );
         if (!r.ok) {
@@ -197,7 +198,7 @@ export default function DashboardHome() {
     setTrendLoading(true);
     void (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        const res = await demoFetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
         const json = await res.json();
         if (!cancelled) {
           setTrendData(Array.isArray(json.data) ? json.data : []);
@@ -218,7 +219,7 @@ export default function DashboardHome() {
     const q = scanSummary.query;
     (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/sparklines/${encodeURIComponent(q)}?days=7`);
+        const res = await demoFetch(`${API_URL}/api/sparklines/${encodeURIComponent(q)}?days=7`);
         const json = await res.json();
         if (json.sparklines) setSparklineData(json.sparklines);
       } catch (e) {
@@ -276,7 +277,7 @@ export default function DashboardHome() {
       }
 
       const memQ = `&memory_user=${encodeURIComponent(memoryUserId)}`;
-      const response = await fetch(
+      const response = await demoFetch(
         `${API_URL}/api/search?query=${encodeURIComponent(query)}${memQ}`,
         { method: 'POST' }
       );
@@ -399,7 +400,7 @@ export default function DashboardHome() {
       if (lastSummary) {
         setInsightLoading(true);
         try {
-          const ir = await fetch(`${API_URL}/api/insights`, {
+          const ir = await demoFetch(`${API_URL}/api/insights`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

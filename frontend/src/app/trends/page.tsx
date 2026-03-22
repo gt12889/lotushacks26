@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Bot, BarChart3 } from 'lucide-react';
 import PricingChart from '@/components/PricingChart';
+import { demoFetch } from '@/lib/api';
 import NLSearchBar from '@/components/NLSearchBar';
 import ComparisonMatrix from '@/components/ComparisonMatrix';
 
@@ -54,7 +55,7 @@ function TrendsContent() {
     setLoading(true);
     void (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        const res = await demoFetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
         const json = await res.json();
         if (!cancelled) setData(json.data || []);
       } catch (e) {
@@ -74,7 +75,7 @@ function TrendsContent() {
     if (!q) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=${days}`);
+      const res = await demoFetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=${days}`);
       const json = await res.json();
       setData(json.data || []);
     } catch (e) {
@@ -100,7 +101,7 @@ function TrendsContent() {
     setNlRecommendation('');
 
     try {
-      const res = await fetch(`${API_URL}/api/nl-search?query=${encodeURIComponent(nlQuery)}`, { method: 'POST' });
+      const res = await demoFetch(`${API_URL}/api/nl-search?query=${encodeURIComponent(nlQuery)}`, { method: 'POST' });
       const reader = res.body?.getReader();
       if (!reader) return;
       const decoder = new TextDecoder();
