@@ -456,7 +456,19 @@ export default function DashboardHome() {
     scanSummary.potential_savings > scanSummary.best_price;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Background video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed inset-0 w-full h-full object-cover opacity-[0.07] pointer-events-none z-0"
+      >
+        <source src="/drone-ocean-bg.mp4" type="video/mp4" />
+      </video>
+
+      <div className="relative z-10 min-h-screen flex flex-col">
       {hasMegalodon && scanSummary && (
         <MegalodonAlert
           drugName={scanSummary.query}
@@ -720,6 +732,7 @@ export default function DashboardHome() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );
