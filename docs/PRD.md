@@ -178,7 +178,7 @@ The prescription optimizer uses `/run-batch` to submit all drug x pharmacy combi
 
 ## 6. Multi-Tier Agent Pipeline
 
-The search system uses a 5-tier agent cascade, visualized in real-time via the **Agent Cascade Pipeline** component:
+The search system uses a 6-tier agent cascade (Tiers 0-5), visualized in real-time via the **Agent Cascade Pipeline** component:
 
 ### Tier 0: OCR Extract (optional)
 - Triggered by prescription image upload
@@ -346,7 +346,7 @@ The frontend uses a dark cyberpunk-pharmaceutical aesthetic called **"The Abyss"
 |-----------|---------|
 | `SearchBar` | Drug search input with quick-search buttons and **voice input** (Web Speech API) |
 | `AgentActivityFeed` | Terminal-style real-time log of all agent events (spawn, searching, success, error, variant, investigate) with LIVE badge, sonar dots, amber investigate styling |
-| `AgentCascade` | 4-tier pipeline visualization (OCR → Pharmacy → Variant → Analyst) with sonar status dots |
+| `AgentCascade` | 6-tier pipeline visualization (OCR → Pharmacy → Variant → Scout-Spawn → Analyst → Investigation) with sonar status dots |
 | `LiveMetricsBar` | 4 KPI counters: agents deployed, pharmacies scanned, products found, savings detected |
 | `ModelRouterPanel` | Collapsible panel showing which LLM handled each step, animated latency bars, sponsor attribution |
 | `PharmacyCards` | 5 agent status cards with bioluminescent glow, source colors, latency, result counts |
@@ -630,7 +630,7 @@ Comparison matrix on the Trends page showing:
 
 - 5+ pharmacy sources scraped simultaneously in <30 seconds
 - Real-time SSE streaming with pharmacy cards lighting up + agent activity feed
-- Multi-tier agent cascade: Tier 1 (search) → Tier 2 (Exa variants) → Tier 3 (scout-spawn)
+- 6-tier agent cascade: OCR → Search → Variant → Scout-Spawn → Analyst → Investigation
 - Price variance >100% detected and displayed (Megalodon Alert)
 - Concrete savings shown in SavingsBanner with VND + percentage
 - Government ceiling compliance violations flagged

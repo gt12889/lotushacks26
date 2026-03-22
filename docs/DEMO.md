@@ -25,14 +25,15 @@
 2. **Landing (5s)**  
    Scroll or point at hero → **Enter Dashboard**.
 
-3. **Search (30–45s)**  
-   - Type a **common VN SKU** (e.g. `Metformin 500mg`, `Paracetamol 500mg`, `Omeprazole 20mg`).  
-   - Click **Deploy Probe** / submit.  
-   - Point at: **live metrics**, **agent feed**, **pharmacy cards or price grid**, **savings** if it appears.  
-   - One line: “This is **SSE** — results arrive as each pharmacy agent finishes.”
+3. **Search (30–45s)**
+   - Type a **common VN SKU** (e.g. `Metformin 500mg`, `Paracetamol 500mg`, `Omeprazole 20mg`).
+   - Click **Deploy Probe** / submit.
+   - Point at: **Qwen normalization pill** (shows Vietnamese → English transform with `[Qwen]` badge), **6-tier Agent Cascade** progressing, **live metrics**, **agent feed**, **pharmacy cards**, **sponsor badges on results** (`[TinyFish]`, `[BrightData]`, `[Exa]`).
+   - After results: point at **Analyst Verdict** → expand to show **confidence breakdown** (5 signal bars), **voice summary** auto-plays (`[ElevenLabs]`).
+   - One line: “This is **SSE** — results arrive as each pharmacy agent finishes. Nine sponsor integrations, all visible.”
 
-4. **Differentiator (10s)**  
-   “TinyFish handles **real sites**, anti-bot, and **stealth**; we normalize outputs and optionally wire **memory and insights** for repeat queries.”
+4. **Differentiator (10s)**
+   “Six-tier cascade: TinyFish agents with **BrightData proxy** and **stealth**, **Exa** discovers generics, **Qwen** normalizes Vietnamese, and an **Investigation Swarm** auto-verifies anomalous prices. **Supermemory** recalls past searches.”
 
 5. **Close (5s)**  
    “Repo + deploy docs are in **`docs/`**; API is FastAPI, UI is Next.js.”
