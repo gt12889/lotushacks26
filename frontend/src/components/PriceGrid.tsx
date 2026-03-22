@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import MegalodonBadge from './ui/megalodon-badge';
-import SponsorBadge from './SponsorBadge';
 import ReferencePriceBadge from './ReferencePriceBadge';
 
 const BRIGHTDATA_SOURCES = new Set(['long_chau', 'pharmacity', 'an_khang']);
@@ -70,7 +69,6 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [], wh
     }
   }
 
-  // Merge Tier 3 variant products
   for (const vp of variantProducts) {
     allProducts.push({ ...vp, variant_of: vp.variant_of });
   }
@@ -85,44 +83,37 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [], wh
     }
   });
 
-  // Price anomaly detection: compute mean & standard deviation
   const validPrices = allProducts.map(p => p.price).filter(p => p > 0);
   const mean = validPrices.length > 0 ? validPrices.reduce((a, b) => a + b, 0) / validPrices.length : 0;
   const stdDev = validPrices.length > 1
     ? Math.sqrt(validPrices.reduce((sum, p) => sum + (p - mean) ** 2, 0) / validPrices.length)
     : 0;
 
-  function getAnomalyBadge(price: number) {
+  function getAnomalyLabel(price: number): { label: string; color: string } | null {
     if (stdDev === 0 || validPrices.length < 3) return null;
-    if (price < mean - 2 * stdDev) {
-      return { label: 'Suspiciously Low', color: 'bg-red-500/15 text-red-400 border-red-500/30' };
-    }
-    if (price > mean + 2 * stdDev) {
-      return { label: 'Overpriced', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
-    }
-    if (price === bestPrice) {
-      return { label: 'Best Value', color: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' };
-    }
+    if (price < mean - 2 * stdDev) return { label: 'Low', color: 'text-alert-red' };
+    if (price > mean + 2 * stdDev) return { label: 'High', color: 'text-warn' };
     return null;
   }
 
   if (allProducts.length === 0) return null;
 
   return (
-    <div className="bioluminescent-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-        <h3 className="text-sm font-bold text-t1 uppercase tracking-wider">
-          Pricing Abyss Index
-          <span className="text-t3 font-normal ml-2 normal-case tracking-normal">({allProducts.length} products)</span>
-        </h3>
-        {whoRef && bestPrice && <ReferencePriceBadge whoRef={whoRef} currentPrice={bestPrice} />}
-        <div className="flex gap-1 text-xs">
+    <div className="panel overflow-hidden">
+      <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-xs text-t1 font-medium">
+            {allProducts.length} products
+          </h3>
+          {whoRef && bestPrice && <ReferencePriceBadge whoRef={whoRef} currentPrice={bestPrice} />}
+        </div>
+        <div className="flex gap-0.5 text-[11px]">
           {(['price', 'unit_price', 'source', 'name'] as SortKey[]).map((key) => (
             <button
               key={key}
               onClick={() => setSortBy(key)}
-              className={`px-3 py-1 rounded transition-colors ${
-                sortBy === key ? 'bg-cyan/10 text-cyan border border-cyan/30' : 'text-t3 hover:text-t2 border border-transparent'
+              className={`px-2.5 py-1 rounded transition-colors ${
+                sortBy === key ? 'bg-cyan/10 text-cyan' : 'text-t3 hover:text-t2'
               }`}
             >
               {key === 'unit_price' ? 'Unit' : key.charAt(0).toUpperCase() + key.slice(1)}
@@ -131,78 +122,60 @@ export default function PriceGrid({ results, bestPrice, variantProducts = [], wh
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-border">
-              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono"></th>
-              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Drug Name</th>
-              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Source</th>
-              <th className="text-right py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Price (VND)</th>
-              <th className="text-right py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Unit</th>
-              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Mfr</th>
-              <th className="text-center py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Status</th>
-              <th className="text-left py-2.5 px-4 text-[10px] uppercase tracking-wider text-t3 font-mono">Tech</th>
+              <th className="text-left py-2 px-4 text-[10px] text-t3 font-normal">Product</th>
+              <th className="text-left py-2 px-4 text-[10px] text-t3 font-normal">Source</th>
+              <th className="text-right py-2 px-4 text-[10px] text-t3 font-normal">Price</th>
+              <th className="text-right py-2 px-4 text-[10px] text-t3 font-normal">Unit</th>
+              <th className="text-center py-2 px-4 text-[10px] text-t3 font-normal">Stock</th>
             </tr>
           </thead>
           <tbody>
-            {allProducts.map((p, i) => (
-              <tr
-                key={i}
-                className={`border-b border-border/50 hover:bg-card/50 transition-colors ${p.variant_of ? '' : ''}`}
-                style={p.variant_of ? { animation: 'fadeSlideIn 0.3s ease-out' } : undefined}
-              >
-                <td className="py-2.5 px-4">
-                  <div className="flex flex-col gap-1">
-                    {p.price === bestPrice && <MegalodonBadge status="best" label="BEST" />}
-                    {(() => {
-                      const badge = getAnomalyBadge(p.price);
-                      return badge ? (
-                        <span className={`text-[8px] font-mono px-1.5 py-0.5 rounded border whitespace-nowrap ${badge.color}`}>
-                          {badge.label}
-                        </span>
-                      ) : null;
-                    })()}
-                  </div>
-                </td>
-                <td className="py-2.5 px-4">
-                  <div className="text-t1 font-medium">
-                    {p.product_url ? (
-                      <a href={p.product_url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">{p.product_name}</a>
-                    ) : p.product_name}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {p.manufacturer && <span className="text-[10px] text-t3 font-mono">{p.manufacturer}</span>}
-                    {p.variant_of && (
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan/10 text-cyan border border-cyan/20">
-                        variant of {p.variant_of}
+            {allProducts.map((p, i) => {
+              const anomaly = getAnomalyLabel(p.price);
+              const isBest = p.price === bestPrice;
+              return (
+                <tr
+                  key={i}
+                  className="border-b border-border/30 hover:bg-white/[0.02] transition-colors"
+                >
+                  <td className="py-2 px-4">
+                    <div className="flex items-center gap-2">
+                      {isBest && <MegalodonBadge status="best" label="BEST" />}
+                      <span className={`text-t1 ${isBest ? 'font-medium' : ''}`}>
+                        {p.product_url ? (
+                          <a href={p.product_url} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">{p.product_name}</a>
+                        ) : p.product_name}
                       </span>
+                      {anomaly && <span className={`text-[9px] ${anomaly.color}`}>{anomaly.label}</span>}
+                    </div>
+                    {p.manufacturer && <div className="text-[10px] text-t3 mt-0.5">{p.manufacturer}</div>}
+                  </td>
+                  <td className="py-2 px-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: SOURCE_COLORS[p.source_id] || '#64748B' }} />
+                      <span className="text-t2">{p.source_name}</span>
+                    </div>
+                  </td>
+                  <td className="py-2 px-4 text-right font-mono text-t1">
+                    {p.price.toLocaleString()}
+                    {p.original_price && p.original_price > p.price && (
+                      <span className="ml-1.5 text-t3 line-through text-[10px]">{p.original_price.toLocaleString()}</span>
                     )}
-                  </div>
-                </td>
-                <td className="py-2.5 px-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SOURCE_COLORS[p.source_id] || '#64748B' }} />
-                    <span className="text-t2 text-xs">{p.source_name}</span>
-                  </div>
-                </td>
-                <td className="py-2.5 px-4 text-right font-mono text-t1">
-                  {p.price.toLocaleString()}
-                  {p.original_price && p.original_price > p.price && (
-                    <span className="ml-2 text-t3 line-through text-[10px]">{p.original_price.toLocaleString()}</span>
-                  )}
-                </td>
-                <td className="py-2.5 px-4 text-right font-mono text-t2 text-xs">
-                  {p.unit_price ? `${Math.round(p.unit_price).toLocaleString()}/u` : '—'}
-                </td>
-                <td className="py-2.5 px-4 text-t3 text-xs">{p.manufacturer || '—'}</td>
-                <td className="py-2.5 px-4 text-center">
-                  {p.in_stock ? <MegalodonBadge status="active" label="IN STOCK" /> : <MegalodonBadge status="out-of-stock" label="OUT" />}
-                </td>
-                <td className="py-2.5 px-4">
-                  <SponsorBadge sponsors={p.variant_of ? ['TinyFish', 'Exa'] : BRIGHTDATA_SOURCES.has(p.source_id) ? ['TinyFish', 'BrightData'] : ['TinyFish']} />
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="py-2 px-4 text-right font-mono text-t3">
+                    {p.unit_price ? `${Math.round(p.unit_price).toLocaleString()}/u` : '—'}
+                  </td>
+                  <td className="py-2 px-4 text-center">
+                    <span className={`text-[10px] ${p.in_stock ? 'text-success' : 'text-t3'}`}>
+                      {p.in_stock ? 'In Stock' : 'Out'}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

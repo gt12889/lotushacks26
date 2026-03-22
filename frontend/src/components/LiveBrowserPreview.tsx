@@ -69,11 +69,11 @@ export default function LiveBrowserPreview({
       >
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 bg-cyan rounded-full animate-pulse" />
-          <span className="text-[10px] font-mono text-cyan uppercase tracking-wider font-bold">
-            WAR ROOM
+          <span className="text-xs text-t2">
+            Live Agents
           </span>
-          <span className="text-[10px] font-mono text-t3">
-            ({entries.length} {entries.length === 1 ? 'agent' : 'agents'})
+          <span className="text-[10px] text-t3">
+            {entries.length}
           </span>
         </div>
         <svg
@@ -98,15 +98,9 @@ export default function LiveBrowserPreview({
               >
                 <div className="px-3 py-1.5 bg-card/50 flex items-center gap-2">
                   <div className={`w-1 h-1 rounded-full ${getDotClass(sourceId)}`} />
-                  <span className="text-[9px] font-mono text-t2 uppercase tracking-wider truncate">
+                  <span className="text-[10px] text-t2 truncate">
                     {getPharmacyName(sourceId)}
                   </span>
-                  {BRIGHTDATA_PROXIED.has(sourceId) && (
-                    <span className="flex items-center gap-1">
-                      <SponsorBadge sponsors={['BrightData']} />
-                      <span className="text-[7px] text-t3 font-mono">VN proxy</span>
-                    </span>
-                  )}
                 </div>
 
                 <iframe

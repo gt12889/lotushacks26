@@ -28,72 +28,34 @@ export default function LiveMetricsBar({
   const pharmaciesDone = pharmaciesComplete >= pharmaciesTotal && pharmaciesTotal > 0;
 
   return (
-    <div
-      className={`
-        flex items-center justify-between
-        panel px-6 py-3
-        font-mono
-        ${isActive ? 'border-l-2 border-cyan' : ''}
-      `}
-    >
-      {/* Agents Deployed */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] uppercase tracking-wider text-t3">
-          Agents Deployed
-        </span>
-        <Counter
-          value={agentsSpawned}
-          className="text-lg font-bold text-cyan"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        />
-      </div>
-
-      {/* Pharmacies Scanned */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] uppercase tracking-wider text-t3">
-          {t('metrics.pharmaciesScanned')}
-        </span>
-        <span
-          className={`text-lg font-bold ${pharmaciesDone ? 'text-success' : 'text-warn'}`}
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        >
-          <Counter value={pharmaciesComplete} />/{pharmaciesTotal}
-        </span>
-      </div>
-
-      {/* Products Found */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] uppercase tracking-wider text-t3">
-          {t('metrics.productsFound')}
-        </span>
-        <Counter
-          value={productsFound}
-          className="text-lg font-bold text-t1"
-          style={{ fontVariantNumeric: 'tabular-nums' }}
-        />
-      </div>
-
-      {/* Savings Detected */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[9px] uppercase tracking-wider text-t3">
-          {t('metrics.savingsDetected')}
-        </span>
-        {savingsVnd !== null ? (
-          <Counter
-            value={savingsVnd}
-            formatter={formatVnd}
-            className="text-lg font-bold text-warn"
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          />
-        ) : (
-          <span
-            className="text-lg font-bold text-warn"
-            style={{ fontVariantNumeric: 'tabular-nums' }}
-          >
-            —
+    <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-deep/60 border border-border">
+      <Metric label="Agents" value={<Counter value={agentsSpawned} className="text-sm font-bold text-t1 tabular-nums" />} />
+      <Metric
+        label="Pharmacies"
+        value={
+          <span className={`text-sm font-bold tabular-nums ${pharmaciesDone ? 'text-success' : 'text-t1'}`}>
+            <Counter value={pharmaciesComplete} />/{pharmaciesTotal}
           </span>
-        )}
-      </div>
+        }
+      />
+      <Metric label="Products" value={<Counter value={productsFound} className="text-sm font-bold text-t1 tabular-nums" />} />
+      <Metric
+        label="Savings"
+        value={
+          savingsVnd !== null
+            ? <Counter value={savingsVnd} formatter={formatVnd} className="text-sm font-bold text-warn tabular-nums" />
+            : <span className="text-sm text-t3">—</span>
+        }
+      />
+    </div>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-t3">{label}</span>
+      {value}
     </div>
   );
 }

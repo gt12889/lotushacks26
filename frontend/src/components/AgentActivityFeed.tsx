@@ -70,14 +70,11 @@ export default function AgentActivityFeed({ events, isActive }: AgentActivityFee
   return (
     <div className="panel font-mono overflow-hidden">
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5">
-        <span className="text-xs font-mono text-t3">AGENT FEED</span>
+        <span className="text-xs text-t3">Agent Feed</span>
         {isActive && (
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-cyan/30 bg-cyan/5">
-            <span
-              className="sonar-dot w-[6px] h-[6px] rounded-full bg-cyan"
-              style={{ '--sonar-color': '#00DBE7' } as React.CSSProperties}
-            />
-            <span className="text-[8px] uppercase tracking-widest text-cyan font-bold">LIVE</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan animate-pulse" />
+            <span className="text-[10px] text-cyan">Live</span>
           </div>
         )}
       </div>
@@ -99,9 +96,7 @@ export default function AgentActivityFeed({ events, isActive }: AgentActivityFee
                 <div
                   key={event.id}
                   className="flex items-start gap-2 py-[3px]"
-                  style={{
-                    textShadow: '0 0 4px rgba(0, 255, 204, 0.3)',
-                  }}
+                  style={{}}
                 >
                   {/* Prompt char */}
                   <span className="text-[10px] text-cyan/40 shrink-0 leading-4 select-none">&gt;</span>

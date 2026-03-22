@@ -597,7 +597,7 @@ export default function DashboardHome() {
                   <Disclosure
                     title="Agent Pipeline"
                     icon={<Eye className="w-3.5 h-3.5 text-cyan" />}
-                    defaultOpen={isSearching}
+                    defaultOpen={false}
                     badge={`${pharmaciesComplete}/5`}
                   >
                     <LiveBrowserPreview
@@ -676,7 +676,7 @@ export default function DashboardHome() {
                     title="Price Comparison"
                     icon={<BarChart3 className="w-3.5 h-3.5 text-cyan" />}
                     badge={productsFound || null}
-                    defaultOpen={false}
+                    defaultOpen={true}
                   >
                     {analystVerdict && (
                       <ActionLabel verdict={analystVerdict} signals={(scanSummary as any)?.confidence_scoring?.signals ?? null} />
