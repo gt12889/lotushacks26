@@ -21,8 +21,8 @@ export function HeroParallax({
     target: ref,
     offset: ['start start', 'end start'],
   });
-  const yBg = useTransform(scrollYProgress, [0, 1], [0, 140]);
-  const yFg = useTransform(scrollYProgress, [0, 1], [0, 48]);
+  const yBg = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 40, 70, 100]);
+  const yFg = useTransform(scrollYProgress, [0, 0.3, 0.7, 1], [0, 14, 26, 36]);
 
   if (reduceMotion) {
     return (

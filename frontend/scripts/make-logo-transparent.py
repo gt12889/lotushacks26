@@ -1,6 +1,6 @@
 """Remove white/light background from logo PNG, make it transparent.
 
-The app favicon is public/icon.svg (blue tile + fish emoji). These paths are
+The app favicon is public/icon.svg (abyss-to-cyan gradient + vector shark). These paths are
 optional raster exports if you still need PNGs for something else.
 """
 from PIL import Image

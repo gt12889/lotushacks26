@@ -1,23 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import {
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Area,
-  ComposedChart,
-} from 'recharts';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import ComparisonBanner from '@/components/ComparisonBanner';
 import SearchBar from '@/components/SearchBar';
 import PharmacyCards from '@/components/PharmacyCards';
 import PriceGrid from '@/components/PriceGrid';
 import SavingsBanner from '@/components/SavingsBanner';
 import MegalodonAlert from '@/components/MegalodonAlert';
-import MegalodonBadge from '@/components/ui/megalodon-badge';
-import SonarFilters from '@/components/SonarFilters';
 import PricingChart from '@/components/PricingChart';
 import AgentActivityFeed from '@/components/AgentActivityFeed';
 import LiveMetricsBar from '@/components/LiveMetricsBar';
@@ -71,7 +61,7 @@ interface TrendPoint {
 interface AgentEvent {
   id: string;
   timestamp: number;
-  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant';
+  type: 'spawn' | 'searching' | 'success' | 'error' | 'variant' | 'investigate';
   agent: string;
   message: string;
   source_id?: string;
@@ -90,62 +80,6 @@ function ensureMemoryUserId(): string {
   return id;
 }
 
-const MOCK_CHART_DATA = [
-  { date: 'OCT 12', awp: 513.6, wac: 520.26 },
-  { date: 'OCT 13', awp: 500.28, wac: 516.93 },
-  { date: 'OCT 14', awp: 506.94, wac: 518.93 },
-  { date: 'OCT 15', awp: 466.98, wac: 513.6 },
-  { date: 'OCT 16', awp: 480.3, wac: 510.27 },
-  { date: 'OCT 17', awp: 427.02, wac: 512.27 },
-  { date: 'OCT 18', awp: 440.34, wac: 506.94 },
-  { date: 'OCT 19', awp: 400.38, wac: 503.61 },
-  { date: 'OCT 20', awp: 407.04, wac: 505.61 },
-  { date: 'OCT 21', awp: 360.42, wac: 500.28 },
-  { date: 'OCT 22', awp: 373.74, wac: 496.95 },
-];
-
-const MOCK_TABLE_DATA = [
-  {
-    name: 'Atorvastatin Calcium',
-    ndc: '00093-3147-01',
-    awp: 432.12,
-    wac: 388.9,
-    change: '+1.2%',
-    changeDir: 'up' as const,
-    status: 'best',
-    statusLabel: 'TINYFISH',
-    agentStatus: 'Active',
-    latency: '12ms',
-    node: '0x44B1...FA12',
-  },
-  {
-    name: 'Lisinopril 20mg',
-    ndc: '00406-0512-01',
-    awp: 1245.0,
-    wac: 920.4,
-    change: '+420%',
-    changeDir: 'up-critical' as const,
-    status: 'critical',
-    statusLabel: 'CRITICAL',
-    agentStatus: null,
-    latency: null,
-    node: null,
-  },
-  {
-    name: 'Rosuvastatin 10mg',
-    ndc: '00378-0112-05',
-    awp: 118.5,
-    wac: 105.2,
-    change: '0.0%',
-    changeDir: 'flat' as const,
-    status: 'monitor',
-    statusLabel: 'MONITOR',
-    agentStatus: null,
-    latency: null,
-    node: null,
-  },
-];
-
 export default function DashboardHome() {
   const { t } = useLocale();
   const [isSearching, setIsSearching] = useState(false);
@@ -162,7 +96,7 @@ export default function DashboardHome() {
   const [trendError, setTrendError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [sparklineData, setSparklineData] = useState<Record<string, { source_name: string; points: { price: number; time: string }[] }>>({});
-  const [syncTime, setSyncTime] = useState('');
+  const [searchTimeMs, setSearchTimeMs] = useState<number | null>(null);
   const [agentEvents, setAgentEvents] = useState<AgentEvent[]>([]);
   const [streamingUrls, setStreamingUrls] = useState<Record<string, string>>({});
   const [modelSteps, setModelSteps] = useState<ModelStep[]>([
@@ -173,6 +107,7 @@ export default function DashboardHome() {
     { step: 'analyst', model: 'qwen-2.5-72b', provider: 'OpenRouter', latency_ms: null, status: 'pending', count: 0 },
   ]);
   const [analystVerdict, setAnalystVerdict] = useState<any>(null);
+  const [investigationResults, setInvestigationResults] = useState<any[]>([]);
   const eventBufferRef = useRef<Array<{ type: string; data: any }>>([]);
   const flushTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestQueryRef = useRef('');
@@ -252,14 +187,6 @@ export default function DashboardHome() {
   );
 
   useEffect(() => {
-    const update = () =>
-      setSyncTime(new Date().toLocaleTimeString('en-US', { hour12: false, timeZone: 'UTC' }));
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
     const q = scanSummary?.query?.trim();
     if (!q) {
       setTrendData([]);
@@ -314,6 +241,7 @@ export default function DashboardHome() {
 
   const handleSearch = async (query: string) => {
     setSearchError(null);
+    const searchStart = Date.now();
     setIsSearching(true);
     setResults({});
     setScanSummary(null);
@@ -325,6 +253,8 @@ export default function DashboardHome() {
     setAgentEvents([]);
     setAnalystVerdict(null);
     setStreamingUrls({});
+    setInvestigationResults([]);
+    setSearchTimeMs(null);
     setModelSteps(prev => prev.map(s => ({ ...s, latency_ms: null, status: 'pending', count: 0 })));
     eventIdRef.current = 0;
     addAgentEvent('spawn', 'Orchestrator', t('dash.deployOrchestrator', { query }));
@@ -390,6 +320,13 @@ export default function DashboardHome() {
             const event = JSON.parse(dataMatch[1]);
             if (event.type === 'analyst_verdict') {
               setAnalystVerdict(event);
+            } else if (event.type === 'anomaly_investigation') {
+              setInvestigationResults(prev => [...prev, event]);
+              addAgentEvent(
+                'investigate',
+                'Investigator',
+                `${event.product_name}: ${event.manufacturer_check?.known_good ? 'Verified mfr' : 'Unverified mfr'}`
+              );
             } else if (event.type === 'counterfeit_risk') {
               // Late-arriving counterfeit risk report from Exa Research
               setScanSummary(prev => prev ? { ...prev, counterfeit_risk: event } as any : prev);
@@ -525,6 +462,7 @@ export default function DashboardHome() {
       addAgentEvent('error', 'Orchestrator', msg);
     } finally {
       setIsSearching(false);
+      setSearchTimeMs(Date.now() - searchStart);
     }
   };
 
@@ -558,9 +496,6 @@ export default function DashboardHome() {
               </p>
             </div>
             <div className="flex gap-2 mt-1">
-              <button className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider">
-                {t('dash.exportIntel')}
-              </button>
               <button
                 onClick={() => (currentQuery ? handleSearch(currentQuery) : null)}
                 className="px-3 py-1.5 text-[10px] border border-cyan/40 text-cyan rounded hover:bg-cyan/10 transition-all hover:border-cyan font-mono uppercase tracking-wider"
@@ -658,6 +593,28 @@ export default function DashboardHome() {
                     Object.values(results).map((r) => [r.source_id, r.source_name])
                   )}
                   isSearching={isSearching}
+                  agentStatuses={(() => {
+                    const statuses: Record<string, 'active' | 'success' | 'error'> = {};
+                    for (const [sid, r] of Object.entries(results)) {
+                      if (r.status === 'success') statuses[sid] = 'success';
+                      else if (r.status === 'error') statuses[sid] = 'error';
+                    }
+                    if (isSearching) {
+                      for (const sid of Object.keys(streamingUrls)) {
+                        if (!statuses[sid]) statuses[sid] = 'active';
+                      }
+                    }
+                    return statuses;
+                  })()}
+                  agentResults={(() => {
+                    const res: Record<string, { resultCount: number; price?: number }> = {};
+                    for (const [sid, r] of Object.entries(results)) {
+                      if (r.status === 'success') {
+                        res[sid] = { resultCount: r.result_count, price: r.lowest_price ?? undefined };
+                      }
+                    }
+                    return res;
+                  })()}
                 />
                 <LiveMetricsBar
                   agentsSpawned={agentEvents.filter((e) => e.type === 'spawn').length}
@@ -698,6 +655,11 @@ export default function DashboardHome() {
                       bestSource={scanSummary.best_source}
                       potentialSavings={scanSummary.potential_savings}
                       totalResults={scanSummary.total_results}
+                    />
+                    <ComparisonBanner
+                      searchTimeMs={searchTimeMs}
+                      pharmacyCount={pharmaciesComplete}
+                      productCount={productsFound}
                     />
                   </>
                 )}
@@ -749,6 +711,7 @@ export default function DashboardHome() {
                 <CounterfeitRiskPanel
                   anomalies={(scanSummary as any)?.price_anomalies ?? null}
                   risk={(scanSummary as any)?.counterfeit_risk ?? null}
+                  investigations={investigationResults}
                 />
                 <PriceGrid results={results} bestPrice={scanSummary?.best_price ?? null} whoRef={scanSummary?.who_reference ?? null} />
                 <DemoAlertTrigger
@@ -799,166 +762,8 @@ export default function DashboardHome() {
                 </span>
               </div>
             </div>
-
-            <div className="bg-abyss rounded-lg overflow-hidden" style={{ height: 220 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={MOCK_CHART_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="awpGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#00DBE7" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#041329" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fill: '#64748B', fontSize: 9, fontFamily: 'monospace' }}
-                    axisLine={{ stroke: 'rgba(0,219,231,0.1)' }}
-                    tickLine={false}
-                    interval={1}
-                  />
-                  <YAxis hide />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#010E24',
-                      border: '1px solid rgba(0,219,231,0.2)',
-                      borderRadius: 4,
-                      fontSize: 10,
-                      fontFamily: 'monospace',
-                    }}
-                    labelStyle={{ color: '#D6E3FF', fontSize: 10 }}
-                    itemStyle={{ color: '#94A3B8', fontSize: 10 }}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="awp"
-                    stroke="#00DBE7"
-                    strokeWidth={1.5}
-                    fill="url(#awpGradient)"
-                    dot={false}
-                    activeDot={{ r: 4, fill: '#00DBE7', stroke: '#041329', strokeWidth: 2 }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="wac"
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={1}
-                    strokeDasharray="3 2"
-                    dot={false}
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="bg-abyss">
-              <div className="flex items-center gap-4 mb-3">
-                <h3 className="text-[11px] font-bold text-t1 uppercase tracking-[0.15em]">
-                  {t('dash.pricingIndex')}
-                </h3>
-                <div className="flex items-center gap-2 text-[9px] text-t3 font-mono">
-                  <span>{t('dash.realtimeFeed')}</span>
-                  <span className="text-t3">•</span>
-                  <span>{t('dash.tinyfishIntel')}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-0 border-b border-border/60 pb-2 mb-0">
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">
-                  {t('dash.tableDrugNdc')}
-                </span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableAwp')}</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableWac')}</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.table24h')}</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableTrend')}</span>
-                <span className="text-[9px] uppercase tracking-wider text-t3 font-mono">{t('dash.tableStatus')}</span>
-              </div>
-
-              {MOCK_TABLE_DATA.map((row, i) => (
-                <div key={i} className="border-b border-border/30 hover:bg-card/30 transition-colors">
-                  <div className="grid grid-cols-[2fr_1fr_1fr_0.8fr_0.8fr_1fr] gap-0 items-center py-3">
-                    <div>
-                      <div className="text-[12px] text-t1 font-medium leading-tight">{row.name}</div>
-                      <div className="text-[9px] text-t3 font-mono mt-0.5">{row.ndc}</div>
-                    </div>
-                    <div className="text-[12px] text-t2 font-mono">{row.awp.toFixed(2)}</div>
-                    <div className="text-[12px] text-t2 font-mono">{row.wac.toFixed(2)}</div>
-                    <div
-                      className={`text-[12px] font-mono font-bold ${
-                        row.changeDir === 'up-critical'
-                          ? 'text-alert-red'
-                          : row.changeDir === 'up'
-                            ? 'text-success'
-                            : 'text-t3'
-                      }`}
-                    >
-                      {row.change}
-                    </div>
-                    <div>
-                      {row.changeDir === 'up-critical' ? (
-                        <svg className="w-4 h-4 text-alert-red" viewBox="0 0 20 20" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-                          />
-                        </svg>
-                      ) : row.changeDir === 'up' ? (
-                        <svg className="w-4 h-4 text-success" viewBox="0 0 20 20" fill="currentColor">
-                          <path
-                            fillRule="evenodd"
-                            d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-                          />
-                        </svg>
-                      ) : (
-                        <span className="text-[10px] text-t3 font-mono">—</span>
-                      )}
-                    </div>
-                    <div>
-                      <MegalodonBadge status={row.status} label={row.statusLabel} />
-                    </div>
-                  </div>
-
-                  {row.agentStatus && (
-                    <div className="flex items-center gap-4 pb-2.5 pl-1">
-                      <span className="text-[8px] text-t3 font-mono uppercase tracking-wider">
-                        {t('dash.distributedNet')}
-                      </span>
-                      <span className="text-[8px] text-t3 font-mono">
-                        {t('dash.heartbeat')}{' '}
-                        <span className="text-success">{row.agentStatus}</span>
-                      </span>
-                      <span className="text-[8px] text-t3 font-mono">
-                        {t('dash.latency')}{' '}
-                        <span className="text-t2">{row.latency}</span>
-                      </span>
-                      <span className="text-[8px] text-t3 font-mono">
-                        {t('dash.node')}{' '}
-                        <span className="text-t2">{row.node}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  {row.status === 'monitor' && (
-                    <div className="pb-2.5 pl-1">
-                      <span className="text-[8px] text-t3 font-mono">{t('dash.hubsCopy')}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between pt-3 border-t border-border/30">
-              <div className="flex gap-5 text-[9px] text-t3 font-mono">
-                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.privacy')}</span>
-                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.methodology')}</span>
-                <span className="hover:text-t2 cursor-pointer transition-colors">{t('footer.oracle')}</span>
-              </div>
-              <span className="text-[9px] text-t3 font-mono">
-                {t('footer.sync')} {syncTime} UTC
-              </span>
-            </div>
           </div>
         </div>
-
-        <SonarFilters />
       </div>
     </div>
   );

@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description:
     "AI-powered pharmaceutical price intelligence across Vietnamese pharmacy chains. Landing, dashboard, trends, and Supermemory-backed recall.",
   icons: {
-    icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
+    icon: [{ url: "/icon.svg?v=shark", type: "image/svg+xml" }],
   },
 };
 

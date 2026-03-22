@@ -12,6 +12,7 @@ const linkKeys = [
   { href: '/trends', key: 'nav.trends' as const },
   { href: '/alerts', key: 'nav.alerts' as const },
   { href: '/optimize', key: 'nav.optimize' as const },
+  { href: '/about', key: 'nav.about' as const },
   { href: '/architecture', key: 'nav.howItWorks' as const },
 ];
 
@@ -66,7 +67,7 @@ export default function NavBar() {
       <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-3 shrink-0 transition-opacity hover:opacity-90">
           <Image
-            src="/icon.svg"
+            src="/icon.svg?v=shark"
             alt="Megalodon MD"
             width={32}
             height={32}

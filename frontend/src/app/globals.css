@@ -64,6 +64,7 @@
 /* Global scale: 15% bigger across the board */
 html {
   font-size: 115%;
+  scroll-behavior: smooth;
 }
 
 /* ───────── Existing animations ───────── */

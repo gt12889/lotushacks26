@@ -109,20 +109,20 @@ export default function LandingPage() {
     <div className="min-h-screen bg-abyss text-t1 font-sans selection:bg-cyan/30">
       {/* Hero: parallax background + staggered copy */}
       <HeroParallax
-        className="relative pt-24 md:pt-32 pb-48 overflow-hidden min-h-[960px]"
+        className="relative pt-20 sm:pt-24 md:pt-28 pb-32 md:pb-44 overflow-hidden min-h-[min(100dvh,56rem)]"
         parallaxBack={<HeroSplineBackground />}
       >
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-12 items-center">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-x-14 lg:gap-y-12 items-start">
             <motion.div
-              className="md:col-span-3 text-left"
+              className="lg:col-span-7 text-left space-y-6 sm:space-y-7 max-w-2xl lg:max-w-none"
               variants={heroStagger}
               initial="hidden"
               animate="show"
             >
               <motion.h1
                 variants={heroItem}
-                className="text-4xl md:text-5xl font-semibold tracking-tight text-t1 mb-6"
+                className="text-[clamp(1.875rem,4.2vw,3.25rem)] sm:text-5xl lg:text-[3.25rem] font-semibold tracking-tight text-t1 leading-[1.08]"
               >
                 {t('landing.heroLine1')} <br />
                 <span className="text-cyan">{t('landing.heroLine2')}</span>
@@ -131,25 +131,28 @@ export default function LandingPage() {
               {t('landing.heroSub') && (
                 <motion.p
                   variants={heroItem}
-                  className="max-w-xl text-lg md:text-xl text-t3 mb-10 font-light leading-relaxed"
+                  className="max-w-xl text-base sm:text-lg text-t3 font-light leading-relaxed"
                 >
                   {t('landing.heroSub')}
                 </motion.p>
               )}
 
-              <motion.div variants={heroItem}>
+              <motion.div variants={heroItem} className="pt-1">
                 <LiquidButton
                   href="/dashboard"
                   size="lg"
-                  className="btn-press w-full sm:w-auto min-h-12 rounded-lg px-6 text-base font-bold text-cyan"
+                  className="btn-press w-full sm:w-auto min-h-11 sm:min-h-12 rounded-lg px-7 text-sm sm:text-base font-bold text-cyan"
                 >
                   {t('landing.enterDashboard')}
                 </LiquidButton>
               </motion.div>
             </motion.div>
 
-            <div className="md:col-span-2 flex flex-col gap-8">
-              <div ref={statsRef} className="grid grid-cols-2 gap-4">
+            <div className="lg:col-span-5 w-full lg:pt-1">
+              <div
+                ref={statsRef}
+                className="grid grid-cols-2 gap-3 sm:gap-4 w-full max-w-md sm:max-w-lg lg:max-w-none lg:ml-auto"
+              >
                 {stats.map((s, i) => (
                   <motion.div
                     key={i}
@@ -157,11 +160,10 @@ export default function LandingPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true, margin: '-40px' }}
                     transition={{ delay: reduceMotion ? 0 : 0.05 * i, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-                    className="interactive-lift p-5 rounded-xl bg-card/20 border border-border/40 backdrop-blur-sm"
+                    className="interactive-lift flex flex-col justify-between min-h-[5.5rem] sm:min-h-[6.25rem] p-4 sm:p-5 rounded-xl bg-card/20 border border-border/40 backdrop-blur-sm"
                   >
                     <div
-                      className="text-2xl font-bold text-cyan mb-1 min-h-[2rem] flex items-baseline flex-wrap gap-x-0"
-                      style={{ fontVariantNumeric: 'tabular-nums' }}
+                      className="text-xl sm:text-2xl lg:text-[1.65rem] font-bold text-cyan leading-none flex items-baseline flex-wrap gap-x-0.5 [font-variant-numeric:tabular-nums]"
                     >
                       {s.kind === 'text' ? (
                         s.value
@@ -177,7 +179,9 @@ export default function LandingPage() {
                         </>
                       )}
                     </div>
-                    <div className="text-[10px] font-mono text-t3 uppercase tracking-widest leading-snug">{s.label}</div>
+                    <div className="text-[10px] sm:text-[11px] font-mono text-t3 uppercase tracking-wider sm:tracking-widest leading-snug mt-2">
+                      {s.label}
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -186,23 +190,40 @@ export default function LandingPage() {
         </div>
       </HeroParallax>
 
-      {/* How it works — secondary CTA (below hero) */}
+      {/* Lamp Section — extended fade in/out for softer transition */}
+      <section id="lamp" className="relative overflow-hidden">
+        <div
+          className="absolute inset-0 z-10 pointer-events-none [background:linear-gradient(to_bottom,rgba(13,28,50,0.99)_0%,rgba(13,28,50,0.9)_5%,rgba(13,28,50,0.75)_12%,rgba(13,28,50,0.5)_22%,rgba(13,28,50,0.2)_35%,transparent_42%,transparent_58%,rgba(13,28,50,0.2)_65%,rgba(13,28,50,0.5)_78%,rgba(13,28,50,0.75)_88%,rgba(13,28,50,0.9)_95%,#0D1C32_100%)]"
+          aria-hidden
+        />
+        <ScrollReveal threshold={0.08}>
+        <LampDemo
+          line1={t('landing.lampLine1')}
+          line2={t('landing.lampLine2')}
+          className="min-h-[150vh] rounded-none"
+          compact
+        />
+        </ScrollReveal>
+      </section>
+
+      {/* Link to full architecture + sponsors on About */}
       <section
         aria-label={t('landing.viewMethodology')}
-        className="border-t border-border/25 bg-deep/50 py-10 md:py-12"
+        className="py-10 md:py-12 [background:linear-gradient(to_bottom,#0D1C32_0%,rgba(13,28,50,0.95)_30%,rgba(1,14,36,0.85)_70%,#010E24_100%)]"
       >
-        <div className="max-w-7xl mx-auto px-6">
-          <a
-            href="#features"
-            className="btn-press inline-flex px-6 py-3 bg-deep border border-border text-t2 font-bold rounded-lg text-base hover:bg-card hover:border-cyan/25 transition-colors"
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+          <Link
+            href="/about#product-stack"
+            className="btn-press inline-flex px-6 py-3 bg-deep border border-border text-t2 font-bold rounded-lg text-base hover:bg-card hover:border-cyan/25 transition-colors w-fit"
           >
             {t('landing.viewMethodology')}
-          </a>
+          </Link>
+          <p className="text-xs text-t3 font-mono max-w-md leading-relaxed">{t('landing.stackDetailsHint')}</p>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section id="features" className="py-20 md:py-24 bg-deep">
+      <section id="features" className="py-20 md:py-24 [background:linear-gradient(to_bottom,#010E24_0%,rgba(1,14,36,0.95)_40%,rgba(13,28,50,0.92)_75%,#0D1C32_100%)]">
         <div className="max-w-7xl mx-auto px-6">
           {/* First 2 features side by side */}
           <div className="grid md:grid-cols-2 gap-8 mb-8">
@@ -245,76 +266,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Lamp Section */}
-      <section id="lamp" className="relative">
-        <ScrollReveal threshold={0.08}>
-        <LampDemo
-          line1={t('landing.lampLine1')}
-          line2={t('landing.lampLine2')}
-          className="min-h-[120vh] rounded-none"
-          compact
-        />
-        </ScrollReveal>
-      </section>
-
-      {/* Infrastructure / How It Works */}
-      <section className="py-20 md:py-24 border-t border-border/20 bg-abyss">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-start gap-16">
-            <ScrollReveal direction="right" className="flex-1">
-            <div>
-              <div className="inline-block px-3 py-1 rounded-full border border-cyan/30 bg-cyan/5 text-[10px] font-mono text-cyan mb-4 uppercase tracking-widest">
-                {t('landing.infraBadge')}
-              </div>
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">
-                {t('landing.infraTitle1')} <br />
-                <span className="text-cyan">{t('landing.infraTitle2')}</span>
-              </h2>
-              <p className="text-t3 mb-8 leading-relaxed">
-                {t('landing.infraBody')}
-              </p>
-              <div className="space-y-4">
-                {[
-                  t('landing.infraBullet1'),
-                  t('landing.infraBullet2'),
-                  t('landing.infraBullet3'),
-                  t('landing.infraBullet4'),
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3">
-                    <div className="w-1.5 h-1.5 bg-cyan rounded-full" />
-                    <span className="text-sm text-t2 font-mono">{item}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            </ScrollReveal>
-            <ScrollReveal direction="left" delay={80} className="flex-1 w-full">
-            <div className="p-8 bg-deep border border-border/60 rounded-2xl interactive-lift">
-              <h3 className="text-sm font-bold text-t1 mb-1">{t('landing.sponsorsTitle')}</h3>
-              <p className="text-xs text-t3 leading-relaxed mb-6">{t('landing.sponsorsIntro')}</p>
-              <div className="border-t border-border/30 pt-2">
-                {LANDING_SPONSOR_KEYS.map((key) => (
-                  <div
-                    key={key}
-                    className="py-4 border-b border-border/30 last:border-0"
-                  >
-                    <SponsorHighlight className="mb-2">{LANDING_SPONSOR_BRAND[key]}</SponsorHighlight>
-                    <p className="text-xs text-t2 leading-relaxed">{t(`landing.sponsor.${key}`)}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="flex items-center justify-between pt-4 mt-2 border-t border-border/20">
-                <span className="text-[10px] font-mono text-t3 uppercase tracking-wider">{t('landing.clusterHealth')}</span>
-                <span className="text-[10px] font-mono text-success">{t('landing.clusterActive')}</span>
-              </div>
-            </div>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section id="abyss" className="py-20 md:py-28 relative overflow-hidden">
+      <section id="abyss" className="py-20 md:py-28 relative overflow-hidden bg-gradient-to-b from-abyss via-abyss to-abyss">
         <ScrollReveal className="max-w-4xl mx-auto px-6 text-center relative z-10" direction="up">
           <h2 className="mb-8 w-full">
             <SplitText

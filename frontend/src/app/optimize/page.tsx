@@ -8,6 +8,7 @@ import AgentCascade from '@/components/AgentCascade';
 import { ApiErrorBanner } from '@/components/ApiErrorBanner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocale } from '@/components/LocaleProvider';
+import MagicRings from '@/components/MagicRings';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -254,8 +255,37 @@ export default function OptimizePage() {
   const agentsSpawned = agentEvents.filter(e => e.type === 'spawn').length;
 
   return (
-    <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+    <div className="min-h-screen relative overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none">
+        <MagicRings
+          color="#fc42ff"
+          colorTwo="#42fcff"
+          ringCount={6}
+          speed={1}
+          attenuation={10}
+          lineThickness={2}
+          baseRadius={0.35}
+          radiusStep={0.1}
+          scaleRate={0.1}
+          opacity={1}
+          blur={0}
+          noiseAmount={0.1}
+          rotation={0}
+          ringGap={1.5}
+          fadeIn={0.7}
+          fadeOut={0.5}
+          followMouse={false}
+          mouseInfluence={0.2}
+          hoverScale={1.2}
+          parallax={0.05}
+          clickBurst={false}
+        />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-abyss/60 via-abyss/50 to-abyss/60 pointer-events-none"
+          aria-hidden
+        />
+      </div>
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-6 space-y-6">
         <div>
           <h2 className="text-xl font-bold text-t1">Prescription Optimizer</h2>
           <p className="text-xs text-t3 mt-1">Optimal sourcing routes across pharmacy networks</p>
@@ -399,3 +429,4 @@ export default function OptimizePage() {
     </div>
   );
 }
+
