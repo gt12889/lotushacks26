@@ -15,6 +15,10 @@ export default function LandingPage() {
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
   const [liveStats, setLiveStats] = useState<{
+    prices_tracked: number;
+    anomalies_detected: number;
+    violations_flagged: number;
+    total_savings_vnd: number;
     total_products: number;
     total_scans: number;
     pharmacies_covered: number;
@@ -48,12 +52,11 @@ export default function LandingPage() {
 
   if (!mounted) return null;
 
-  const scanTimeSec = liveStats ? liveStats.avg_scan_time_ms / 1000 : 30;
   const stats = [
-    { label: t('landing.statLatency'), prefix: '< ', value: scanTimeSec, suffix: 's', formatter: (v: number) => v.toFixed(1) },
-    { label: t('landing.statData'), value: liveStats ? liveStats.total_scans : 14.2, suffix: liveStats ? '' : 'M+' },
-    { label: t('landing.statAccuracy'), value: liveStats ? liveStats.pharmacies_covered : 99.9, suffix: liveStats ? ' pharmacies' : '%', formatter: liveStats ? undefined : (v: number) => v.toFixed(1) },
-    { label: t('landing.statCoverage'), value: liveStats ? liveStats.drugs_tracked : 5, suffix: liveStats ? ' drugs' : '', prefix: liveStats ? '' : 'Top ' },
+    { label: 'PRICES TRACKED', prefix: '', value: liveStats ? liveStats.prices_tracked : 847, suffix: '', formatter: (v: number) => v.toLocaleString(), metric: 'prices' },
+    { label: 'ANOMALIES DETECTED', prefix: '', value: liveStats ? liveStats.anomalies_detected : 23, suffix: '', metric: 'anomalies' },
+    { label: 'VIOLATIONS FLAGGED', prefix: '', value: liveStats ? liveStats.violations_flagged : 5, suffix: '', metric: 'violations' },
+    { label: 'SAVINGS (VND)', prefix: '', value: liveStats ? liveStats.total_savings_vnd : 4200000, suffix: '', formatter: (v: number) => v.toLocaleString(), metric: 'savings' },
   ];
 
   return (
@@ -101,9 +104,10 @@ export default function LandingPage() {
             {/* Right column - 40% — KPI stats */}
             <div ref={statsRef} className="md:col-span-2 grid grid-cols-2 gap-4">
               {stats.map((s, i) => (
-                <div
+                <Link
                   key={i}
-                  className="p-5 rounded-xl bg-card/20 border border-border/40 backdrop-blur-sm"
+                  href={`/stats?metric=${s.metric}`}
+                  className="p-5 rounded-xl bg-card/20 border border-border/40 backdrop-blur-sm hover:border-cyan/60 transition-colors group cursor-pointer"
                 >
                   <div className="text-2xl font-bold text-cyan mb-1" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {s.prefix}
@@ -114,8 +118,11 @@ export default function LandingPage() {
                     )}
                     {s.suffix}
                   </div>
-                  <div className="text-[10px] font-mono text-t3 uppercase tracking-widest">{s.label}</div>
-                </div>
+                  <div className="text-[10px] font-mono text-t3 uppercase tracking-widest group-hover:text-cyan transition-colors">
+                    {s.label}
+                    <span className="ml-1.5 opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
+                  </div>
+                </Link>
               ))}
             </div>
           </div>
