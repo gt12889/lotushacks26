@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Mic, MicOff, Search, Camera, Loader2 } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
 import { demoFetch } from '@/lib/api';
@@ -27,7 +27,13 @@ export default function SearchBar({ onSearch, isSearching, defaultQuery = '' }: 
     if (query.trim()) onSearch(query.trim());
   };
 
-  const supportsVoice = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  const [supportsVoice, setSupportsVoice] = useState(false);
+  useEffect(() => {
+    setSupportsVoice(
+      typeof window !== 'undefined' &&
+        ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+    );
+  }, []);
 
   const toggleVoice = useCallback(() => {
     if (isListening) {
