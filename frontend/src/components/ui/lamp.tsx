@@ -127,7 +127,7 @@ export const LampContainer = ({
       <div
         className={cn(
           "relative z-50 flex flex-col items-center px-5 max-w-[95vw]",
-          compact ? "-translate-y-[6.3rem] md:-translate-y-[8.1rem]" : "-translate-y-80"
+          compact ? "-translate-y-[8.5rem] md:-translate-y-[10.5rem]" : "-translate-y-80"
         )}
       >
         {children}
