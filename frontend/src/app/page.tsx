@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLocale } from '@/components/LocaleProvider';
 import { LampDemo } from '@/components/ui/lamp';
@@ -22,6 +22,10 @@ export default function LandingPage() {
   const statsRef = useRef<HTMLDivElement>(null);
   const [statsVisible, setStatsVisible] = useState(false);
   const [liveStats, setLiveStats] = useState<{
+    prices_tracked: number;
+    anomalies_detected: number;
+    violations_flagged: number;
+    total_savings_vnd: number;
     total_products: number;
     total_scans: number;
     pharmacies_covered: number;
@@ -161,7 +165,7 @@ export default function LandingPage() {
           >
             {t('landing.viewMethodology')}
           </Link>
-          <p className="text-xs text-t3 font-mono max-w-md leading-relaxed">{t('landing.stackDetailsHint')}</p>
+          <p className="text-xs text-t3 font-mono italic max-w-md leading-relaxed">{t('landing.stackDetailsHint')}</p>
         </div>
       </section>
 

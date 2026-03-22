@@ -175,6 +175,129 @@ def fix_gov_prices(db: sqlite3.Connection):
     return len(rows)
 
 
+def seed_sparkline_data(db: sqlite3.Connection):
+    """Insert 5-7 recent price records per pharmacy for sparkline demo drugs.
+
+    Spreads timestamps over the past 7 days with ±5-10% price variance so
+    sparkline charts show visible trend data during demo.
+    """
+    now = datetime.now()
+    inserted = 0
+
+    sparkline_drugs = [
+        # (drug_query, product_name, manufacturer, pack_size, base_price)
+        ("Metformin 500mg", "Metformin 500mg Vidipha (hộp 100 viên)", "Vidipha", 100, 32000),
+        ("Paracetamol 500mg", "Paracetamol 500mg Nadyphar (hộp 100 viên)", "Nadyphar", 100, 15000),
+    ]
+
+    for drug_query, product_name, manufacturer, pack_size, base_price in sparkline_drugs:
+        for source_id, source_name in SOURCES.items():
+            low, high = PHARMACY_PRICE_VARIANCE[source_id]
+            pharmacy_base = int(base_price * random.uniform(low, high))
+            pharmacy_base = max(1000, round(pharmacy_base / 1000) * 1000)
+
+            num_points = random.randint(5, 7)
+            # Spread evenly over past 7 days
+            for i in range(num_points):
+                hours_ago = int((i / (num_points - 1)) * 168) if num_points > 1 else 0
+                observed_at = now - timedelta(hours=hours_ago)
+
+                # ±5-10% daily variance
+                variance = random.uniform(-0.10, 0.10)
+                price = int(pharmacy_base * (1 + variance))
+                price = max(1000, round(price / 1000) * 1000)
+                unit_price = round(price / pack_size, 1)
+
+                url_slug = product_name.lower().replace(" ", "-").replace("(", "").replace(")", "")
+                pharmacy_urls = {
+                    "long_chau": f"https://nhathuoclongchau.com.vn/{url_slug}",
+                    "pharmacity": f"https://pharmacity.vn/{url_slug}",
+                    "an_khang": f"https://ankhang.vn/{url_slug}",
+                    "than_thien": f"https://nhathuocthanhtien.vn/{url_slug}",
+                    "medicare": f"https://medicare.vn/{url_slug}",
+                }
+
+                db.execute(
+                    """INSERT INTO prices
+                       (drug_query, source_id, product_name, price, original_price,
+                        pack_size, unit_price, manufacturer, in_stock, product_url, observed_at)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (
+                        drug_query, source_id, product_name, price, None,
+                        pack_size, unit_price, manufacturer, 1,
+                        pharmacy_urls[source_id],
+                        observed_at.strftime("%Y-%m-%d %H:%M:%S"),
+                    ),
+                )
+                inserted += 1
+
+    return inserted
+
+
+def seed_anomaly_data(db: sqlite3.Connection):
+    """Seed Amoxicillin 500mg prices so Z-score anomaly detection fires naturally.
+
+    An Khang gets a suspiciously low price (8,000 VND) while others are 25,000-35,000 VND.
+    This makes the CounterfeitRiskPanel trigger automatically from real detection logic.
+    """
+    now = datetime.now()
+    inserted = 0
+
+    normal_prices = {
+        "long_chau": (25000, "Amoxicillin 500mg Domesco (hộp 100 viên)", "Domesco"),
+        "pharmacity": (28000, "Amoxicillin 500mg Vidipha (hộp 100 viên)", "Vidipha"),
+        "than_thien": (32000, "Amoxicillin 500mg TV.Pharm (hộp 100 viên)", "TV.Pharm"),
+        "medicare": (35000, "Amoxil 500mg (hộp 12 viên)", "GSK"),
+    }
+
+    # Normal prices for 4 pharmacies
+    for source_id, (price, product_name, manufacturer) in normal_prices.items():
+        observed_at = now - timedelta(hours=random.randint(1, 24))
+        pack_size = 100 if "100" in product_name else 12
+        unit_price = round(price / pack_size, 1)
+        url_slug = product_name.lower().replace(" ", "-").replace("(", "").replace(")", "")
+        pharmacy_urls = {
+            "long_chau": f"https://nhathuoclongchau.com.vn/{url_slug}",
+            "pharmacity": f"https://pharmacity.vn/{url_slug}",
+            "than_thien": f"https://nhathuocthanhtien.vn/{url_slug}",
+            "medicare": f"https://medicare.vn/{url_slug}",
+        }
+        db.execute(
+            """INSERT INTO prices
+               (drug_query, source_id, product_name, price, original_price,
+                pack_size, unit_price, manufacturer, in_stock, product_url, observed_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                "Amoxicillin 500mg", source_id, product_name, price, None,
+                pack_size, unit_price, manufacturer, 1,
+                pharmacy_urls[source_id],
+                observed_at.strftime("%Y-%m-%d %H:%M:%S"),
+            ),
+        )
+        inserted += 1
+
+    # Suspiciously low price at An Khang — triggers Z-score anomaly
+    anomaly_price = 8000
+    anomaly_product = "Amoxicillin 500mg (hộp 100 viên)"
+    anomaly_manufacturer = "Unknown"
+    observed_at = now - timedelta(hours=random.randint(1, 6))
+    db.execute(
+        """INSERT INTO prices
+           (drug_query, source_id, product_name, price, original_price,
+            pack_size, unit_price, manufacturer, in_stock, product_url, observed_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            "Amoxicillin 500mg", "an_khang", anomaly_product, anomaly_price, None,
+            100, round(anomaly_price / 100, 1), anomaly_manufacturer, 1,
+            "https://ankhang.vn/amoxicillin-500mg-hop-100-vien",
+            observed_at.strftime("%Y-%m-%d %H:%M:%S"),
+        ),
+    )
+    inserted += 1
+
+    return inserted
+
+
 def main():
     db = sqlite3.connect(DB_PATH)
 
@@ -185,6 +308,14 @@ def main():
     # Seed price data
     count = seed_prices(db)
     print(f"Seeded {count} price observations")
+
+    # Seed sparkline-focused data (7-day window for Metformin & Paracetamol)
+    sparkline_count = seed_sparkline_data(db)
+    print(f"Seeded {sparkline_count} sparkline price points")
+
+    # Seed anomaly trigger data (Amoxicillin with suspicious An Khang price)
+    anomaly_count = seed_anomaly_data(db)
+    print(f"Seeded {anomaly_count} anomaly trigger records")
 
     db.commit()
 

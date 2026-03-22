@@ -22,43 +22,29 @@ cd frontend && npm install && npm run dev
 
 Visit **http://localhost:3005**
 
-See [docs/SETUP.md](docs/SETUP.md) for env vars and detailed setup.
-
-## Deploy
-
-- **Railway**: [docs/README.md](docs/README.md) (two-service deploy from one repo)
-- **Docker Compose**: [docs/DOCKER-COMPOSE.md](docs/DOCKER-COMPOSE.md) + [docker-compose.yml](docker-compose.yml)
-- **Env template**: [railway.env.example](railway.env.example)
+See [docs/README.md](docs/README.md) for env vars, Railway deploy, and Docker Compose.
 
 ## Documentation
 
-All project docs live in [`docs/`](docs/INDEX.md):
-
 | Doc | Purpose |
 |-----|---------|
-| [PRD](docs/PRD.md) | Product requirements, architecture, tech stack, components |
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | System diagram & data flows |
+| [README](docs/README.md) | Setup, deploy, tech stack, API endpoints |
+| [PRD](docs/PRD.md) | Product requirements & architecture |
 | [SPONSORS](docs/SPONSORS.md) | Sponsor challenge audit & implementation status |
-| [PLAN](docs/PLAN.md) | Implementation phases (all complete) |
-| [DEMO](docs/DEMO.md) | Live demo script & timing |
-| [PITCH](docs/PITCH.md) | One-page judge pitch |
-| [SLIDES](docs/SLIDES.md) | Slide bullet outline |
-| [Q&A](docs/Q&A.md) | Anticipated judge questions |
-| [KNOWN-ISSUES](docs/KNOWN-ISSUES.md) | Honest limitations for Q&A |
+| [DEMO](docs/DEMO.md) | Live demo script, Q&A prep, known issues |
 
 ## Sponsor Integrations (9)
 
 | Sponsor | Role |
 |---------|------|
-| **TinyFish** | 5 parallel stealth agents, 5-tier cascade, /run-batch, War Room live browser previews |
+| **TinyFish** | 5 parallel stealth agents, 6-tier cascade, /run-batch, War Room live browser previews |
 | **BrightData** | Proxy on 3 chains with Vietnam geo-targeting |
 | **OpenRouter** | NL multi-drug search, Qwen + GPT-4o routing, fallback chain |
-| **Exa** | 6 use cases: variants, WHO pricing, drug info, counterfeit risk, scout-spawn, investigation swarm |
+| **Exa** | Variants, WHO pricing, drug info, counterfeit risk, investigation swarm |
 | **ElevenLabs** | Vietnamese TTS voice summaries + Discord voice alerts |
 | **OpenAI** | GPT-4o Vision + function calling for prescription OCR |
-| **Qwen** | 2.5 72B Vietnamese drug name normalization |
-| **Discord** | Webhook notifications for price alerts |
-| **Supermemory** | Cross-session search context recall |
+| **Discord** | Webhook notifications for price alerts + audio attachments |
+| **Supermemory** | Cross-session search context recall + personalization |
 
 ---
 

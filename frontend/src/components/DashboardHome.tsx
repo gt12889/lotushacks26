@@ -23,7 +23,7 @@ import { ApiErrorBanner } from '@/components/ApiErrorBanner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import type { ModelStep } from '@/components/ModelRouterPanel';
 import { useLocale } from '@/components/LocaleProvider';
-import { Zap, BarChart3, Pill } from 'lucide-react';
+import { Zap, BarChart3, Pill, Eye, Shield, Bell, TrendingUp, Brain } from 'lucide-react';
 import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';

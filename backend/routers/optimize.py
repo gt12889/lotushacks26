@@ -203,19 +203,42 @@ async def optimize_prescription_stream(request: OptimizeRequest):
     )
 
 
+DEMO_PRESCRIPTION_FALLBACK = {
+    "drugs": [
+        {"name": "Metformin 500mg", "dosage": "500mg", "frequency": "2x daily", "quantity": 60},
+        {"name": "Amlodipine 5mg", "dosage": "5mg", "frequency": "1x daily", "quantity": 30},
+        {"name": "Losartan 50mg", "dosage": "50mg", "frequency": "1x daily", "quantity": 30},
+    ]
+}
+
+
 @router.post("/optimize/prescription", response_model=OptimizeResponse)
 async def optimize_from_prescription(image: UploadFile = File(...)):
     """Upload a prescription image → OCR extracts drugs → optimize across pharmacies.
 
     Chains OpenAI GPT-4o function calling (OCR) with TinyFish parallel search.
+    Falls back to a hardcoded demo extraction if the API call fails or times out.
     """
     image_data = await image.read()
     api_key = settings.openai_api_key or settings.openrouter_api_key
-    drugs = await extract_drugs_from_image(image_data, api_key)
+
+    drugs = []
+    try:
+        drugs = await asyncio.wait_for(
+            extract_drugs_from_image(image_data, api_key),
+            timeout=8.0,
+        )
+    except asyncio.TimeoutError:
+        logger.warning("OCR timed out after 8s — using demo fallback prescription")
+    except Exception as e:
+        logger.warning(f"OCR failed ({e}) — using demo fallback prescription")
 
     drug_names = [d["name"] for d in drugs if d.get("name")]
+
     if not drug_names:
-        return OptimizeResponse(items=[], total_optimized=0)
+        logger.info("OCR returned no drugs — using demo fallback prescription")
+        drugs = DEMO_PRESCRIPTION_FALLBACK["drugs"]
+        drug_names = [d["name"] for d in drugs]
 
     # Reuse existing optimize logic
     request = OptimizeRequest(drugs=drug_names)

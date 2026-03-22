@@ -8,24 +8,32 @@ AI-powered pharmaceutical price intelligence platform that deploys parallel Tiny
 
 Built for **LotusHacks 2026** | Enterprise Track
 
-**More docs:** [Documentation index](./INDEX.md) · **Prep:** [DEMO](./DEMO.md) · [PITCH](./PITCH.md) · [SLIDES](./SLIDES.md) · [Q&A](./Q&A.md)
+---
+
+## What Shipped
+
+- FastAPI backend with **SSE search** across **5 pharmacy sources** (TinyFish)
+- Next.js dashboard: search, results, metrics, agent feed, live preview
+- **6-tier agent cascade**: OCR → Search → Variant → Scout → Analyst → Investigator
+- SQLite persistence (prices, sources, alerts, monitors, government ceilings)
+- **EN/VI** locale toggle
+- **Supermemory** recall for cross-session context
+- **LLM insights** and shopping advice (OpenRouter)
+- **OCR** prescription → optimizer pipeline
+- **Discord** + **ElevenLabs** voice alerts
+- **Trends**, **Alerts**, **Optimize** pages wired end-to-end
+- Dockerfiles + Railway deploy configs
 
 ---
 
 ## Quick Start
 
-Run commands from the **repository root** (parent of `docs/`).
-
 ### Prerequisites
 
-- Node.js 20+ (see `frontend/package.json`)
+- Node.js 20+
 - Python 3.11+ (3.12 recommended)
 
-### 1. Environment setup
-
-See [SETUP.md](./SETUP.md) and [`../railway.env.example`](../railway.env.example) for variable names.
-
-### 2. Backend
+### Backend
 
 ```bash
 cd backend
@@ -35,7 +43,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload --port 8000
 ```
 
-### 3. Frontend
+### Frontend
 
 ```bash
 cd frontend
@@ -45,95 +53,83 @@ npm run dev
 
 Visit **http://localhost:3005**
 
-## Deploy on Railway (live demo URL)
+### Environment
 
-Two services from the **same GitHub repo**, different **Root Directory**s.
+Backend (`.env` or Railway vars):
+- `TINYFISH_API_KEY` (required)
+- Optional: `EXA_API_KEY`, `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `BRIGHTDATA_PROXY_URL`, `SUPERMEMORY_API_KEY`, `ELEVENLABS_API_KEY`, `DISCORD_WEBHOOK_URL`
 
-1. **Backend (FastAPI)**  
-   - [Railway Dashboard](https://railway.app) → **New Project** → **Deploy from GitHub** → select this repo.  
-   - Open the service → **Settings** → **Root Directory** → `backend`.  
-   - **Variables**: copy names from [`../railway.env.example`](../railway.env.example) (API keys + **`CORS_ORIGINS`**).  
-   - **`CORS_ORIGINS`** must list your frontend’s public URL (comma-separated), e.g. `https://your-frontend.up.railway.app,http://localhost:3005`. If unset, the API only allows `http://localhost:3005`.  
-   - **Settings → Networking → Generate Domain** → note the URL (e.g. `https://xxx.up.railway.app`).
+Frontend (`frontend/.env.local`):
+- `NEXT_PUBLIC_API_URL=http://localhost:8000`
 
-2. **Frontend (Next.js)**  
-   - **Add service** → same repo → **Root Directory** → `frontend`.  
-   - **Variables**: `NEXT_PUBLIC_API_URL` = backend public URL (**no** trailing slash).  
-   - Redeploy the frontend after setting or changing this (Next bakes it in at build time).  
-   - **Networking** → generate a public domain for the UI.
+Quick checks:
+- API: http://localhost:8000/health
+- UI: http://localhost:3005
+- If browser can't reach API: check `CORS_ORIGINS` includes `http://localhost:3005`
 
-3. **SQLite**  
-   - Default DB file lives on the service filesystem and can reset on redeploy. For a hackathon demo that is usually fine; for persistence, add a **Volume** in Railway and point `DATABASE_URL` at a path on that volume.
+---
 
-4. **CLI (optional)**  
-   - `npm i -g @railway/cli` → `railway login` → from `backend/` or `frontend/` run `railway link` to attach a folder to an existing service.
+## Deploy on Railway
 
-Config-as-code: `backend/railway.toml` and `frontend/railway.toml` use the **Dockerfile** builder (`backend/Dockerfile`, `frontend/Dockerfile`) so deploys work the same from GitHub, CLI, or a registry.
+Two services from the **same GitHub repo**, different Root Directories.
 
-### Without GitHub
+1. **Backend (FastAPI)** — Root Directory: `backend`, add API keys + `CORS_ORIGINS` → Generate Domain
+2. **Frontend (Next.js)** — Root Directory: `frontend`, set `NEXT_PUBLIC_API_URL` to backend URL → Generate Domain
 
-**A. Railway CLI (zip-style deploy from your laptop)**  
-1. Install: `npm i -g @railway/cli` → `railway login`.  
-2. Create an **empty** project in the dashboard (or `railway init` in a folder).  
-3. **Backend:** `cd backend` → `railway link` (pick/create the API service) → set **Root Directory** to `.` or leave service tied to this repo path (CLI uploads the current directory). Run `railway up` to build and deploy the Dockerfile.  
-4. **Frontend:** `cd frontend` → `railway link` (other service) → set **`NEXT_PUBLIC_API_URL`** in Variables to your API’s public URL → `railway up`.  
-5. Set **`CORS_ORIGINS`** on the backend service to include the frontend public URL.
-
-**B. Docker image (any registry)**  
-```bash
-# Backend
-docker build -t YOUR_USER/megladon-api:latest ./backend
-docker push YOUR_USER/megladon-api:latest
-
-# Frontend (set real API URL at build time)
-docker build --build-arg NEXT_PUBLIC_API_URL=https://YOUR-API.up.railway.app -t YOUR_USER/megladon-web:latest ./frontend
-docker push YOUR_USER/megladon-web:latest
-```  
-In Railway: **New** → **Docker Image** → paste image name → add env vars on the service (backend still needs `CORS_ORIGINS`, etc.).
-
-**C. Switch back to Nixpacks**  
-If you prefer Railway’s auto build without Docker, change `[build] builder = "NIXPACKS"` and remove `dockerfilePath` in each `railway.toml`, and set `startCommand` again as in git history.
+Config-as-code: `backend/railway.toml` and `frontend/railway.toml` use the Dockerfile builder.
 
 ### Docker Compose (no Railway)
 
-Run **API + web** on any machine with Docker: see **[DOCKER-COMPOSE.md](./DOCKER-COMPOSE.md)** and root **`docker-compose.yml`**, **`.env.docker.example`**.
+```bash
+docker-compose up --build
+```
+
+See root `docker-compose.yml` and `railway.env.example` for variable names.
+
+---
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Web Agent | TinyFish (5 parallel stealth agents, /run-batch for optimizer) |
-| Backend | FastAPI + asyncio |
+| Web Agents | TinyFish (5 parallel stealth agents, /run-batch for optimizer) |
+| Backend | FastAPI + asyncio + SSE |
 | Database | SQLite (aiosqlite) |
 | Scheduler | APScheduler |
-| Frontend | Next.js + Tailwind |
+| Frontend | Next.js 16, React 19, Tailwind CSS v4, Recharts |
 | Notifications | Discord Webhooks |
-| Voice | ElevenLabs |
-| Drug Intelligence | Exa (variant discovery, WHO reference pricing, drug info summaries) |
-| LLM Routing | OpenRouter (Qwen 2.5 72B, GPT-4o) |
+| Voice | ElevenLabs (Vietnamese TTS) |
+| Drug Intelligence | Exa (variant discovery, WHO reference pricing, counterfeit detection) |
+| LLM Routing | OpenRouter (Qwen 2.5 72B, GPT-4o, Claude Sonnet fallback) |
 | Memory | Supermemory (cross-session context recall) |
+| OCR | GPT-4o with function calling |
+| Proxy | BrightData (stealth + anti-bot bypass) |
 
 ## API Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/search?query=...` | SSE streaming price search (with live browser preview URLs) |
-| POST | `/api/optimize` | Prescription cost optimizer (atomic /run-batch for multi-drug) |
-| POST | `/api/optimize/prescription` | OCR prescription image → drug extraction → optimize |
+| POST | `/api/search?query=...` | SSE streaming price search |
+| POST | `/api/optimize` | Prescription cost optimizer |
+| POST | `/api/optimize/stream` | SSE streaming optimizer |
+| POST | `/api/optimize/prescription` | OCR prescription → optimize |
+| POST | `/api/nl-search` | Natural language multi-drug search |
 | GET | `/api/prices/{query}` | Cached price data |
 | GET | `/api/trends/{query}` | Historical price trends |
-| POST | `/api/alerts` | Configure price alerts |
-| POST | `/api/monitor` | Set up recurring monitor |
+| GET | `/api/sparklines/{query}` | Per-source sparkline data |
+| POST | `/api/alerts` | Configure price alert |
 | GET | `/api/alerts` | List active alerts |
-| DELETE | `/api/alerts/{id}` | Deactivate an alert |
+| DELETE | `/api/alerts/{id}` | Deactivate alert |
+| POST | `/api/monitor` | Set up recurring monitor |
 | GET | `/api/monitors` | List active monitors |
-| POST | `/api/ocr` | OCR prescription image → extract drug names |
-| POST | `/api/demo-alert` | Trigger demo Discord + voice alert |
-| POST | `/api/insights` | Personalized shopping insights via Supermemory context |
-| POST | `/api/tts/summary` | Vietnamese TTS audio summary of search results (ElevenLabs) |
+| POST | `/api/ocr` | OCR prescription image |
+| POST | `/api/insights` | Personalized shopping insights |
+| POST | `/api/tts/summary` | Vietnamese TTS summary |
+| POST | `/api/demo-alert` | Demo Discord + voice alert |
 | GET | `/api/memory/recall` | Supermemory context recall |
+| GET | `/api/stats` | Live DB statistics |
 | GET | `/health` | Health check |
-| GET | `/health/services` | Detailed service health status |
+| GET | `/health/services` | Detailed service health |
 
 ## Pharmacy Sources
 
@@ -144,18 +140,3 @@ Run **API + web** on any machine with Docker: see **[DOCKER-COMPOSE.md](./DOCKER
 | An Khang | 527+ | ankhang.vn |
 | Than Thien | 100+ | nhathuocthanhtien.vn |
 | Medicare | 50+ | medicare.vn |
-
-## Architecture
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for a structured overview. Summary:
-
-```
-Search Query → 5 Parallel TinyFish Agents (stealth) → SSE Stream → Dashboard
-               ├─ Long Chau agent  [stealth+proxy]          ├─ Live Browser Preview (iframe)
-               ├─ Pharmacity agent [stealth+proxy]           ├─ Pharmacy Cards
-               ├─ An Khang agent   [stealth+proxy]           ├─ Price Grid
-               ├─ Than Thien agent [stealth]    → SQLite     ├─ Savings Banner
-               └─ Medicare agent   [stealth]    → Discord    └─ Optimizer
-
-Prescription → /run-batch (atomic, up to 100 runs) → Poll Results → Optimized Sourcing
-```
