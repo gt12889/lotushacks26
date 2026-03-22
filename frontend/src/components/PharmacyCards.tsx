@@ -37,6 +37,14 @@ const PHARMACY_INITIALS: Record<string, string> = {
   medicare: 'MC',
 };
 
+const PHARMACY_URLS: Record<string, string> = {
+  long_chau: 'https://nhathuoclongchau.com.vn',
+  pharmacity: 'https://www.pharmacity.vn',
+  an_khang: 'https://www.ankhang.vn',
+  than_thien: 'https://nhathuocthanhtien.vn',
+  medicare: 'https://medicare.vn',
+};
+
 const BRIGHTDATA_PHARMACIES = new Set(['long_chau', 'pharmacity', 'an_khang']);
 
 export default function PharmacyCards({ results, sparklines }: PharmacyCardsProps) {
@@ -88,7 +96,11 @@ export default function PharmacyCards({ results, sparklines }: PharmacyCardsProp
                 <span className="text-lg font-bold font-mono text-t1">{PHARMACY_INITIALS[id]}</span>
                 {result && <MegalodonBadge status={statusType} />}
               </div>
-              <div className="text-[10px] text-t3 mb-2">{result?.source_name || id}</div>
+              <div className="text-[10px] text-t3 mb-2">
+                <a href={PHARMACY_URLS[id] || '#'} target="_blank" rel="noopener noreferrer" className="hover:text-cyan transition-colors">
+                  {result?.source_name || id}
+                </a>
+              </div>
               {result?.status === 'searching' && (
                 <div className="text-xs text-warn animate-pulse font-mono">Scanning...</div>
               )}
