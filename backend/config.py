@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     openrouter_normalization_model: str = "qwen/qwen-2.5-72b-instruct"
     openrouter_fallback_model: str = "anthropic/claude-sonnet-4-20250514"
     supermemory_api_key: str = ""
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+    twilio_to_number: str = ""
     cors_origins: str = "http://localhost:3005,http://localhost:3000,http://localhost:3001,http://localhost:3333"
     database_url: str = "sqlite:///./megladon_md.db"
 
