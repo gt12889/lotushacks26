@@ -1,10 +1,13 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from config import settings
+from middleware.demo_mode import DemoModeMiddleware
 from database import init_db
 from services.scheduler import start_scheduler, stop_scheduler
 from services.health import check_tinyfish_health, periodic_health_check, get_health_status
@@ -52,6 +55,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Megladon MD API", version="0.1.0", lifespan=lifespan)
+
+# Demo mode middleware must be added BEFORE CORS so it can intercept requests
+app.add_middleware(DemoModeMiddleware)
 
 # Flexible CORS: If CORS_ORIGINS is "*" or not set, allow all but disable credentials
 # (Browsers disallow "*" + allow_credentials=True)
@@ -101,3 +107,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         status_code=500,
         content={"detail": "Internal server error", "type": type(exc).__name__},
     )
+
+
+# Static file serving (for demo audio files, etc.)
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")

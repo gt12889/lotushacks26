@@ -5,6 +5,7 @@ import MegalodonBadge from '@/components/ui/megalodon-badge';
 import { ApiErrorBanner } from '@/components/ApiErrorBanner';
 import { LoadingPanel, LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocale } from '@/components/LocaleProvider';
+import { demoFetch } from '@/lib/api';
 import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -26,33 +27,48 @@ export default function AlertsPage() {
   const [saving, setSaving] = useState(false);
 
   const fetchAlerts = useCallback(async () => {
-    const res = await fetch(`${API_URL}/api/alerts`);
-    if (!res.ok) throw new Error(String(res.status));
-    return (await res.json()) as Alert[];
-  }, []);
+    try {
+      const res = await demoFetch(`${API_URL}/api/alerts`);
+      if (!res.ok) throw new Error(String(res.status));
+      const a = await res.json();
+      setAlerts(Array.isArray(a) ? a : []);
+    } catch (e) {
+      console.error(e);
+      setListError(e instanceof TypeError ? t('error.network') : t('error.alertsLoad'));
+    }
+  }, [t]);
 
   const fetchMonitors = useCallback(async () => {
-    const res = await fetch(`${API_URL}/api/monitors`);
-    if (!res.ok) throw new Error(String(res.status));
-    return (await res.json()) as Monitor[];
-  }, []);
+    try {
+      const res = await demoFetch(`${API_URL}/api/monitors`);
+      if (!res.ok) throw new Error(String(res.status));
+      const m = await res.json();
+      setMonitors(Array.isArray(m) ? m : []);
+    } catch (e) {
+      console.error(e);
+      setListError(e instanceof TypeError ? t('error.network') : t('error.alertsLoad'));
+    }
+  }, [t]);
 
   const loadAll = useCallback(async () => {
     setListError(null);
     setListLoading(true);
     try {
-      const [a, m] = await Promise.all([fetchAlerts(), fetchMonitors()]);
+      const [aRes, mRes] = await Promise.all([
+        demoFetch(`${API_URL}/api/alerts`),
+        demoFetch(`${API_URL}/api/monitors`),
+      ]);
+      if (!aRes.ok || !mRes.ok) throw new Error('Fetch failed');
+      const [a, m] = await Promise.all([aRes.json(), mRes.json()]);
       setAlerts(Array.isArray(a) ? a : []);
       setMonitors(Array.isArray(m) ? m : []);
     } catch (e) {
       console.error(e);
-      setListError(
-        e instanceof TypeError ? t('error.network') : t('error.alertsLoad')
-      );
+      setListError(e instanceof TypeError ? t('error.network') : t('error.alertsLoad'));
     } finally {
       setListLoading(false);
     }
-  }, [fetchAlerts, fetchMonitors, t]);
+  }, [t]);
 
   useEffect(() => {
     void loadAll();
@@ -63,7 +79,7 @@ export default function AlertsPage() {
     setActionError(null);
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/alerts`, {
+      const res = await demoFetch(`${API_URL}/api/alerts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -89,7 +105,7 @@ export default function AlertsPage() {
     setActionError(null);
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/alerts/${id}`, { method: 'DELETE' });
+      const res = await demoFetch(`${API_URL}/api/alerts/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         setActionError(t('error.server', { status: res.status }));
         return;
@@ -107,7 +123,7 @@ export default function AlertsPage() {
     setActionError(null);
     setSaving(true);
     try {
-      const res = await fetch(`${API_URL}/api/monitor`, {
+      const res = await demoFetch(`${API_URL}/api/monitor`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

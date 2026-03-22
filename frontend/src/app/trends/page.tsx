@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Bot, BarChart3 } from 'lucide-react';
 import PricingChart from '@/components/PricingChart';
+import { demoFetch } from '@/lib/api';
 import NLSearchBar from '@/components/NLSearchBar';
 import ComparisonMatrix from '@/components/ComparisonMatrix';
 import { ApiErrorBanner } from '@/components/ApiErrorBanner';
@@ -61,7 +62,7 @@ function TrendsContent() {
     setFetchError(null);
     void (async () => {
       try {
-        const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
+        const res = await demoFetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=7`);
         if (!res.ok) {
           if (!cancelled) {
             setData([]);
@@ -95,7 +96,7 @@ function TrendsContent() {
     setLoading(true);
     setFetchError(null);
     try {
-      const res = await fetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=${days}`);
+      const res = await demoFetch(`${API_URL}/api/trends/${encodeURIComponent(q)}?days=${days}`);
       if (!res.ok) {
         setData([]);
         setFetchError(t('error.server', { status: res.status }));
@@ -130,7 +131,7 @@ function TrendsContent() {
     setNlRecommendation('');
 
     try {
-      const res = await fetch(`${API_URL}/api/nl-search?query=${encodeURIComponent(nlQuery)}`, { method: 'POST' });
+      const res = await demoFetch(`${API_URL}/api/nl-search?query=${encodeURIComponent(nlQuery)}`, { method: 'POST' });
       if (!res.ok) {
         setNlError(t('error.server', { status: res.status }));
         return;

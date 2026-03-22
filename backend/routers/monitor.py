@@ -9,6 +9,7 @@ from services.tinyfish import search_all_pharmacies
 from services.exa import detect_price_anomaly
 from services.discord import send_alert, send_alert_with_audio
 from services.elevenlabs import generate_audio
+from services.twilio_call import make_voice_call
 from services.price_fluctuation import get_prices_id_cutoff_before_scan, fluctuation_lines_for_scan
 from config import settings
 
@@ -17,17 +18,29 @@ logger = logging.getLogger(__name__)
 
 
 async def _send_vn_alert(message: str, vn_text: str):
-    """Send Discord alert with optional Vietnamese voice note."""
-    if not settings.discord_webhook_url:
-        logger.warning("Discord webhook not configured — skipping alert")
-        return
+    """Send Discord alert with optional Vietnamese voice note + Twilio phone call."""
     audio = None
     if settings.elevenlabs_api_key:
         audio = await generate_audio(vn_text, settings.elevenlabs_api_key)
-    if audio:
-        await send_alert_with_audio(message, audio, settings.discord_webhook_url)
-    else:
-        await send_alert(message, settings.discord_webhook_url)
+
+    # Discord
+    if settings.discord_webhook_url:
+        if audio:
+            await send_alert_with_audio(message, audio, settings.discord_webhook_url)
+        else:
+            await send_alert(message, settings.discord_webhook_url)
+
+    # Twilio phone call — only for alerts with audio
+    if audio and settings.twilio_account_sid:
+        public_url = settings.cors_origins.split(",")[0].replace("3005", "8000") if settings.cors_origins else None
+        await make_voice_call(
+            audio_bytes=audio,
+            account_sid=settings.twilio_account_sid,
+            auth_token=settings.twilio_auth_token,
+            from_number=settings.twilio_from_number,
+            to_number=settings.twilio_to_number,
+            public_api_url=public_url,
+        )
 
 
 async def run_monitor_job(monitor_id: int, drug_query: str):

@@ -9,6 +9,7 @@ import { ApiErrorBanner } from '@/components/ApiErrorBanner';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { useLocale } from '@/components/LocaleProvider';
 import MagicRings from '@/components/MagicRings';
+import { demoFetch } from '@/lib/api';
 import SponsorBadge from '@/components/SponsorBadge';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -83,7 +84,7 @@ export default function OptimizePage() {
     try {
       const formData = new FormData();
       formData.append('image', file);
-      const res = await fetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
+      const res = await demoFetch(`${API_URL}/api/ocr`, { method: 'POST', body: formData });
       if (!res.ok) {
         setPageError(t('error.server', { status: res.status }));
         setStreamActive(false);
@@ -107,7 +108,7 @@ export default function OptimizePage() {
       setLoading(true);
       addAgentEvent('spawn', 'Orchestrator', `Deploying pharmacy agents for ${data.drugs.length} drug(s)`);
 
-      const sseRes = await fetch(`${API_URL}/api/optimize/stream`, {
+      const sseRes = await demoFetch(`${API_URL}/api/optimize/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ drugs: data.drugs }),
@@ -188,7 +189,7 @@ export default function OptimizePage() {
     addAgentEvent('spawn', 'Orchestrator', `Deploying pharmacy agents for ${validDrugs.length} drug(s)`);
 
     try {
-      const sseRes = await fetch(`${API_URL}/api/optimize/stream`, {
+      const sseRes = await demoFetch(`${API_URL}/api/optimize/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ drugs: validDrugs }),

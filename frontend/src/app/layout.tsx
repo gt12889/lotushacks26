@@ -3,6 +3,7 @@ import "./globals.css";
 import NavBar from "@/components/NavBar";
 import AbyssFooter from "@/components/AbyssFooter";
 import { LocaleProvider } from "@/components/LocaleProvider";
+import { DemoModeProvider } from "@/components/DemoModeProvider";
 import { Geist, Fira_Code } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -27,9 +28,11 @@ export default function RootLayout({
     <html lang="en" className={cn("font-sans", geist.variable, firaCode.variable)}>
       <body className="antialiased bg-abyss text-t1 min-h-screen flex flex-col" suppressHydrationWarning>
         <LocaleProvider>
-          <NavBar />
-          <main className="flex-1">{children}</main>
-          <AbyssFooter />
+          <DemoModeProvider>
+            <NavBar />
+            <main className="flex-1">{children}</main>
+            <AbyssFooter />
+          </DemoModeProvider>
         </LocaleProvider>
       </body>
     </html>

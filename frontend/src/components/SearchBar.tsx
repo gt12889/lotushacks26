@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Mic, MicOff, Search, Camera, Loader2 } from 'lucide-react';
 import { useLocale } from '@/components/LocaleProvider';
+import { demoFetch } from '@/lib/api';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -74,7 +75,7 @@ export default function SearchBar({ onSearch, isSearching, defaultQuery = '' }: 
       const formData = new FormData();
       formData.append('image', file);
 
-      const res = await fetch(`${API_URL}/api/ocr`, {
+      const res = await demoFetch(`${API_URL}/api/ocr`, {
         method: 'POST',
         body: formData,
       });

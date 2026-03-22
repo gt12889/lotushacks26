@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo, useRef } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useLocale } from '@/components/LocaleProvider';
 import { LampDemo } from '@/components/ui/lamp';
+import { demoFetch } from '@/lib/api';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { HeroParallax } from '@/components/HeroParallax';
@@ -63,7 +64,7 @@ export default function LandingPage() {
 
   useEffect(() => {
     setMounted(true);
-    fetch('http://localhost:8000/api/stats')
+    demoFetch('http://localhost:8000/api/stats')
       .then((r) => r.json())
       .then(setLiveStats)
       .catch(() => {});
